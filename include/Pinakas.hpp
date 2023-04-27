@@ -141,13 +141,17 @@ namespace Pinakas::Backend
       // create a matrix MxN
       Matrix(const size_t M, const size_t N);
       // create a matrix with the same dimensions as 'matrix'
-      Matrix(const Matrix::Size size);
+      Matrix(const Size size);
       // create a matrix MxN with a specific value
       Matrix(const size_t M, const size_t N, const Value value);
+      // create a matrix with the same dimensions as 'matrix' with a specific value
+      Matrix(const Matrix::Size size, Value value);
       // create a matrix with the same dimensions as 'matrix' with a specific value
       Matrix(const Matrix& matrix, Value value);
       // create a matrix MxN random values
       Matrix(const size_t M, const size_t N, const Value min, const Value max);
+      // create a matrix with the same dimensions as 'matrix' with random values
+      Matrix(const Matrix::Size size, const Value min, const Value max);
       // create a matrix with the same dimensions as 'matrix' with random values
       Matrix(const Matrix& matrix, const Value min, const Value max);
       // create a matrix from specific values
@@ -247,7 +251,7 @@ namespace Pinakas::Backend
     }
   }
 
-  Matrix::Matrix(const Matrix::Size size)
+  Matrix::Matrix(const Size size)
     : Matrix(size.M, size.N)
   {}
 
@@ -285,6 +289,10 @@ namespace Pinakas::Backend
   Matrix::Matrix(const Matrix& matrix, Value value)
     : Matrix(matrix.size.M, matrix.size.N, value)
   {}
+  
+  Matrix::Matrix(const Size size, Value value)
+    : Matrix(size.M, size.N, value)
+  {}
 
   Matrix::Matrix(const size_t M, const size_t N, const Value min, const Value max)
     : // member initialization list
@@ -321,6 +329,14 @@ namespace Pinakas::Backend
     for (size_t index = 0; index < size.numel; ++index)
       data[0][index] = uniform_distribution(generator);
   }
+  
+  Matrix::Matrix(const Matrix& matrix, Value min, Value max)
+    : Matrix(matrix.size.M, matrix.size.N, min, max)
+  {}
+  
+  Matrix::Matrix(const Size size, Value min, Value max)
+    : Matrix(size.M, size.N, min, max)
+  {}
 
   Matrix::Matrix(const List<const List<const Value>> values)
     : // member initialization list
