@@ -1,6 +1,6 @@
 #ifndef matrix_hpp
 #define matrix_hpp
-
+#include <stdlib.h>
 #define CLEARSCREEN "\033[2J\033[1;1H"
 
 typedef struct {unsigned int x, y, numel;} _size;
