@@ -31,7 +31,7 @@
 // --versions---------------------------------------------------------------------
 // 
 // --notice-----------------------------------------------------------------------
-//
+// Pinākás
 // --inclusion guard--------------------------------------------------------------
 #ifndef PINAKAS_HPP
 #define PINAKAS_HPP
@@ -44,6 +44,8 @@
 #include <algorithm>
 #include <chrono>
 #include <random>
+#include <functional>
+#include <utility>
 #define tic	auto _start = std::chrono::high_resolution_clock::now()	
 #define toc	auto _stop = std::chrono::high_resolution_clock::now(); std::cout << "Time elapsed: " << std::chrono::duration_cast<std::chrono::microseconds>(_stop - _start).count() << " us\n"
 // --Pinakas library: backend forward declaration---------------------------------
@@ -52,92 +54,51 @@ namespace Pinakas::Backend
   template<typename T>
   using List = std::initializer_list<T>;
   //
-  typedef float Value;
+  typedef double Value;
+  typedef std::function<Value(Value)> Function;
   //
+  struct Size;
   struct Matrix;
-  //
+// -------------------------------------------------------------------------------
+  Matrix& operator+=(Matrix& A, const Matrix& B);
+  Matrix& operator+=(Matrix& A, const Value B);
+// -------------------------------------------------------------------------------
   Matrix operator+(const Matrix& A, const Matrix& B);
-  inline Matrix operator+(const Matrix& A, const Matrix&& B);
-  inline Matrix operator+(const Matrix&& A, const Matrix& B);
-  inline Matrix operator+(const Matrix&& A, const Matrix&& B);
-  //
+  inline Matrix&& operator+(Matrix&& A, Matrix&& B);
   Matrix operator+(const Matrix& A, const Value B);
-  inline Matrix operator+(const Matrix&& A, const Value B);
+  inline Matrix&& operator+(Matrix&& A, const Value B);
   inline Matrix operator+(const Value A, const Matrix& B);
-  inline Matrix operator+(const Value A, const Matrix&& B);
-  //
-  Matrix operator-(const Matrix& A, const Matrix& B);
-  inline Matrix operator-(const Matrix& A, const Matrix&& B);
-  inline Matrix operator-(const Matrix&& A, const Matrix& B);
-  inline Matrix operator-(const Matrix&& A, const Matrix&& B);
-  //
-  Matrix operator-(const Matrix& A, const Value B);
-  inline Matrix operator-(const Matrix&& A, const Value B);
-  inline Matrix operator-(const Value A, const Matrix& B);
-  inline Matrix operator-(const Value A, const Matrix&& B);
-  //
-  Matrix operator*(const Matrix& A, const Matrix& B);
-  inline Matrix operator*(const Matrix& A, const Matrix&& B);
-  inline Matrix operator*(const Matrix&& A, const Matrix& B);
-  inline Matrix operator*(const Matrix&& A, const Matrix&& B);
-  //
-  Matrix operator*(const Matrix& A, const Value B);
-  inline Matrix operator*(const Matrix&& A, const Value B);
-  inline Matrix operator*(const Value A, const Matrix& B);
-  inline Matrix operator*(const Value A, const Matrix&& B);
-  //
-  Matrix operator/(const Matrix& A, const Matrix& B);
-  inline Matrix operator/(const Matrix& A, const Matrix&& B);
-  inline Matrix operator/(const Matrix&& A, const Matrix& B);
-  inline Matrix operator/(const Matrix&& A, const Matrix&& B);
-  //
-  Matrix operator/(const Matrix& A, const Value B);
-  inline Matrix operator/(const Matrix&& A, const Value B);
-  inline Matrix operator/(const Value A, const Matrix& B);
-  inline Matrix operator/(const Value A, const Matrix&& B);
-  //
-  Matrix floor(const Matrix& A);
-  inline Matrix floor(const Matrix&& A);
-  //
-  Matrix round(const Matrix& A);
-  inline Matrix round(const Matrix&& A);
-  //
-  Matrix ceil(const Matrix& A);
-  inline Matrix ceil(const Matrix&& A);
-  
-  Matrix operator^(const Matrix& A, const Value B);
-  inline Matrix operator^(const Matrix&& A, const Value B);
+  inline Matrix&& operator+(const Value A, Matrix&& B);
+  //Matrix diff(const Matrix& A, size_t n = 1);
+  //inline Matrix diff(const Matrix&& A, size_t n = 1);
 
-  Matrix mul(const Matrix& A, const Matrix& B);
-  inline Matrix mul(const Matrix& A, const Matrix&& B);
-  inline Matrix mul(const Matrix&& A, const Matrix& B);
-  inline Matrix mul(const Matrix&& A, const Matrix&& B);
-
-  Matrix transpose(const Matrix& A);
-  inline Matrix transpose(const Matrix&& A);
-
-  std::unique_ptr<Matrix[]> MGS(const Matrix& A);
-  inline std::unique_ptr<Matrix[]> MGS(const Matrix&& A);
+  //Value newton(const Function function, const Value tolerance = 1e-6, const size_t max_iteration = 100, const Value seed = 1);
 }
 // --Pinakas library: frontend forward declarations-------------------------------
 namespace Pinakas
 {
   using Backend::Matrix;
+
 }
 // --Pinakas library: backend struct and class definitions------------------------
 namespace Pinakas::Backend
 {
+  struct Size {
+    size_t M, N, numel;
+    bool operator==(const Size B) const noexcept;
+    bool operator!=(const Size B) const noexcept;
+  };
+
   struct Matrix {
     public:
-      // information regarding matrix size
-      const struct Size {
-        size_t M, N, numel;
-      } size;
-    public:
+      // destructor
+      ~Matrix();
       // empty matrix
       Matrix();
-      // copy a matrix
+      // copy constructor
       Matrix(const Matrix& matrix);
+      // move constructor
+      Matrix(Matrix&& matrix) noexcept;
       // create a matrix MxN
       Matrix(const size_t M, const size_t N);
       // create a matrix with the same dimensions as 'matrix'
@@ -145,110 +106,134 @@ namespace Pinakas::Backend
       // create a matrix MxN with a specific value
       Matrix(const size_t M, const size_t N, const Value value);
       // create a matrix with the same dimensions as 'matrix' with a specific value
-      Matrix(const Matrix::Size size, Value value);
+      Matrix(const Size size, Value value);
       // create a matrix with the same dimensions as 'matrix' with a specific value
       Matrix(const Matrix& matrix, Value value);
       // create a matrix MxN random values
       Matrix(const size_t M, const size_t N, const Value min, const Value max);
       // create a matrix with the same dimensions as 'matrix' with random values
-      Matrix(const Matrix::Size size, const Value min, const Value max);
+      Matrix(const Size size, const Value min, const Value max);
       // create a matrix with the same dimensions as 'matrix' with random values
       Matrix(const Matrix& matrix, const Value min, const Value max);
+      // create a matrix from specific values
+      Matrix(const List<Value> values);
       // create a matrix from specific values
       Matrix(const List<const List<const Value>> values);
       // join matrix (side-wise)
       Matrix(const List<const Matrix> list);
       //
-      Matrix& operator=(const Matrix& B);
-      inline Matrix& operator=(const Matrix&& B);
-      Matrix& operator=(const Value B);
+      Matrix& operator=(const Matrix& B) noexcept;
+      Matrix& operator=(Matrix&& B) noexcept;
+      Matrix& operator=(const Value B) noexcept;
       // vector indexing
-      inline Value* operator[](const size_t y) const;
+      inline Value* operator[](const size_t y) const noexcept;
       // bound-checked flat-indexing
-      inline Value& operator()(const size_t index) const;
+      inline Value& operator()(const size_t index) const noexcept;
       // bound-checked indexing
-      inline Value& operator()(const size_t y, const size_t x) const;
+      inline Value& operator()(const size_t y, const size_t x) const noexcept;
+      //
+      inline Size size(void) const noexcept;
     private:
+      // allocate memory block
+      bool allocate(const size_t M, const size_t N) noexcept;
+      // information regarding matrix size
+      Size _size;
       // memory block for data
-      std::unique_ptr<char[]> memory_block;
+      std::unique_ptr<char[]> _memory_block;
       // data is a Value[M][N] array
-      Value** data;
+      Value** _data;
   };
 }
 // --Pinakas library: operator overloads forward declarations----------------------
 namespace Pinakas::Backend
 {
-  Matrix operator+(Matrix& A, Matrix& B);
-
   std::ostream& operator<<(std::ostream& ostream, const Matrix& matrix);
-  std::ostream& operator<<(std::ostream& ostream, const Matrix::Size size);
+  std::ostream& operator<<(std::ostream& ostream, const Size size);
 }
 // --Pinakas library: backend struct and class member definitions-----------------
 namespace Pinakas::Backend
 {
-  Matrix::Matrix()
-    : // member initialization list
-    size{0, 0, 0},
-    memory_block(nullptr),
-    data(nullptr)
-  {}
+  bool Size::operator==(const Size B) const noexcept {
+    return (M == B.M) && (N == B.N) && (numel == B.numel);
+  }
 
-  Matrix::Matrix(const Matrix& matrix)
-    : // member initialization list
-    size(matrix.size),
-    memory_block(new char[(sizeof(Value*) + sizeof(Value) * size.N) * size.M])
+  bool Size::operator!=(const Size B) const noexcept {
+    return (M != B.M) || (N != B.N) || (numel != B.numel);
+  }
+
+  bool Matrix::allocate(const size_t M, const size_t N) noexcept
   {
-    // get the address of the memory block
-    char* address = memory_block.get();
+    // allocate memory
+    _memory_block.reset(new char[sizeof(Value*[M]) + sizeof(Value[M][N])]);
+
+    // get address of memory block
+    char* address = _memory_block.get();
 
     // validate memory allocation
     if (!address) {
       std::cerr << "! invalid memory allocation !\n";
-      exit(0);
+      return false;
     }
 
     // create rows into memory block
-    data = new (address) Value*[size.M];
+    _data = (Value**) address;
     // offset address
-    address += sizeof(Value*) * size.M;
+    address += sizeof(Value*) * M;
     
-    for (size_t y = 0; y < size.M; ++y) {
+    for (size_t y = 0; y < M; ++y) {
       // create columns into memory block
-      data[y] = new (address) Value[size.N];
+      _data[y] = (Value*) address;
       // offset address
-      address += sizeof(Value) * size.N;
+      address += sizeof(Value) * N;
     }
 
-    // assign value to matrix
-    for (size_t index = 0; index < size.numel; ++index)
-      data[0][index] = matrix[0][index];
+    // save size
+    _size = {M, N, M*N};
+
+    return true;
+  }
+  
+  Matrix::~Matrix()
+  {
+    std::clog << "Matrix deleted !\n";
+  }
+
+  Matrix::Matrix()
+    : // member initialization list
+    _size{0, 0, 0},
+    _memory_block(nullptr),
+    _data(nullptr)
+  {
+    std::clog << "Matrix created ! (empty)\n";
+  }
+
+  Matrix::Matrix(const Matrix& matrix)
+  {
+    std::clog << "Matrix copied !\n";
+    
+    // allocate memory
+    if (allocate(matrix._size.M, matrix._size.N)) {
+      // assign value to matrix
+      for (size_t index = 0; index < _size.numel; ++index)
+        _data[0][index] = matrix[0][index];
+    }
+  }
+
+  Matrix::Matrix(Matrix&& matrix) noexcept
+    : // member initialization list
+    _size(matrix._size),
+    _memory_block(matrix._memory_block.release()),
+    _data(matrix._data)
+  {
+    std::clog << "Matrix moved !\n";
   }
 
   Matrix::Matrix(const size_t M, const size_t N)
-    : // member initialization list
-    size{M, N, M*N},
-    memory_block(new char[(sizeof(Value*) + sizeof(Value) * size.N) * size.M])
   {
-    // get the address of the memory block
-    char* address = memory_block.get();
-
-    // validate memory allocation
-    if (!address) {
-      std::cerr << "! invalid memory allocation !\n";
-      exit(0);
-    }
-
-    // create rows into memory block
-    data = new (address) Value*[size.M];
-    // offset address
-    address += sizeof(Value*) * size.M;
+    std::clog << "Matrix created !\n";
     
-    for (size_t y = 0; y < size.M; ++y) {
-      // create columns into memory block
-      data[y] = new (address) Value[size.N];
-      // offset address
-      address += sizeof(Value) * size.N;
-    }
+    // allocate memory
+    allocate(M, N);
   }
 
   Matrix::Matrix(const Size size)
@@ -256,38 +241,19 @@ namespace Pinakas::Backend
   {}
 
   Matrix::Matrix(const size_t M, const size_t N, const Value value)
-    : // member initialization list
-    size{M, N, M*N},
-    memory_block(new char[(sizeof(Value*) + sizeof(Value) * size.N) * size.M])
   {
-    // get the address of the memory block
-    char* address = memory_block.get();
-
-    // validate memory allocation
-    if (!address) {
-      std::cerr << "! invalid memory allocation !\n";
-      exit(0);
-    }
-
-    // create rows into memory block
-    data = new (address) Value*[size.M];
-    // offset address
-    address += sizeof(Value*) * size.M;
+    std::clog << "Matrix created !\n";
     
-    for (size_t y = 0; y < size.M; ++y) {
-      // create columns into memory block
-      data[y] = new (address) Value[size.N];
-      // offset address
-      address += sizeof(Value) * size.N;
+    // allocate memory
+    if (allocate(M, N)) {
+      // assign value to matrix
+      for (size_t index = 0; index < _size.numel; ++index)
+        _data[0][index] = value;
     }
-
-    // assign value to matrix
-    for (size_t index = 0; index < size.numel; ++index)
-      data[0][index] = value;
   }
   
   Matrix::Matrix(const Matrix& matrix, Value value)
-    : Matrix(matrix.size.M, matrix.size.N, value)
+    : Matrix(matrix._size.M, matrix._size.N, value)
   {}
   
   Matrix::Matrix(const Size size, Value value)
@@ -295,149 +261,100 @@ namespace Pinakas::Backend
   {}
 
   Matrix::Matrix(const size_t M, const size_t N, const Value min, const Value max)
-    : // member initialization list
-    size{M, N, M*N},
-    memory_block(new char[(sizeof(Value*) + sizeof(Value) * size.N) * size.M])
   {
-    // get the address of the memory block
-    char* address = memory_block.get();
+    std::clog << "Matrix created !\n";
 
-    // validate memory allocation
-    if (!address) {
-      std::cerr << "! invalid memory allocation !\n";
-      exit(0);
+    // allocate memory
+    if (allocate(M, N)) {
+      // random number generator
+      std::random_device device;
+      std::mt19937 generator(device());
+      std::uniform_real_distribution<> uniform_distribution(min, max);
+
+      // assign random value to matrix
+      for (size_t index = 0; index < _size.numel; ++index)
+        _data[0][index] = uniform_distribution(generator);
     }
-
-    // create rows into memory block
-    data = new (address) Value*[size.M];
-    // offset address
-    address += sizeof(Value*) * size.M;
-    
-    for (size_t y = 0; y < size.M; ++y) {
-      // create columns into memory block
-      data[y] = new (address) Value[size.N];
-      // offset address
-      address += sizeof(Value) * size.N;
-    }
-
-    // random number generator
-    std::random_device device;
-    std::mt19937 generator(device());
-    std::uniform_real_distribution<> uniform_distribution(min, max);
-
-    // assign random value to matrix
-    for (size_t index = 0; index < size.numel; ++index)
-      data[0][index] = uniform_distribution(generator);
   }
   
   Matrix::Matrix(const Matrix& matrix, Value min, Value max)
-    : Matrix(matrix.size.M, matrix.size.N, min, max)
+    : Matrix(matrix._size.M, matrix._size.N, min, max)
   {}
   
   Matrix::Matrix(const Size size, Value min, Value max)
     : Matrix(size.M, size.N, min, max)
   {}
 
-  Matrix::Matrix(const List<const List<const Value>> values)
-    : // member initialization list
-    size{values.size(), 0, 0}
+
+  Matrix::Matrix(const List<Value> list)
   {
+    std::clog << "Matrix created !\n";
+    
+    // allocate memory
+    if (allocate(1, list.size())) {
+      // assign values into matrix
+      size_t x = 0;
+      for (Value value : list)
+        _data[0][x++] = value;
+    }
+  }
+
+  Matrix::Matrix(const List<const List<const Value>> values)
+  {
+    std::clog << "Matrix created !\n";
+
     // dimension validation
+    size_t temp_N = 0;
     for (List<const Value> vector : values) {
-      if (size.N && size.N != vector.size()) {
-        std::cerr << "vertical dimensions mismatch (" << size.N << " vs " << vector.size() << ")\n";
-        const_cast<Size&>(size) = {0, 0, 0};
+      if (temp_N && (temp_N != vector.size())) {
+        std::cerr << "vertical dimensions mismatch (" << temp_N << " vs " << vector.size() << ")\n";
+        _size = {0, 0, 0};
         return;
       }
-      else const_cast<size_t&>(size.N) = vector.size();
+      else temp_N = vector.size();
     }
-    const_cast<size_t&>(size.numel) = size.M*size.N;
-
-    // allocate memory for matrix
-    memory_block.reset(new char[(sizeof(Value*) + sizeof(Value) * size.N) * size.M]);
-
-    // get the address of the memory block
-    char* address = memory_block.get();
-
-    // validate memory allocation
-    if (!address) {
-      std::cerr << "! invalid memory allocation !\n";
-      exit(0);
-    }
-
-    // create rows into memory block
-    data = new (address) Value*[size.M];
-    // offset address
-    address += sizeof(Value*) * size.M;
     
-    for (size_t y = 0; y < size.M; ++y) {
-      // create columns into memory block
-      data[y] = new (address) Value[size.N];
-      // offset address
-      address += sizeof(Value) * size.N;
-    }
-
-    // assign values into matrix
-    size_t y = 0;
-    for (List<const Value> vector : values) {
-      size_t x = 0;
-      for (Value value : vector) {
-        data[y][x] = value;
-        ++x;
+    // allocate memory
+    if (allocate(values.size(), temp_N)) {
+      // assign values into matrix
+      size_t y = 0;
+      for (List<const Value> vector : values) {
+        size_t x = 0;
+        for (Value value : vector) {
+          _data[y][x] = value;
+          ++x;
+        }
+        ++y;
       }
-      ++y;
     }
   }
   
   Matrix::Matrix(const List<const Matrix> list)
-    : // member initialization list
-    size{0, 0, 0}
   {
+    std::clog << "Matrix created !\n";
+
     // dimension validation
+    size_t temp_M = 0;
+    size_t temp_N = 0;
     for (Matrix matrix : list) {
-      if (size.M && size.M != matrix.size.M) {
-        std::cerr << "vertical dimensions mismatch (" << size.M << " vs " << matrix.size.M << ")\n";
-        const_cast<Size&>(size) = {0, 0, 0};
+      if (temp_M && (temp_M != matrix._size.M)) {
+        std::cerr << "vertical dimensions mismatch (" << temp_M << " vs " << matrix._size.M << ")\n";
+        _size = {0, 0, 0};
         return;
       }
-      else const_cast<size_t&>(size.M) = matrix.size.M;
-      const_cast<size_t&>(size.N) += matrix.size.N;
-    }
-    const_cast<size_t&>(size.numel) = size.M*size.N;
-
-    // allocate memory for matrix
-    memory_block.reset(new char[(sizeof(Value*) + sizeof(Value) * size.N) * size.M]);
-
-    // get the address of the memory block
-    char* address = memory_block.get();
-
-    // validate memory allocation
-    if (!address) {
-      std::cerr << "! invalid memory allocation !\n";
-      exit(0);
+      else temp_M = matrix._size.M;
+      temp_N += matrix._size.N;
     }
 
-    // create rows into memory block
-    data = new (address) Value*[size.M];
-    // offset address
-    address += sizeof(Value*) * size.M;
-    
-    for (size_t y = 0; y < size.M; ++y) {
-      // create columns into memory block
-      data[y] = new (address) Value[size.N];
-      // offset address
-      address += sizeof(Value) * size.N;
-    }
-    
-    // dimension validation
-    size_t index = 0;
-    for (Matrix matrix : list) {
-      for (size_t y = 0; y < matrix.size.M; ++y) {
-        for (size_t x = 0; x < matrix.size.N; ++x) {
-          data[y][x + index] = matrix[y][x];
-        }
+    // allocate memory
+    if (allocate(temp_M, temp_N)) {
+      size_t index = 0;
+      for (Matrix matrix : list) {
+        for (size_t y = 0; y < matrix._size.M; ++y)
+          for (size_t x = 0; x < matrix._size.N; ++x)
+            _data[y][x + index] = matrix[y][x];
+        index += matrix._size.N;
       }
-      index += matrix.size.N;
     }
   }
 
@@ -446,7 +363,7 @@ namespace Pinakas::Backend
     Value minimum = matrix[0][0];
 
     // find minimal value
-    for (size_t index = 1; index < matrix.size.numel; ++index)
+    for (size_t index = 1; index < matrix.size().numel; ++index)
       if (matrix[0][index] < minimum) minimum = matrix[0][index];
 
     return minimum;
@@ -462,7 +379,7 @@ namespace Pinakas::Backend
     Value maximum = matrix[0][0];
 
     // find minimal value
-    for (size_t index = 1; index < matrix.size.numel; ++index)
+    for (size_t index = 1; index < matrix.size().numel; ++index)
       if (matrix[0][index] > maximum) maximum = matrix[0][index];
       
     return maximum;
@@ -477,9 +394,9 @@ namespace Pinakas::Backend
   {
     Value summation = 0;
 
-    for (size_t index = 0; index < matrix.size.numel; ++index)
+    for (size_t index = 0; index < matrix.size().numel; ++index)
       summation += matrix[0][index];
-      
+    puts("sum end");
     return summation;
   }
 
@@ -488,32 +405,36 @@ namespace Pinakas::Backend
     return sum(const_cast<Matrix&>(matrix));
   }
 
-  inline Value* Matrix::operator[](const size_t index) const
+  inline Value* Matrix::operator[](const size_t index) const noexcept
   {
-    return data[index];
+    return _data[index];
   }
 
-  inline Value& Matrix::operator()(const size_t index) const
+  inline Value& Matrix::operator()(const size_t index) const noexcept
   {
     // return value if the index is valid
-    if (index < size.N*size.M) return data[0][index];
+    if (index < _size.N*_size.M) return _data[0][index];
     // out of bound error message
-    std::cerr << '(' << index << ") out of bound " << size.N*size.M << " (dimensions are " << size << ")\n";
-    return data[0][0];
+    std::cerr << '(' << index << ") out of bound " << _size.N*_size.M << " (dimensions are " << _size << ")\n";
+    return _data[0][0];
   }
 
-  inline Value& Matrix::operator()(const size_t y, const size_t x) const
+  inline Value& Matrix::operator()(const size_t y, const size_t x) const noexcept
   {
     // return value if the index is valid
-    if ((y < size.M) && (x < size.N)) return data[y][x];
+    if ((y < _size.M) && (x < _size.N)) return _data[y][x];
     // out of bound error messages
-    else if (y >= size.M)
-      std::cerr << '(' << y << ",_) out of bound " << size.M << " (dimensions are " << size << ")\n";
-    else if (x >= size.N)
-      std::cerr << "(_," << x << ") out of bound " << size.N << " (dimensions are " << size << ")\n";
-    return data[0][0];
+    else if (y >= _size.M)
+      std::cerr << '(' << y << ",_) out of bound " << _size.M << " (dimensions are " << _size << ")\n";
+    else if (x >= _size.N)
+      std::cerr << "(_," << x << ") out of bound " << _size.N << " (dimensions are " << _size << ")\n";
+    return _data[0][0];
+  }
+
+  
+  inline Size Matrix::size(void) const noexcept
+  {
+    return _size;
   }
 }
-// --Pinakas library: include definitions-----------------------------------------
-#include "Pinakas.cpp"
 #endif

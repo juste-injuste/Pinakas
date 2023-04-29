@@ -1,43 +1,5 @@
 #include "mudelizer.hpp"
 
-matrix_array MGS(matrix arr) {
-	int   N = arr.sizex(), M = arr.sizey();
-	double 	V[N][M];
-	matrix 	Q(N, M);
-	matrix 	R(N, N);
-	register int i, j, k;
-	double proj, norm;
-	
-	for (j=0; j<N; j++)
-		for (i=0; i<M; i++)
-			V[j][i] = arr(j, i);
-	for (j=0; j<N; j++) {
-		proj = 0;
-		for (i=0; i<M; i++) {
-			proj += V[j][i] * V[j][i];
-		}
-		norm = sqrt(proj);
-		R(j, j) = norm;
-		for (i=0; i<M; i++) {
-			Q(j, i) = V[j][i] / norm;
-		}
-		for (k=j+1; k<N; k++) {
-			proj = 0;
-			for (i=0; i<M; i++) {
-				proj += Q(j, i) * V[k][i];
-			}
-			for (i=0; i<M; i++) {
-				V[k][i] -= Q(j, i) * proj;
-			}
-			R(k, j) = proj;
-		}
-	}
-	matrix_array QR(2);
-	QR[0] = Q;
-	QR[1] = R;
-	return QR;
-}
-
 matrix_array linearize(matrix xdata, matrix ydata) {  // resample un-equally spaced sorted data
     int     n = xdata.numel();
     matrix  new_x(n), new_y(n);
