@@ -63,6 +63,7 @@ CMAKE_BINARY_DIR = "C:\Users\justi\OneDrive - USherbrooke\Documents\github\Pinak
 
 # The main recursive "all" target.
 all: CMakeFiles/Pinakas.dir/all
+all: CMakeFiles/Pinakas_main.dir/all
 .PHONY : all
 
 # The main recursive "preinstall" target.
@@ -71,6 +72,7 @@ preinstall:
 
 # The main recursive "clean" target.
 clean: CMakeFiles/Pinakas.dir/clean
+clean: CMakeFiles/Pinakas_main.dir/clean
 .PHONY : clean
 
 #=============================================================================
@@ -80,12 +82,12 @@ clean: CMakeFiles/Pinakas.dir/clean
 CMakeFiles/Pinakas.dir/all:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles\Pinakas.dir\build.make CMakeFiles/Pinakas.dir/depend
 	$(MAKE) $(MAKESILENT) -f CMakeFiles\Pinakas.dir\build.make CMakeFiles/Pinakas.dir/build
-	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --progress-dir="C:\Users\justi\OneDrive - USherbrooke\Documents\github\Pinakas\build\CMakeFiles" --progress-num=1,2,3 "Built target Pinakas"
+	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --progress-dir="C:\Users\justi\OneDrive - USherbrooke\Documents\github\Pinakas\build\CMakeFiles" --progress-num=1,2 "Built target Pinakas"
 .PHONY : CMakeFiles/Pinakas.dir/all
 
 # Build rule for subdir invocation for target.
 CMakeFiles/Pinakas.dir/rule: cmake_check_build_system
-	$(CMAKE_COMMAND) -E cmake_progress_start "C:\Users\justi\OneDrive - USherbrooke\Documents\github\Pinakas\build\CMakeFiles" 3
+	$(CMAKE_COMMAND) -E cmake_progress_start "C:\Users\justi\OneDrive - USherbrooke\Documents\github\Pinakas\build\CMakeFiles" 2
 	$(MAKE) $(MAKESILENT) -f CMakeFiles\Makefile2 CMakeFiles/Pinakas.dir/all
 	$(CMAKE_COMMAND) -E cmake_progress_start "C:\Users\justi\OneDrive - USherbrooke\Documents\github\Pinakas\build\CMakeFiles" 0
 .PHONY : CMakeFiles/Pinakas.dir/rule
@@ -98,6 +100,32 @@ Pinakas: CMakeFiles/Pinakas.dir/rule
 CMakeFiles/Pinakas.dir/clean:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles\Pinakas.dir\build.make CMakeFiles/Pinakas.dir/clean
 .PHONY : CMakeFiles/Pinakas.dir/clean
+
+#=============================================================================
+# Target rules for target CMakeFiles/Pinakas_main.dir
+
+# All Build rule for target.
+CMakeFiles/Pinakas_main.dir/all: CMakeFiles/Pinakas.dir/all
+	$(MAKE) $(MAKESILENT) -f CMakeFiles\Pinakas_main.dir\build.make CMakeFiles/Pinakas_main.dir/depend
+	$(MAKE) $(MAKESILENT) -f CMakeFiles\Pinakas_main.dir\build.make CMakeFiles/Pinakas_main.dir/build
+	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --progress-dir="C:\Users\justi\OneDrive - USherbrooke\Documents\github\Pinakas\build\CMakeFiles" --progress-num=3,4 "Built target Pinakas_main"
+.PHONY : CMakeFiles/Pinakas_main.dir/all
+
+# Build rule for subdir invocation for target.
+CMakeFiles/Pinakas_main.dir/rule: cmake_check_build_system
+	$(CMAKE_COMMAND) -E cmake_progress_start "C:\Users\justi\OneDrive - USherbrooke\Documents\github\Pinakas\build\CMakeFiles" 4
+	$(MAKE) $(MAKESILENT) -f CMakeFiles\Makefile2 CMakeFiles/Pinakas_main.dir/all
+	$(CMAKE_COMMAND) -E cmake_progress_start "C:\Users\justi\OneDrive - USherbrooke\Documents\github\Pinakas\build\CMakeFiles" 0
+.PHONY : CMakeFiles/Pinakas_main.dir/rule
+
+# Convenience name for target.
+Pinakas_main: CMakeFiles/Pinakas_main.dir/rule
+.PHONY : Pinakas_main
+
+# clean rule for target.
+CMakeFiles/Pinakas_main.dir/clean:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles\Pinakas_main.dir\build.make CMakeFiles/Pinakas_main.dir/clean
+.PHONY : CMakeFiles/Pinakas_main.dir/clean
 
 #=============================================================================
 # Special targets to cleanup operation of make.

@@ -8,7 +8,7 @@ set(CMAKE_DEPENDS_LANGUAGES
 
 # The set of dependency files which are needed:
 set(CMAKE_DEPENDS_DEPENDENCY_FILES
-  "C:/Users/justi/OneDrive - USherbrooke/Documents/github/Pinakas/src/Pinakas.cpp" "CMakeFiles/Pinakas.dir/src/Pinakas.cpp.obj" "gcc" "CMakeFiles/Pinakas.dir/src/Pinakas.cpp.obj.d"
+  "C:/Users/justi/OneDrive - USherbrooke/Documents/github/Pinakas/test/main.cpp" "CMakeFiles/Pinakas_main.dir/test/main.cpp.obj" "gcc" "CMakeFiles/Pinakas_main.dir/test/main.cpp.obj.d"
   )
 
 # Targets to which this target links which contain Fortran sources.

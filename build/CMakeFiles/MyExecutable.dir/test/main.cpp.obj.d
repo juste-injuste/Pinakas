@@ -1,4 +1,4 @@
-CMakeFiles/Pinakas.dir/test/main.cpp.obj: \
+CMakeFiles/MyExecutable.dir/test/main.cpp.obj: \
  C:\Users\justi\OneDrive\ -\ USherbrooke\Documents\github\Pinakas\test\main.cpp \
  c:\users\justi\onedrive\ -\ usherbrooke\documents\github\pinakas\include\pinakas.hpp \
  c:\mingw\lib\gcc\mingw32\6.3.0\include\c++\iostream \

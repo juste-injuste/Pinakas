@@ -1,3 +1,4 @@
 C:/Users/justi/OneDrive - USherbrooke/Documents/github/Pinakas/build/CMakeFiles/Pinakas.dir
+C:/Users/justi/OneDrive - USherbrooke/Documents/github/Pinakas/build/CMakeFiles/Pinakas_main.dir
 C:/Users/justi/OneDrive - USherbrooke/Documents/github/Pinakas/build/CMakeFiles/edit_cache.dir
 C:/Users/justi/OneDrive - USherbrooke/Documents/github/Pinakas/build/CMakeFiles/rebuild_cache.dir

@@ -128,6 +128,19 @@ Pinakas/fast:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles\Pinakas.dir\build.make CMakeFiles/Pinakas.dir/build
 .PHONY : Pinakas/fast
 
+#=============================================================================
+# Target rules for targets named Pinakas_main
+
+# Build rule for target.
+Pinakas_main: cmake_check_build_system
+	$(MAKE) $(MAKESILENT) -f CMakeFiles\Makefile2 Pinakas_main
+.PHONY : Pinakas_main
+
+# fast build rule for target.
+Pinakas_main/fast:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles\Pinakas_main.dir\build.make CMakeFiles/Pinakas_main.dir/build
+.PHONY : Pinakas_main/fast
+
 src/Pinakas.obj: src/Pinakas.cpp.obj
 .PHONY : src/Pinakas.obj
 
@@ -157,7 +170,7 @@ test/main.obj: test/main.cpp.obj
 
 # target to build an object file
 test/main.cpp.obj:
-	$(MAKE) $(MAKESILENT) -f CMakeFiles\Pinakas.dir\build.make CMakeFiles/Pinakas.dir/test/main.cpp.obj
+	$(MAKE) $(MAKESILENT) -f CMakeFiles\Pinakas_main.dir\build.make CMakeFiles/Pinakas_main.dir/test/main.cpp.obj
 .PHONY : test/main.cpp.obj
 
 test/main.i: test/main.cpp.i
@@ -165,7 +178,7 @@ test/main.i: test/main.cpp.i
 
 # target to preprocess a source file
 test/main.cpp.i:
-	$(MAKE) $(MAKESILENT) -f CMakeFiles\Pinakas.dir\build.make CMakeFiles/Pinakas.dir/test/main.cpp.i
+	$(MAKE) $(MAKESILENT) -f CMakeFiles\Pinakas_main.dir\build.make CMakeFiles/Pinakas_main.dir/test/main.cpp.i
 .PHONY : test/main.cpp.i
 
 test/main.s: test/main.cpp.s
@@ -173,7 +186,7 @@ test/main.s: test/main.cpp.s
 
 # target to generate assembly for a file
 test/main.cpp.s:
-	$(MAKE) $(MAKESILENT) -f CMakeFiles\Pinakas.dir\build.make CMakeFiles/Pinakas.dir/test/main.cpp.s
+	$(MAKE) $(MAKESILENT) -f CMakeFiles\Pinakas_main.dir\build.make CMakeFiles/Pinakas_main.dir/test/main.cpp.s
 .PHONY : test/main.cpp.s
 
 # Help Target
@@ -185,6 +198,7 @@ help:
 	@echo ... edit_cache
 	@echo ... rebuild_cache
 	@echo ... Pinakas
+	@echo ... Pinakas_main
 	@echo ... src/Pinakas.obj
 	@echo ... src/Pinakas.i
 	@echo ... src/Pinakas.s
