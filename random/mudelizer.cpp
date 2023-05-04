@@ -1,32 +1,5 @@
 #include "mudelizer.hpp"
 
-matrix_array linearize(matrix xdata, matrix ydata) {  // resample un-equally spaced sorted data
-    int     n = xdata.numel();
-    matrix  new_x(n), new_y(n);
-    double  step = (xdata[n-1]-xdata[0])/(n-1);
-	double  x1, x2, y1, y2;
-
-    new_x[0]	= xdata[0];
-	new_y[0]    = ydata[0];
-    new_x[n-1]  = xdata[n-1];
-    new_y[n-1]  = ydata[n-1];
-
-    for (int i=1; i<n-1; i++) {
-        new_x[i] = new_x[i-1] + step;
-
-        x1 = xdata[i];
-		y1 = ydata[i];
-        x2 = xdata[i+1];
-        y2 = ydata[i+1];
-
-        new_y[i] = ((y1-y2)*new_x[i] + x1*y2 - x2*y1)/(x1-x2);
-    }
-
-	matrix_array resampled(2);
-	resampled[0] = new_x;
-	resampled[1] = new_y;
-    return resampled;
-}
 
 matrix resample(matrix data, unsigned int L) {
 	int N	= data.numel()*L;	// approximate new data lenght

@@ -6,7 +6,7 @@
 // 
 // --liscence---------------------------------------------------------------------
 // 
-// MIT License
+// MIdouble License
 // 
 // Copyright (c) 2023 Justin Asselin (juste-injuste)
 // 
@@ -20,12 +20,12 @@
 // The above copyright notice and this permission notice shall be included in all
 // copies or substantial portions of the Software.
 // 
-// THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-// IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-// FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-// AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-// LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-// OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+// THE SOFTWARE IS PROVIDED "AS IS", WITHOUdouble WARRANTY OF ANY KIND, EXPRESS OR
+// IMPLIED, INCLUDING BUdouble NOdouble LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+// FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENdouble SHALL THE
+// AUTHORS OR COPYRIGHdouble HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+// LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORdouble OR OTHERWISE, ARISING FROM,
+// OUdouble OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
 //  
 // --versions---------------------------------------------------------------------
@@ -60,90 +60,210 @@ namespace Pinakas::Backend
   typedef double Value;
   //
   struct Size;
+  //
+  
   struct Matrix;
 // -------------------------------------------------------------------------------
   void validate_size(const Size size_A, const Size size_B, const std::string& op);
 // -------------------------------------------------------------------------------
+  
   Matrix& operator+=(Matrix& A, const Matrix& B);
+  
   Matrix operator+(const Matrix& A, const Matrix& B);
+  
   Matrix&& operator+(const Matrix& A, Matrix&& B);
+  
   Matrix&& operator+(Matrix&& A, const Matrix& B);
+  
   Matrix&& operator+(Matrix&& A, Matrix&& B);
-  Matrix& operator+=(Matrix& A, const Value B) noexcept;
-  Matrix operator+(const Matrix& A, const Value B) noexcept;
-  inline Matrix&& operator+(Matrix&& A, const Value B) noexcept;
-  inline Matrix operator+(const Value A, const Matrix& B) noexcept;
-  inline Matrix&& operator+(const Value A, Matrix&& B) noexcept;
+  
+  Matrix& operator+=(Matrix& A, const double B) noexcept;
+  
+  Matrix operator+(const Matrix& A, const double B) noexcept;
+  
+  inline Matrix&& operator+(Matrix&& A, const double B) noexcept;
+  
+  inline Matrix operator+(const double A, const Matrix& B) noexcept;
+  
+  inline Matrix&& operator+(const double A, Matrix&& B) noexcept;
+  
+  Matrix operator+(const Matrix& A);
+  
+  Matrix&& operator+(Matrix&& A) noexcept;
+  
 // -------------------------------------------------------------------------------
   Matrix& operator*=(Matrix& A, const Matrix& B);
+  
   Matrix operator*(const Matrix& A, const Matrix& B);
+  
   Matrix&& operator*(const Matrix& A, Matrix&& B);
+  
   Matrix&& operator*(Matrix&& A, const Matrix& B);
+  
   Matrix&& operator*(Matrix&& A, Matrix&& B);
-  Matrix& operator*=(Matrix& A, const Value B) noexcept;
-  Matrix operator*(const Matrix& A, const Value B) noexcept;
-  inline Matrix&& operator*(Matrix&& A, const Value B) noexcept;
-  inline Matrix operator*(const Value A, const Matrix& B) noexcept;
-  inline Matrix&& operator*(const Value A, Matrix&& B) noexcept;
+  
+  Matrix& operator*=(Matrix& A, const double B);
+  
+  Matrix&& operator*=(Matrix&& A, const double B) noexcept;
+  
+  Matrix& operator*(const Matrix& A, const double B);
+  
+  inline Matrix&& operator*(Matrix&& A, const double B) noexcept;
+  
+  inline Matrix operator*(const double A, const Matrix& B) noexcept;
+  
+  inline Matrix&& operator*(const double A, Matrix&& B) noexcept;
+  
 // -------------------------------------------------------------------------------
   Matrix& operator-=(Matrix& A, const Matrix& B);
+  
   Matrix operator-(const Matrix& A, const Matrix& B);
+  
   Matrix&& operator-(const Matrix& A, Matrix&& B);
+  
   Matrix&& operator-(Matrix&& A, const Matrix& B);
+  
   Matrix&& operator-(Matrix&& A, Matrix&& B);
-  inline Matrix& operator-=(Matrix& A, const Value B) noexcept;
-  inline Matrix operator-(const Matrix& A, const Value B) noexcept;
-  inline Matrix&& operator-(Matrix&& A, const Value B) noexcept;
-  Matrix operator-(const Value A, const Matrix& B) noexcept;
-  Matrix&& operator-(const Value A, Matrix&& B) noexcept;
+  
+  inline Matrix& operator-=(Matrix& A, const double B) noexcept;
+  
+  inline Matrix operator-(const Matrix& A, const double B) noexcept;
+  
+  inline Matrix&& operator-(Matrix&& A, const double B) noexcept;
+  
+  Matrix operator-(const double A, const Matrix& B) noexcept;
+  
+  Matrix&& operator-(const double A, Matrix&& B) noexcept;
+  
+  Matrix operator-(const Matrix& A);
+  
+  Matrix&& operator-(Matrix&& A) noexcept;
+  
 // -------------------------------------------------------------------------------
   Matrix& operator/=(Matrix& A, const Matrix& B);
+  
   Matrix operator/(const Matrix& A, const Matrix& B);
+  
   Matrix&& operator/(const Matrix& A, Matrix&& B);
+  
   Matrix&& operator/(Matrix&& A, const Matrix& B);
+  
   Matrix&& operator/(Matrix&& A, Matrix&& B);
-  inline Matrix& operator/=(Matrix& A, const Value B) noexcept;
-  inline Matrix operator/(const Matrix& A, const Value B) noexcept;
-  inline Matrix&& operator/(Matrix&& A, const Value B) noexcept;
-  Matrix operator/(const Value A, const Matrix& B) noexcept;
-  Matrix&& operator/(const Value A, Matrix&& B) noexcept;
+  
+  inline Matrix& operator/=(Matrix& A, const double B) noexcept;
+  
+  inline Matrix operator/(const Matrix& A, const double B) noexcept;
+  
+  inline Matrix&& operator/(Matrix&& A, const double B) noexcept;
+  
+  Matrix operator/(const double A, const Matrix& B) noexcept;
+  
+  Matrix&& operator/(const double A, Matrix&& B) noexcept;
+  
 // -------------------------------------------------------------------------------
   Matrix& operator^=(Matrix& A, const Matrix& B);
+  
   Matrix operator^(const Matrix& A, const Matrix& B);
+  
   Matrix&& operator^(const Matrix& A, Matrix&& B);
+  
   Matrix&& operator^(Matrix&& A, const Matrix& B);
+  
   Matrix&& operator^(Matrix&& A, Matrix&& B);
-  Matrix& operator^=(Matrix& A, const Value B) noexcept;
-  Matrix operator^(const Matrix& A, const Value B) noexcept;
-  Matrix&& operator^(Matrix&& A, const Value B) noexcept;
-  Matrix operator^(const Value A, const Matrix& B) noexcept;
-  Matrix&& operator^(const Value A, Matrix&& B) noexcept;
+  
+  Matrix& operator^=(Matrix& A, const double B) noexcept;
+  
+  Matrix operator^(const Matrix& A, const double B) noexcept;
+  
+  Matrix&& operator^(Matrix&& A, const double B) noexcept;
+  
+  Matrix operator^(const double A, const Matrix& B) noexcept;
+  
+  Matrix&& operator^(const double A, Matrix&& B) noexcept;
 // -------------------------------------------------------------------------------
+  
   Matrix floor(const Matrix& A);
+  
   Matrix&& floor(Matrix&& A) noexcept;
-// -------------------------------------------------------------------------------
+  
   Matrix round(const Matrix& A);
+  
   Matrix&& round(Matrix&& A) noexcept;
-// -------------------------------------------------------------------------------
+  
   Matrix ceil(Matrix& A);
+  
   Matrix&& ceil(Matrix&& A) noexcept;
 // -------------------------------------------------------------------------------
+  
   Matrix mul(const Matrix& A, const Matrix& B);
 // -------------------------------------------------------------------------------
+  
   Matrix transpose(const Matrix& A);
+  
+  Matrix transpose(Matrix&& A);
 // -------------------------------------------------------------------------------
-  Value min(const Matrix& matrix) noexcept;
+  
+  double min(const Matrix& matrix) noexcept;
+  
+  double max(const Matrix& matrix) noexcept;
 // -------------------------------------------------------------------------------
-  Value max(const Matrix& matrix) noexcept;
-// -------------------------------------------------------------------------------
-  Value sum(const Matrix& matrix) noexcept;
-// -------------------------------------------------------------------------------
-  Value prod(const Matrix& matrix) noexcept;
+  
+  double sum(const Matrix& matrix) noexcept;
+  
+  double prod(const Matrix& matrix) noexcept;
+  std::unique_ptr<Matrix[]> MGS(const Matrix& A);
+  Matrix div(Matrix& A, Matrix& B);
+  
+  std::unique_ptr<Matrix[]> linearize(const Matrix& xdata, const Matrix& ydata);
+  
+  std::unique_ptr<Matrix[]> linearize(const Matrix& xdata, Matrix&& ydata);
+  
+  std::unique_ptr<Matrix[]> linearize(Matrix&& xdata, const Matrix& ydata);
+  
+  std::unique_ptr<Matrix[]> linearize(Matrix&& xdata, Matrix&& ydata);
+  Matrix linspace(const double x1, const double x2, const size_t N);
+  Matrix iota(const size_t N);
+  
+  Matrix diff(const Matrix& A, size_t n);
+  
+  Matrix conv(const Matrix& A, const Matrix& B);
+  Matrix blackman(const size_t L);
+  
+  Matrix hamming(const size_t L);
+  
+  Matrix hann(const size_t L);
+  
+  double newton(const std::function<double(double)> function, const double tol, const size_t max_iteration, const double seed);
 }
 // --Pinakas library: frontend forward declarations-------------------------------
 namespace Pinakas
 {
   using Backend::Matrix;
+// -------------------------------------------------------------------------------
+  using Backend::floor;
+  using Backend::round;
+  using Backend::ceil;
+// -------------------------------------------------------------------------------
+  using Backend::mul;
+// -------------------------------------------------------------------------------
+  using Backend::transpose;
+// -------------------------------------------------------------------------------
+  using Backend::min;
+  using Backend::max;
+// -------------------------------------------------------------------------------
+  using Backend::sum;
+  using Backend::prod;
+  using Backend::MGS;
+  using Backend::div;
+  using Backend::linearize;
+  using Backend::linspace;
+  using Backend::iota;
+  using Backend::diff;
+  using Backend::conv;
+  using Backend::blackman;
+  using Backend::hamming;
+  using Backend::hann;
+  using Backend::newton;
 }
 // --Pinakas library: backend struct and class definitions------------------------
 namespace Pinakas::Backend
@@ -154,6 +274,7 @@ namespace Pinakas::Backend
     inline bool operator!=(const Size B) const noexcept;
   };
 
+  
   struct Matrix {
     public:
       // destructor
@@ -169,31 +290,34 @@ namespace Pinakas::Backend
       // create a matrix with the same dimensions as 'matrix'
       inline Matrix(const Size size);
       // create a matrix MxN with a specific value
-      Matrix(const size_t M, const size_t N, const Value value);
+      Matrix(const size_t M, const size_t N, const double value);
       // create a matrix with the same dimensions as 'matrix' with a specific value
-      inline Matrix(const Size size, Value value);
+      inline Matrix(const Size size, double value);
       // create a matrix MxN random values
-      Matrix(const size_t M, const size_t N, const Value min, const Value max);
+      Matrix(const size_t M, const size_t N, const double min, const double max);
       // create a matrix with the same dimensions as 'matrix' with random values
-      inline Matrix(const Size size, const Value min, const Value max);
+      inline Matrix(const Size size, const double min, const double max);
       // create a matrix from specific values
-      Matrix(const List<Value> values);
+      Matrix(const List<double> values);
       // create a matrix from specific values
-      Matrix(const List<const List<const Value>> values);
+      Matrix(const List<const List<const double>> values);
       // join matrix (side-wise)
       Matrix(const List<const Matrix> list);
       //
       Matrix& operator=(const Matrix& B);
       Matrix& operator=(Matrix&& B) noexcept;
-      Matrix& operator=(const Value B) noexcept;
+      Matrix& operator=(const double B) noexcept;
       // vector indexing
-      inline Value* operator[](const size_t y) const noexcept;
+      inline double* operator[](const size_t y) const noexcept;
       // bound-checked flat-indexing
-      inline Value& operator()(const size_t index) const;
+      inline double& operator()(const size_t index) const;
       // bound-checked indexing
-      inline Value& operator()(const size_t y, const size_t x) const;
+      inline double& operator()(const size_t y, const size_t x) const;
       //
       inline Size size(void) const noexcept;
+      //
+      //
+      Matrix& transpose(void);
     private:
       // allocate memory block
       void allocate(const size_t M, const size_t N);
@@ -201,13 +325,28 @@ namespace Pinakas::Backend
       Size size_;
       // memory block for data
       std::unique_ptr<char[]> memory_block_;
-      // data is a Value[M][N] array
-      Value** data_;
+      // data is a T[M][N] array
+      double** data_;
+    public:
+      class Iterator {
+        public:
+          Iterator(Matrix& matrix, const size_t index) : matrix(matrix), index(index) {}
+          bool operator==(const Iterator& other) const { return index == other.index; }
+          bool operator!=(const Iterator& other) const { return !(*this == other); }
+          Iterator& operator++() { ++index; return *this; }
+          double& operator*() const { return matrix[0][index]; }
+        private:
+          Matrix& matrix;
+          size_t index;
+      };
+      Iterator begin() { return Iterator(*this, 0); }
+      Iterator end()   { return Iterator(*this, size_.numel); }
   };
 }
 // --Pinakas library: operator overloads forward declarations----------------------
 namespace Pinakas::Backend
 {
+  
   std::ostream& operator<<(std::ostream& ostream, const Matrix& matrix);
   std::ostream& operator<<(std::ostream& ostream, const Size size);
 }
