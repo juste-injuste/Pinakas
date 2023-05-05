@@ -20,6 +20,9 @@ namespace Pinakas::Backend
     #ifdef LOGGING
     std::clog << "Matrix deleted !\n";
     #endif
+    //if (memory_block_) {
+    //  delete(memory_block_.get(), sizeof(double*[size_.M]) + sizeof(double[size_.M]));
+    //}
   }
 
   
@@ -42,7 +45,7 @@ namespace Pinakas::Backend
     std::clog << "Matrix copied !\n";
     #endif
     // allocate memory
-    allocate(matrix.size_.M, matrix.size_.N);
+    allocate(this, matrix.size_.M, matrix.size_.N);
     // assign value to matrix
     for (size_t index = 0; index < size_.numel; ++index)
       data_[0][index] = matrix[0][index];
@@ -69,7 +72,7 @@ namespace Pinakas::Backend
     std::clog << "Matrix created !\n";
     #endif
     // allocate memory
-    allocate(M, N);
+    allocate(this, M, N);
   }
 
   
@@ -84,7 +87,7 @@ namespace Pinakas::Backend
     std::clog << "Matrix created !\n";
     #endif
     // allocate memory
-    allocate(M, N);
+    allocate(this, M, N);
     // assign value to matrix
     for (size_t index = 0; index < size_.numel; ++index)
       data_[0][index] = value;
@@ -102,7 +105,7 @@ namespace Pinakas::Backend
     std::clog << "Matrix created !\n";
     #endif
     // allocate memory
-    allocate(M, N);
+    allocate(this, M, N);
     // random number generator
     std::random_device device;
     std::mt19937 generator(device());
@@ -125,7 +128,7 @@ namespace Pinakas::Backend
     std::clog << "Matrix created !\n";
     #endif
     // allocate memory
-    allocate(1, list.size());
+    allocate(this, 1, list.size());
     // assign values into matrix
     size_t x = 0;
     for (double value : list)
@@ -149,7 +152,7 @@ namespace Pinakas::Backend
       else temp_N = vector.size();
     }
     // allocate memory
-    allocate(values.size(), temp_N);
+    allocate(this, values.size(), temp_N);
     // assign values into matrix
     size_t y = 0;
     for (List<const double> vector : values) {
@@ -181,7 +184,7 @@ namespace Pinakas::Backend
       temp_N += matrix.size_.N;
     }
     // allocate memory
-    allocate(temp_M, temp_N);
+    allocate(this, temp_M, temp_N);
     size_t index = 0;
     for (Matrix matrix : list) {
       for (size_t y = 0; y < matrix.size_.M; ++y)
@@ -191,27 +194,32 @@ namespace Pinakas::Backend
     }
   }
 
-  
-  void Matrix::allocate(const size_t M, const size_t N)
+  void allocate(Matrix* matrix, const size_t M, const size_t N, char* address)
   {
-    // allocate memory
-    memory_block_.reset(new char[sizeof(double*[M]) + sizeof(double[M][N])]);
+    if (address) {
+      // take memory
+      matrix->memory_block_.reset(new (address) char[sizeof(double*[M]) + sizeof(double[M][N])]);
+    }
+    else {
+      // allocate memory
+      matrix->memory_block_.reset(new char[sizeof(double*[M]) + sizeof(double[M][N])]);
+    }
     // get address of memory block
-    char* address = memory_block_.get();
+    address = matrix->memory_block_.get();
     // validate memory allocation
     if (!address) throw std::bad_alloc();
     // create rows into memory block
-    data_ = (double**) address;
+    matrix->data_ = (double**) address;
     // offset address
     address += sizeof(double*[M]);
     for (size_t y = 0; y < M; ++y) {
       // create columns into memory block
-      data_[y] = (double*) address;
+      matrix->data_[y] = (double*) address;
       // offset address
       address += sizeof(double[N]);
     }
     // save sizeValue
-    size_ = {M, N, M*N};
+    matrix->size_ = {M, N, M*N};
   }
 
   
@@ -269,7 +277,7 @@ namespace Pinakas::Backend
   {
     std::cout << "assigned\n";
     if (this != &B) {
-      if (size_ != B.size_) allocate(B.size_.M, B.size_.N);
+      if (size_ != B.size_) allocate(this, B.size_.M, B.size_.N);
       if (memory_block_.get()) {
         for (size_t index = 0; index < size_.numel; ++index)
           data_[0][index] = B[0][index];
@@ -879,57 +887,136 @@ namespace Pinakas::Backend
     return QR;
   }
 
-  Matrix div(Matrix& A, Matrix& B) {
-    auto M = B.size().M;
-    auto N = B.size().N;
+  Matrix div(const Matrix& A, const Matrix& B) {
+    if (A.size().M != B.size().M) {
+      std::stringstream error_message;
+      error_message << "operator mul: vertical dimensions mismatch (A is ";
+      error_message << A.size().M << "x_, B is ";
+      error_message << B.size().M << "x_)\n";
+      throw std::invalid_argument(error_message.str());
+    }
+    if (A.size().N != 1) {
+      std::stringstream error_message;
+      error_message << "operator mul: horizontal dimension is not 1 (A is " << "_x" << B.size().N << ")\n";
+      throw std::invalid_argument(error_message.str());
+    }
 
-    auto V = B;
-    auto Q = Matrix(M, N, 0);
-    auto R = Matrix(N, N, 0);
+    size_t M = B.size().M;
+    size_t N = B.size().N;
+
+    Matrix V = B;
+    Matrix Q = Matrix(M, N);
+    Matrix R = Matrix(N, N);
 
     for (size_t x = 0; x < N; ++x) {
       double sum_of_squares = 0;
       for (size_t y = 0; y < M; ++y)
-        sum_of_squares += V(y, x) * V(y, x);
+        sum_of_squares += V[y][x] * V[y][x];
       double norm = sqrt(sum_of_squares);
       if (norm)
         for (size_t y = 0; y < M; ++y)
-          Q(y, x) = V(y, x) / norm;
+          Q[y][x] = V[y][x] / norm;
       for (size_t k = x; k < N; ++k) {
         double projection = 0;
         for (size_t y = 0; y < M; ++y)
-          projection += Q(y, x) * V(y, k);
+          projection += Q[y][x] * V[y][k];
         for (size_t y = 0; y < M; ++y)
-          V(y, k) -= projection * Q(y, x);
+          V[y][k] -= projection * Q[y][x];
         if (k >= x)
-          R(x, k) = projection;
+          R[x][k] = projection;
       }
     }
-
-    Matrix Qt(N, M);
-    for (size_t y = 0; y < M; ++y)
-      for (size_t x = 0; x < N; ++x)
-        Qt[x][y] = Q[y][x];
 
     Matrix QtA(N, 1, 0);
     for (size_t j = 0; j < N; ++j)
       for (size_t k = 0; k < M; ++k)
-        QtA[j][0] += Qt[j][k] * A[k][0];
+        QtA[j][0] += Q[k][j] * A[k][0];
 
     //*/
     Matrix x(N, 1);
     //*
     for (size_t i = N-1; i < N; --i) {
-      double temp = QtA(i, 0);
+      double substitution = QtA[i][0];
       for (size_t j = N-1; j > i; --j)
-        temp -= R(i, j) * x(j, 0);
-      x(i, 0) = temp / R(i, i);
+        substitution -= R[i][j] * x[j][0];
+      x[i][0] = substitution / R[i][i];
     }
     //*/
 
     return x;
   }
 
+  Matrix fastdiv(const Matrix& A, Matrix B) {
+    if (A.size().M != B.size().M) {
+      std::stringstream error_message;
+      error_message << "operator mul: vertical dimensions mismatch (A is ";
+      error_message << A.size().M << "x_, B is ";
+      error_message << B.size().M << "x_)\n";
+      throw std::invalid_argument(error_message.str());
+    }
+    
+    if (A.size().N != 1) {
+      std::stringstream error_message;
+      error_message << "operator mul: horizontal dimension is not 1 (A is " << "_x" << B.size().N << ")\n";
+      throw std::invalid_argument(error_message.str());
+    }
+
+    const size_t M = B.size().M;
+    const size_t N = B.size().N;
+    /*
+    const size_t Q_bytes = sizeof(double*[M]) + sizeof(double[M][N]);
+    const size_t R_bytes = sizeof(double*[N]) + sizeof(double[N][N]);
+    const size_t x_bytes = sizeof(double*[N]) + sizeof(double[N][1]);
+    char* address = new char[Q_bytes + R_bytes + x_bytes];
+    Matrix Q, R, c;
+
+    std::cout << (void*)address << '\n';
+    allocate(&Q, M, N, address);
+    address += Q_bytes;
+    allocate(&R, N, N, address);
+    address += R_bytes;
+    allocate(&c, N, 1, address);
+    c = 0;
+    std::cout << "allocated !\n";
+    //*/
+    Matrix Q = Matrix(M, N);
+    Matrix R = Matrix(N, N);
+    Matrix c = Matrix(N, 1, 0);
+    
+    for (size_t x = 0; x < N; ++x) {
+      double sum_of_squares = 0;
+      for (size_t y = 0; y < M; ++y)
+        sum_of_squares += B[y][x] * B[y][x];
+      double inorm = 1/sqrt(sum_of_squares);
+      if (std::isfinite(inorm))
+        for (size_t y = 0; y < M; ++y)
+          Q[y][x] = B[y][x] * inorm;
+      for (size_t k = x; k < N; ++k) {
+        double projection = 0;
+        for (size_t y = 0; y < M; ++y)
+          projection += Q[y][x] * B[y][k];
+        for (size_t y = 0; y < M; ++y)
+          B[y][k] -= projection * Q[y][x];
+        if (k >= x)
+          R[x][k] = projection;
+      }
+    }
+
+
+    //*/
+    //*
+    for (size_t i = N - 1; i < N; --i) {
+      double substitution = 0;
+      for (size_t k = 0; k < M; ++k)
+        substitution += Q[k][i] * A[k][0];
+      for (size_t j = N - 1; j > i; --j)
+        substitution -= R[i][j] * c[j][0];
+      c[i][0] = substitution / R[i][i];
+    }
+    //*/
+
+    return c;
+  }
   
   std::unique_ptr<Matrix[]> linearize(const Matrix& xdata, const Matrix& ydata)
   {
@@ -1139,7 +1226,7 @@ namespace Pinakas::Backend
       //double number = std::max(std::abs(min(A)), max(A));
 
       // find length of longest number in characters
-      //size_t length = std::ceil(std::log10(number)) + (min(A) < 0);
+      // size_t length = std::ceil(std::log10(number)) + (min(A) < 0);
       // add matrix to ostream
       for (size_t y = 0; y < A.size().M; ++y) {
         for (size_t x = 0; x < A.size().N; ++x)
@@ -1160,16 +1247,30 @@ namespace Pinakas::Backend
   {
     return ostream << size.N << 'x' << size.M;
   }
-  
 }
 // -
 int main()
 {
   using namespace Pinakas;
-  Matrix x = transpose(iota(4) + 1);
-  Matrix y = 2*(x^2) - x + 3;
-  Matrix w = {{x^2}, {x}, {x^0}};
-
+  Matrix x = transpose(iota(1000) + 1);
+  Matrix y = 0.1*(x^4) + 0.01*(x^3) + 2*(x^2) - x + 3;
+  Matrix w = {{x^4}, {x^3}, {x^2}, {x}, {x^0}};
+  std::cout << w.size();
+  for (int j=0; j<5;++j) {
+    puts("---------------------");
+    {
+      tic;
+      for (int i=0; i<100; ++i)
+        div(y, w);
+      toc;
+    }
+    {
+      tic;
+      for (int i=0; i<100; ++i)
+        fastdiv(y, w);
+      toc;
+    }
+  }
   std::cout << div(y, w);
   //std::cout << x.size();
   //std::cout << x;

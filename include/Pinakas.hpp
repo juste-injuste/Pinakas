@@ -49,8 +49,9 @@
 #include <stdexcept>
 #include <sstream>
 #include <limits>
+#include <new>
 #define tic	auto _start = std::chrono::high_resolution_clock::now()	
-#define toc	auto _stop = std::chrono::high_resolution_clock::now(); std::cout << "Time elapsed: " << std::chrono::duration_cast<std::chrono::microseconds>(_stop - _start).count() << " us\n"
+#define toc	auto _stop = std::chrono::high_resolution_clock::now(); std::cout << "Time elapsed: " << std::chrono::duration_cast<std::chrono::milliseconds>(_stop - _start).count() << " ms\n"
 // --Pinakas library: backend forward declaration---------------------------------
 namespace Pinakas::Backend
 {
@@ -211,8 +212,11 @@ namespace Pinakas::Backend
   double sum(const Matrix& matrix) noexcept;
   
   double prod(const Matrix& matrix) noexcept;
+
   std::unique_ptr<Matrix[]> MGS(const Matrix& A);
-  Matrix div(Matrix& A, Matrix& B);
+
+  Matrix div(const Matrix& A, const Matrix& B);
+  Matrix fastdiv(const Matrix& A, Matrix B);
   
   std::unique_ptr<Matrix[]> linearize(const Matrix& xdata, const Matrix& ydata);
   
@@ -238,32 +242,35 @@ namespace Pinakas::Backend
 // --Pinakas library: frontend forward declarations-------------------------------
 namespace Pinakas
 {
-  using Backend::Matrix;
+  inline namespace Frontend
+  {
+    using Backend::Matrix;
 // -------------------------------------------------------------------------------
-  using Backend::floor;
-  using Backend::round;
-  using Backend::ceil;
+    using Backend::floor;
+    using Backend::round;
+    using Backend::ceil;
 // -------------------------------------------------------------------------------
-  using Backend::mul;
+    using Backend::mul;
 // -------------------------------------------------------------------------------
-  using Backend::transpose;
+    using Backend::transpose;
 // -------------------------------------------------------------------------------
-  using Backend::min;
-  using Backend::max;
+    using Backend::min;
+    using Backend::max;
 // -------------------------------------------------------------------------------
-  using Backend::sum;
-  using Backend::prod;
-  using Backend::MGS;
-  using Backend::div;
-  using Backend::linearize;
-  using Backend::linspace;
-  using Backend::iota;
-  using Backend::diff;
-  using Backend::conv;
-  using Backend::blackman;
-  using Backend::hamming;
-  using Backend::hann;
-  using Backend::newton;
+    using Backend::sum;
+    using Backend::prod;
+    using Backend::MGS;
+    using Backend::div;
+    using Backend::linearize;
+    using Backend::linspace;
+    using Backend::iota;
+    using Backend::diff;
+    using Backend::conv;
+    using Backend::blackman;
+    using Backend::hamming;
+    using Backend::hann;
+    using Backend::newton;
+  }
 }
 // --Pinakas library: backend struct and class definitions------------------------
 namespace Pinakas::Backend
@@ -274,7 +281,6 @@ namespace Pinakas::Backend
     inline bool operator!=(const Size B) const noexcept;
   };
 
-  
   struct Matrix {
     public:
       // destructor
@@ -303,6 +309,7 @@ namespace Pinakas::Backend
       Matrix(const List<const List<const double>> values);
       // join matrix (side-wise)
       Matrix(const List<const Matrix> list);
+
       //
       Matrix& operator=(const Matrix& B);
       Matrix& operator=(Matrix&& B) noexcept;
@@ -315,12 +322,9 @@ namespace Pinakas::Backend
       inline double& operator()(const size_t y, const size_t x) const;
       //
       inline Size size(void) const noexcept;
-      //
-      //
-      Matrix& transpose(void);
     private:
       // allocate memory block
-      void allocate(const size_t M, const size_t N);
+      friend void allocate(Matrix* matrix, const size_t M, const size_t N, char* address = nullptr);
       // information regarding matrix size
       Size size_;
       // memory block for data
