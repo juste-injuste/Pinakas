@@ -36,20 +36,22 @@
 #ifndef PINAKAS_HPP
 #define PINAKAS_HPP
 // --necessary standard libraries-------------------------------------------------
-#include <iostream>
-#include <iomanip>
-#include <initializer_list>
-#include <memory>
-#include <cmath>
-#include <algorithm>
-#include <chrono>
-#include <random>
-#include <functional>
-#include <utility>
-#include <stdexcept>
-#include <sstream>
-#include <limits>
-#include <new>
+#include <iostream>         // for io
+#include <iomanip>          // for io formatting
+#include <initializer_list> // for std::initializer_list
+#include <memory>           // for std::unique_ptr
+#include <cmath>            // for math operations
+#include <algorithm>        // for std::min, std::max
+#include <chrono>           // for benchmarking
+#include <random>           // for random number generators
+#include <functional>       // for std::function<>
+#include <utility>          // for std::move
+#include <stdexcept>        // for exceptions
+#include <sstream>          // for string formatting
+#include <limits>           // for std::numeric_limits<>
+#include <fstream>          // for ofstream
+#include <cstdlib>          // for std::system
+#include <cstdio>           // for std::remove
 #define tic	auto _start = std::chrono::high_resolution_clock::now()	
 #define toc	auto _stop = std::chrono::high_resolution_clock::now(); std::cout << "Time elapsed: " << std::chrono::duration_cast<std::chrono::milliseconds>(_stop - _start).count() << " ms\n"
 // --Pinakas library: backend forward declaration---------------------------------
@@ -57,6 +59,8 @@ namespace Pinakas::Backend
 {
   template<typename T>
   using List = std::initializer_list<T>;
+  template<typename T>
+  using Pair = std::pair<T, T>;
   typedef double Value;
   struct Size;  
   struct Matrix;
@@ -134,7 +138,7 @@ namespace Pinakas::Backend
   Matrix mul(const Matrix& A, const Matrix& B);
 // -------------------------------------------------------------------------------
   Matrix transpose(const Matrix& A);
-  Matrix transpose(Matrix&& A);
+  Matrix reshape(const Matrix& A, const size_t M, const size_t N);
 // -------------------------------------------------------------------------------
   double min(const Matrix& matrix);
   double max(const Matrix& matrix);
@@ -145,9 +149,6 @@ namespace Pinakas::Backend
   std::unique_ptr<Matrix[]> QR(Matrix A);
   Matrix div(const Matrix& A, Matrix B);
   std::unique_ptr<Matrix[]> linearize(const Matrix& xdata, const Matrix& ydata);
-  std::unique_ptr<Matrix[]> linearize(const Matrix& xdata, Matrix&& ydata);
-  std::unique_ptr<Matrix[]> linearize(Matrix&& xdata, const Matrix& ydata);
-  std::unique_ptr<Matrix[]> linearize(Matrix&& xdata, Matrix&& ydata);
   Matrix linspace(const double x1, const double x2, const size_t N);
   Matrix iota(const size_t N);
   Matrix diff(const Matrix& A, size_t n);
@@ -156,6 +157,7 @@ namespace Pinakas::Backend
   Matrix hamming(const size_t L);
   Matrix hann(const size_t L);
   double newton(const std::function<double(double)> function, const double tol, const size_t max_iteration, const double seed);
+  void plot(std::string title, List<Pair<const Matrix&>> data_sets, bool persistent = true, bool remove = true, bool pause = false);
 }
 // --Pinakas library: frontend forward declarations-------------------------------
 namespace Pinakas { inline namespace Frontend
@@ -169,6 +171,7 @@ namespace Pinakas { inline namespace Frontend
   using Backend::mul;
 // -------------------------------------------------------------------------------
   using Backend::transpose;
+  using Backend::reshape;
 // -------------------------------------------------------------------------------
   using Backend::min;
   using Backend::max;
@@ -176,6 +179,7 @@ namespace Pinakas { inline namespace Frontend
   using Backend::sum;
   using Backend::prod;
   using Backend::MGS;
+  using Backend::QR;
   using Backend::div;
   using Backend::linearize;
   using Backend::linspace;
@@ -186,6 +190,7 @@ namespace Pinakas { inline namespace Frontend
   using Backend::hamming;
   using Backend::hann;
   using Backend::newton;
+  using Backend::plot;
 }}
 // --Pinakas library: backend struct and class definitions------------------------
 namespace Pinakas::Backend
@@ -215,9 +220,9 @@ namespace Pinakas::Backend
       // create a matrix with the same dimensions as 'matrix' with a specific value
       inline Matrix(const Size size, double value);
       // create a matrix MxN random values
-      Matrix(const size_t M, const size_t N, std::pair<double, double> range);
+      Matrix(const size_t M, const size_t N, Pair<double> range);
       // create a matrix with the same dimensions as 'matrix' with random values
-      inline Matrix(const Size size, const std::pair<double, double> range);
+      inline Matrix(const Size size, const Pair<double> range);
       // create a matrix from specific values
       Matrix(const List<double> values);
       // create a matrix from specific values

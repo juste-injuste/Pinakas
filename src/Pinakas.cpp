@@ -89,7 +89,7 @@ namespace Pinakas { namespace Backend
     : Matrix(size.M, size.N, value)
   {}
   
-  Matrix::Matrix(const size_t M, const size_t N, const std::pair<double, double> range)
+  Matrix::Matrix(const size_t M, const size_t N, const Pair<double> range)
   {
     #ifdef LOGGING
     std::clog << "Matrix created !\n";
@@ -105,7 +105,7 @@ namespace Pinakas { namespace Backend
       data_[0][index] = uniform_distribution(generator);
   }
   
-  Matrix::Matrix(const Size size, const std::pair<double, double> range)
+  Matrix::Matrix(const Size size, const Pair<double> range)
     : Matrix(size.M, size.N, range)
   {}
   
@@ -182,14 +182,19 @@ namespace Pinakas { namespace Backend
   void allocate(Matrix* matrix, const size_t M, const size_t N)
   {
     // validate sizes
-    if (!M) throw std::invalid_argument("vertical size is 0");
-    if (!N) throw std::invalid_argument("horizontal size is 0");
+    if ((M == 0) && (N == 0))
+      throw std::invalid_argument("vertical and horizontal dimensions are 0");
+    else if (M == 0)
+      throw std::invalid_argument("vertical dimension is 0");
+    else if (N == 0)
+      throw std::invalid_argument("horizontal dimension is 0");
     // allocate memory
     matrix->memory_block_.reset(new char[sizeof(double*[M]) + sizeof(double[M][N])]);
     // get address of memory block
     char* address = matrix->memory_block_.get();
     // validate memory allocation
-    if (!address) throw std::bad_alloc();
+    if (!address)
+      throw std::bad_alloc();
     // create rows into memory block
     matrix->data_ = (double**) address;
     // offset address
@@ -883,7 +888,13 @@ namespace Pinakas { namespace Backend
 // -------------------------------------------------------------------------------
   Matrix mul(const Matrix& A, const Matrix& B)
   {
-    validate_size(A.size(), B.size(), "mul");
+    if (A.size().N != B.size().M) {
+      std::stringstream error_message;
+      error_message << "operator mul: nonconformant arguments (";
+      error_message << "A is " << A.size().M << 'x' << A.size().N;
+      error_message << ", B is " << B.size().M << 'x' << B.size().N << ")\n";
+      throw std::invalid_argument(error_message.str());
+    }
     Matrix R(A.size().M, B.size().N, 0);
     for (size_t i = 0; i < B.size().N; i++)
       for (size_t j = 0; j < A.size().M; j++)
@@ -892,7 +903,6 @@ namespace Pinakas { namespace Backend
     return R;
   }
 // -------------------------------------------------------------------------------
-  
   Matrix transpose(const Matrix& A)
   {
     Matrix R(A.size().N, A.size().M);
@@ -902,9 +912,18 @@ namespace Pinakas { namespace Backend
     return R;
   }
 
-  Matrix transpose(Matrix&& A)
+  Matrix reshape(const Matrix& A, const size_t M, const size_t N)
   {
-    return transpose(A);
+    if (A.size().numel != M*N) {
+      std::stringstream error_message;
+      error_message << "reshape: can't reshape " << A.size();
+      error_message << " array to " << M << 'x' << N << " array";
+      throw std::invalid_argument(error_message.str());
+    }
+    Matrix R(M, N);
+    for (size_t index = 0; index < R.size().numel; ++index)
+      R[0][index] = A[0][index];
+    return R;
   }
 // -------------------------------------------------------------------------------
   double min(const Matrix& matrix)
@@ -1131,44 +1150,6 @@ namespace Pinakas { namespace Backend
     }
     return resampled;
   }
-  
-  std::unique_ptr<Matrix[]> linearize(const Matrix& xdata, Matrix&& ydata)
-  {
-    return linearize(xdata, (ydata));
-  }
-  
-  std::unique_ptr<Matrix[]> linearize(Matrix&& xdata, const Matrix& ydata)
-  {
-    return linearize((xdata), ydata);
-  }
-  
-  std::unique_ptr<Matrix[]> linearize(Matrix&& xdata, Matrix&& ydata)
-  {
-    size_t N = xdata.size().numel;
-    Matrix new_x(1, N, 0), new_y(1, N, 0);
-    double  step = (xdata[0][N-1] - xdata[0][0]) / (N - 1);
-    std::cout << "step: " << step << '\n';
-    double  x1, x2, y1, y2;
-
-    new_x[0][0]     = xdata[0][0];
-    new_y[0][0]     = ydata[0][0];
-    new_x[0][N - 1] = xdata[0][N - 1];
-    new_y[0][N - 1] = ydata[0][N - 1];
-
-    for (size_t index = 1; index < (N - 1); ++index) {
-      new_x[0][index] = new_x[0][index-1] + step;
-
-      x1 = xdata[0][index];
-      y1 = ydata[0][index];
-      x2 = xdata[0][index + 1];
-      y2 = ydata[0][index + 1];
-
-      new_y[0][index] = ((y1 - y2) * new_x[0][index] + x1 * y2 - x2 * y1) / (x1 - x2);
-    }
-
-    Matrix* resampled = new Matrix[2]{new_x, new_y};
-    return std::unique_ptr<Matrix[]>(resampled);
-  }
 
   Matrix linspace(const double x1, const double x2, const size_t N)
   {
@@ -1183,10 +1164,10 @@ namespace Pinakas { namespace Backend
 
   Matrix iota(const size_t N)
   {
-    Matrix vector(1, N);
-    for (size_t index = 0; index < vector.size().numel ; ++index)
-      vector[0][index] = index;
-    return vector;
+    Matrix indices(1, N);
+    for (size_t index = 0; index < N ; ++index)
+      indices[0][index] = index;
+    return indices;
   }
 
   Matrix diff(const Matrix& A, size_t n)
@@ -1356,19 +1337,66 @@ namespace Pinakas { namespace Backend
     return ostream << size.N << 'x' << size.M;
   }
 
-  Matrix& reshape(Matrix& A, const size_t M, const size_t N)
+  void plot(std::string title, List<Pair<const Matrix&>> data_sets, bool persistent, bool remove, bool pause)
   {
-    if (A.size().numel != M*N) {
-      std::stringstream error_message;
-      error_message << "reshape: can't reshape " << A.size();
-      error_message << " array to " << M << 'x' << N << " array";
-      throw std::invalid_argument(error_message.str());
+    // validate that gnuplot is in system path
+    static bool gnuplot_on_system_path = false;
+    if ((!gnuplot_on_system_path) && std::system("gnuplot --version"))
+      throw std::runtime_error("gnuplot could not be found in the system path");
+    gnuplot_on_system_path = true;
+    
+    // validate that x and y have the same number of elements
+    for (auto& data_set : data_sets) {
+      if (data_set.first.size().numel != data_set.second.size().numel) {
+        std::stringstream error_message;
+        error_message << "number of element mismatch (x has " << data_set.first.size().numel;
+        error_message << " elements,  y has " << data_set.second.size().numel << " elements)\n";
+        throw std::invalid_argument(error_message.str());
+      }
     }
-    Matrix R(M, N);
-    for (size_t index = 0; index < R.size().numel; ++index)
-      R[0][index] = A[0][index];
-    A = R;
-    return A;
+
+    // create filename
+    const std::string filename = title + ".data";
+    // create file
+    std::ofstream file(filename);
+    // validate file opening
+    if (!file)
+      throw std::runtime_error("could not open " + filename);
+
+    // write x and y data to file for each data set
+    for (auto& data_set : data_sets) {
+      const Matrix& x = data_set.first;
+      const Matrix& y = data_set.second;
+      for (size_t index = 0; index < x.size().numel; ++index)
+        file << x[0][index] << ' ' << y[0][index] << '\n';
+      // separate data sets
+      file << "\n\n";
+    }
+
+    // close file
+    file.close();
+    // command pipeline
+    std::stringstream gnuplot_pipeline;
+    // launch gnuplot
+    gnuplot_pipeline << "gnuplot";
+    // conditionally set plot to persistent
+    if (persistent)
+      gnuplot_pipeline << " -persistent";
+    // set plot title: -e "set title \"...\"
+    gnuplot_pipeline << " -e \"set title \\\"" << title << "\\\"\"";
+    // plot data: -e "plot '...'"
+    gnuplot_pipeline << " -e \"plot '" << filename << "' with lines\"";
+    // plot remaining data sets
+    for (size_t i = 1; i < data_sets.size(); ++i)
+      gnuplot_pipeline << " -e \"replot '" << filename << "' index " << i << " with lines\"";
+    // conditionally pause after plotting
+    if (pause)
+      gnuplot_pipeline << " -e \"pause -1 'press any key to continue...'\"";
+    // execute command pipeline
+    std::system(gnuplot_pipeline.str().c_str());
+    // conditionally remove file after creation
+    if (remove)
+      std::remove(filename.c_str());
   }
 }}
 //
@@ -1376,16 +1404,21 @@ int main()
 {
   using namespace Pinakas;
   //*
-  Matrix x = transpose(iota(1000) + 1);
+  Matrix x = transpose(iota(10) + 1);
   Matrix y = 0.01*(x^4) + 0.1*(x^3) + 2*(x^2) - x + 3;
   Matrix w = {x^4, x^3, x^2, x, x^0};
-
+  plot("test", {{x, y}, {x, x*100}}, true, false, false);
+  
   //*/
-  Matrix T = {{1, 2, 3},
-              {4, 5, 6},
-              {7, 8, 9},
-              {10, 11, 12}};
 
-  //*
+
+
+
+  
+  /*
+  Matrix T = {{1,  2,  3},
+              {4,  5,  6},
+              {7,  8,  9},
+              {10, 11, 12}};
   //*/
 }
