@@ -238,14 +238,14 @@ namespace Pinakas { namespace Backend
     return size_;
   }
   
-  Column Matrix::col(size_t index)
+  Column Matrix::col(size_t n)
   {
-    return Column(*this, index);
+    return Column(*this, n);
   }
 
-  Row Matrix::row(size_t index)
+  Row Matrix::row(size_t m)
   {
-    return Row(*this, index);
+    return Row(*this, m);
   }
 // -------------------------------------------------------------------------------
   Matrix::Iterator::Iterator(Matrix& matrix, const size_t index)
@@ -353,16 +353,16 @@ namespace Pinakas { namespace Backend
     return *this;
   }
 // -------------------------------------------------------------------------------
-  Column::Column(Matrix& matrix, const size_t N)
+  Column::Column(Matrix& matrix, const size_t n)
     : // member initialization list,
     size_{matrix.size().M, 1, matrix.size().M},
-    N_(N),
+    n_(n),
     matrix_(matrix)
   {}
 
   double& Column::operator[](const size_t index) const
   {
-    return matrix_[index][N_];
+    return matrix_[index][n_];
   }
 
   double& Column::operator()(const size_t index) const
@@ -372,7 +372,7 @@ namespace Pinakas { namespace Backend
       error_message << '(' << index << ") out of bound " << size().M - 1 << " (dimensions are " << size().M << "x1 )";
       throw std::out_of_range(error_message.str());
     }
-    return matrix_[index][N_];
+    return matrix_[index][n_];
   }
 
   Size Column::size(void) const
@@ -380,16 +380,16 @@ namespace Pinakas { namespace Backend
     return size_;
   }
 // -------------------------------------------------------------------------------
-  Row::Row(Matrix& matrix, const size_t M)
+  Row::Row(Matrix& matrix, const size_t m)
     : // member initialization list
     size_{1, matrix.size().N, matrix.size().N},
-    M_(M),
+    m_(m),
     matrix_(matrix)
   {}
 
   double& Row::operator[](const size_t index) const
   {
-    return matrix_[M_][index];
+    return matrix_[m_][index];
   }
 
   double& Row::operator()(const size_t index) const
@@ -399,7 +399,7 @@ namespace Pinakas { namespace Backend
       error_message << '(' << index << ") out of bound " << size().N - 1 << " (dimensions are 1x" << size().N << ')';
       throw std::out_of_range(error_message.str());
     }
-    return matrix_[M_][index];
+    return matrix_[m_][index];
   }
 
   Size Row::size(void) const
@@ -476,17 +476,24 @@ namespace Pinakas { namespace Backend
   
   Matrix&& operator+(Matrix&& A, const double B)
   {
+    for (size_t index = 0; index < A.size().numel; ++index)
+      A[0][index] += B;
     return std::move(A += B);
   }
   
   Matrix operator+(const double A, const Matrix& B)
   {
-    return B + A;
+    Matrix R(B.size());
+    for (size_t index = 0; index < R.size().numel; ++index)
+      R[0][index] = A + B[0][index];
+    return R;
   }
   
   Matrix&& operator+(const double A, Matrix&& B)
   {
-    return std::move(B += A);
+    for (size_t index = 0; index < B.size().numel; ++index)
+      B[0][index] += A;
+    return std::move(B);
   }
   
   Matrix operator+(const Matrix& A)
@@ -550,24 +557,31 @@ namespace Pinakas { namespace Backend
   Matrix operator*(const Matrix& A, const double B)
   {
     Matrix R(A.size());
-    for (size_t index = 0; index < A.size().numel; ++index)
+    for (size_t index = 0; index < R.size().numel; ++index)
       R[0][index] = A[0][index] * B;
     return R;
   }
   
   Matrix&& operator*(Matrix&& A, const double B)
   {
+    for (size_t index = 0; index < A.size().numel; ++index)
+      A[0][index] *= B;
     return std::move(A *= B);
   }
   
   Matrix operator*(const double A, const Matrix& B)
   {
-    return B * A;
+    Matrix R(B.size());
+    for (size_t index = 0; index < R.size().numel; ++index)
+      R[0][index] = A * B[0][index];
+    return R;
   }
   
   Matrix&& operator*(const double A, Matrix&& B)
   {
-    return std::move(B *= A);
+    for (size_t index = 0; index < B.size().numel; ++index)
+      B[0][index] *= A;
+    return std::move(B);
   }
 // -------------------------------------------------------------------------------
   Matrix& operator-=(Matrix& A, const Matrix& B)
@@ -613,17 +627,24 @@ namespace Pinakas { namespace Backend
 
   Matrix& operator-=(Matrix& A, const double B)
   {
-    return A += (-B);
+    for (size_t index = 0; index < A.size().numel; ++index)
+      A[0][index] -= B;
+    return A;
   }
 
   Matrix operator-(const Matrix& A, const double B)
   {
-    return A + (-B);
+    Matrix R(A.size());
+    for (size_t index = 0; index < R.size().numel; ++index)
+      R[0][index] = A[0][index] - B;
+    return R;
   }
   
   Matrix&& operator-(Matrix&& A, const double B)
   {
-    return std::move(A += (-B));
+    for (size_t index = 0; index < A.size().numel; ++index)
+      A[0][index] -= B;
+    return std::move(A);
   }
 
   Matrix operator-(const double A, const Matrix& B)
@@ -699,17 +720,27 @@ namespace Pinakas { namespace Backend
 // -------------------------------------------------------------------------------
   Matrix& operator/=(Matrix& A, const double B)
   {
-    return A *= (1 / B);
+    const double iB = 1 / B;
+    for (size_t index = 0; index < A.size().numel; ++index)
+      A[0][index] *= iB;
+    return A;
   }
   
   Matrix operator/(const Matrix& A, const double B)
   {
-    return A * (1 / B);
+    const double iB = 1 / B;
+    Matrix R(A.size());
+    for (size_t index = 0; index < R.size().numel; ++index)
+      R[0][index] = A[0][index] * iB;
+    return R;
   }
   
   Matrix&& operator/(Matrix&& A, const double B)
   {
-    return std::move(A *= (1 / B));
+    const double iB = 1 / B;
+    for (size_t index = 0; index < A.size().numel; ++index)
+      A[0][index] *= iB;
+    return std::move(A);
   }
 
   Matrix operator/(const double A, const Matrix& B)
@@ -778,7 +809,7 @@ namespace Pinakas { namespace Backend
   Matrix operator^(const Matrix& A, const double B)
   {
     Matrix R(A.size());
-    for (size_t index = 0; index < A.size().numel; ++index)
+    for (size_t index = 0; index < R.size().numel; ++index)
       R[0][index] = std::pow(A[0][index], B);
     return R;
   }
@@ -793,7 +824,7 @@ namespace Pinakas { namespace Backend
   Matrix operator^(const double A, const Matrix& B)
   {
     Matrix R(B.size());
-    for (size_t index = 0; index < B.size().numel; ++index)
+    for (size_t index = 0; index < R.size().numel; ++index)
       R[0][index] = std::pow(A, B[0][index]);
     return R;
   }
@@ -860,9 +891,9 @@ namespace Pinakas { namespace Backend
       throw std::invalid_argument(error_message.str());
     }
     Matrix R(A.size().M, B.size().N, 0);
-    for (size_t i = 0; i<B.size().N; i++)
-      for (size_t j = 0; j<A.size().M; j++)
-        for (size_t k = 0; k<A.size().N; k++)
+    for (size_t i = 0; i < B.size().N; i++)
+      for (size_t j = 0; j < A.size().M; j++)
+        for (size_t k = 0; k < A.size().N; k++)
           R[j][i] += A[j][k] * B[k][i];
     return R;
   }
@@ -946,32 +977,62 @@ namespace Pinakas { namespace Backend
     return product;
   }
 // -------------------------------------------------------------------------------
-  std::unique_ptr<Matrix[]> MGS(const Matrix& A)
+  Matrix MGS(Matrix A)
   {
-    size_t M = A.size().M;
-    size_t N = A.size().N;
-    Matrix V = A;
+    const size_t M = A.size().M;
+    const size_t N = A.size().N;
+
+    Matrix Q(M, N);
+    
+    size_t i, j, k;
+    double sum_of_squares, inorm, projection;
+    for (i = 0; i < N; ++i) {
+      sum_of_squares = 0;
+      for (size_t j = 0; j < M; ++j)
+        sum_of_squares += A[j][i] * A[j][i];
+      inorm = std::pow(sum_of_squares, -0.5);
+      if (std::isfinite(inorm))
+        for (j = 0; j < M; ++j)
+          Q[j][i] = A[j][i] * inorm;
+      for (k = i + 1; k < N; ++k) {
+        projection = 0;
+        for (j = 0; j < M; ++j)
+          projection += Q[j][i] * A[j][k];
+        for (j = 0; j < M; ++j)
+          A[j][k] -= projection * Q[j][i];
+      }
+    }
+    return Q;
+  }
+
+  std::unique_ptr<Matrix[]> QR(Matrix A)
+  {
+    const size_t M = A.size().M;
+    const size_t N = A.size().N;
+
     std::unique_ptr<Matrix[]> QR(new Matrix[2]{{Matrix(M, N)}, Matrix(N, N, 0)});
     Matrix& Q = QR[0];
     Matrix& R = QR[1];
-
+    
     size_t i, j, k;
-    for (j = 0; j < N; ++j) {
-      // q_j = v_j / ||v_j||_2
-      double sum_of_squares = 0;
-      for (i = 0; i < M; ++i)
-        sum_of_squares += V[i][j] * V[i][j];
-      double norm = std::sqrt(sum_of_squares);
-      if (norm)
-        for (i = 0; i < M; ++i)
-          Q[i][j] = V[i][j] / norm;
-      for (k = j; k < N; ++k) {
-        // v_k = v_k - (qT_j*v_k)*q_j   <---------- to revise
-        double projection = 0;
-        for (i = 0; i < M; ++i) projection += Q[i][j] * V[i][k];
-        for (i = 0; i < M; ++i) V[i][k] -= projection * Q[i][j];
-        // compute R
-        if (k >= j) R[j][k] = projection;
+    double sum_of_squares, inorm, projection;
+    for (i = 0; i < N; ++i) {
+      sum_of_squares = 0;
+      for (size_t j = 0; j < M; ++j)
+        sum_of_squares += A[j][i] * A[j][i];
+      inorm = std::pow(sum_of_squares, -0.5);
+      if (std::isfinite(inorm))
+        for (j = 0; j < M; ++j)
+          Q[j][i] = A[j][i] * inorm;
+      for (k = i; k < N; ++k) {
+        projection = 0;
+        for (j = 0; j < M; ++j)
+          projection += Q[j][i] * A[j][k];
+        if (k != i)
+          for (j = 0; (k != i) && (j < M); ++j)
+            A[j][k] -= projection * Q[j][i];
+        if (k >= i)
+          R[i][k] = projection;
       }
     }
     return QR;
@@ -979,55 +1040,68 @@ namespace Pinakas { namespace Backend
 
   Matrix div(const Matrix& A, Matrix B)
   {
+    // verify vertical dimensions
     if (A.size().M != B.size().M) {
       std::stringstream error_message;
       error_message << "operator div: vertical dimensions mismatch (A is ";
       error_message << A.size().M << "x_, B is " << B.size().M << "x_)\n";
       throw std::invalid_argument(error_message.str());
     }
-    
+    // verify that A is a column matrix
     if (A.size().N != 1) {
       std::stringstream error_message;
       error_message << "operator div: horizontal dimension is not 1 (A is " << "_x" << B.size().N << ")\n";
       throw std::invalid_argument(error_message.str());
     }
-
+    // store the dimensions of B
     const size_t M = B.size().M;
     const size_t N = B.size().N;
-
-    Matrix Q = Matrix(M, N);
-    Matrix R = Matrix(N, N);
-    Matrix x = Matrix(N, 1);
+    // necessary matrices
+    Matrix Q(M, N), R(N, N), x(N, 1);
+    // loop indices
+    size_t i, j, k;
+    // temporary variables
     double sum_of_squares, inorm, projection, substitution;
-    
-    for (size_t i = 0; i < N; ++i) {
+    // QR decomposition using the modified Gram-Schmidt process
+    for (i = 0; i < N; ++i) {
+      // calculate the squared Euclidean norm of B's i'th column 
       sum_of_squares = 0;
-      for (size_t j = 0; j < M; ++j)
+      for (j = 0; j < M; ++j)
         sum_of_squares += B[j][i] * B[j][i];
-      inorm = 1/sqrt(sum_of_squares);
-      if (std::isfinite(inorm))
-        for (size_t j = 0; j < M; ++j)
+      if (sum_of_squares != 0) { // skips if the squared Euclidean norm is 0
+        // calculate the inverse Euclidean norm of B's i'th column
+        inorm = std::pow(sum_of_squares, -0.5);
+        // normalize and store B's normalized i'th column
+        for (j = 0; j < M; ++j)
           Q[j][i] = B[j][i] * inorm;
-      for (size_t k = i; k < N; ++k) {
+      }
+      // orthogonalize the remaining columns with respects to B's i'th column
+      for (k = i; k < N; ++k) {
+        // calculate Q's i'th orthonormal projection onto B's k'th unorthogonalized column
         projection = 0;
-        for (size_t j = 0; j < M; ++j)
+        for (j = 0; j < M; ++j)
           projection += Q[j][i] * B[j][k];
-        for (size_t j = 0; j < M; ++j)
-          B[j][k] -= projection * Q[j][i];
+        // construct upper triangle matrix R using Q's i'th orthonormal projection onto B's k'th unorthogonalized column
         if (k >= i)
           R[i][k] = projection;
+        // orthogonalize B's k'th column by removing Q's i'th orthonormal projection onto B's k'th unorthogonalized column
+        if (k != i) // skips if k == i because the projection would be 0
+          for (j = 0; j < M; ++j)
+            B[j][k] -= projection * Q[j][i];
       }
     }
-
-    for (size_t i = N - 1; i < N; --i) {
+    // solve linear system Rx = Qt*A using back substitution
+    for (i = N - 1; i < N; --i) {
+      // calculate appropriate Qt*A component
       substitution = 0;
-      for (size_t j = 0; j < M; ++j)
+      for (j = 0; j < M; ++j)
         substitution += Q[j][i] * A[j][0];
-      for (size_t k = N - 1; k > i; --k)
+      // back substitution of previously solved x components
+      for (k = N - 1; k > i; --k)
         substitution -= R[i][k] * x[k][0];
+      // solve x's i'th component
       x[i][0] = substitution / R[i][i];
     }
-
     return x;
   }
   
@@ -1317,14 +1391,39 @@ namespace Pinakas { namespace Backend
 int main()
 {
   using namespace Pinakas;
-  /*
+  //*
   Matrix x = transpose(iota(1000) + 1);
   Matrix y = 0.01*(x^4) + 0.1*(x^3) + 2*(x^2) - x + 3;
   Matrix w = {x^4, x^3, x^2, x, x^0};
+  redo:
+  for (int i = 0; i < 5; ++i)
+  {
+    tic;
+    for (int j = 0; j < 1000; ++j)
+      div(y, w);
+    toc;
+  }
+  puts("----------");
+  for (int i = 0; i < 5; ++i)
+  {
+    tic;
+    for (int j = 0; j < 1000; ++j)
+      fastdiv(y, w);
+    toc;
+  }
+  std::cin.get();
+  goto redo;
+
+
+
   //*/
-  auto T = Matrix(3, 3, {0, 1});
-  T[0][1] = 22;
-  std::cout << "T:\n" << T;
+  Matrix T = {{1, 2, 3},
+              {4, 5, 6},
+              {7, 8, 9}};
+  std::cout << "T:\n" << MGS(T);
+  
+  std::cout << "T:\n" << div(y, w);
+  
 
   //for (size_t M = 0; M < T.size().M; ++M) std::cout << "row(" << M << "):\n" << T.row(M);
   //for (size_t N = 0; N < T.size().N; ++N) std::cout << "col(" << N << "):\n" << T.col(N);

@@ -72,11 +72,11 @@ namespace Pinakas::Backend
   Matrix&& operator+(Matrix&& A, Matrix&& B);
   Matrix& operator+=(Matrix& A, const double B);
   Matrix operator+(const Matrix& A, const double B);
-  inline Matrix&& operator+(Matrix&& A, const double B);
-  inline Matrix operator+(const double A, const Matrix& B);
-  inline Matrix&& operator+(const double A, Matrix&& B);
-  Matrix operator+(const Matrix& A);
-  Matrix&& operator+(Matrix&& A);
+  Matrix&& operator+(Matrix&& A, const double B);
+  Matrix operator+(const double A, const Matrix& B);
+  Matrix&& operator+(const double A, Matrix&& B);
+  inline Matrix operator+(const Matrix& A);
+  inline Matrix&& operator+(Matrix&& A);
 // -------------------------------------------------------------------------------
   Matrix& operator*=(Matrix& A, const Matrix& B);
   Matrix operator*(const Matrix& A, const Matrix& B);
@@ -85,18 +85,18 @@ namespace Pinakas::Backend
   Matrix&& operator*(Matrix&& A, Matrix&& B);
   Matrix& operator*=(Matrix& A, const double B);
   Matrix operator*(const Matrix& A, const double B);
-  inline Matrix&& operator*(Matrix&& A, const double B);
-  inline Matrix operator*(const double A, const Matrix& B);
-  inline Matrix&& operator*(const double A, Matrix&& B);
+  Matrix&& operator*(Matrix&& A, const double B);
+  Matrix operator*(const double A, const Matrix& B);
+  Matrix&& operator*(const double A, Matrix&& B);
 // -------------------------------------------------------------------------------
   Matrix& operator-=(Matrix& A, const Matrix& B);
   Matrix operator-(const Matrix& A, const Matrix& B);
   Matrix&& operator-(const Matrix& A, Matrix&& B);
   Matrix&& operator-(Matrix&& A, const Matrix& B);
   Matrix&& operator-(Matrix&& A, Matrix&& B);
-  inline Matrix& operator-=(Matrix& A, const double B);
-  inline Matrix operator-(const Matrix& A, const double B);
-  inline Matrix&& operator-(Matrix&& A, const double B);
+  Matrix& operator-=(Matrix& A, const double B);
+  Matrix operator-(const Matrix& A, const double B);
+  Matrix&& operator-(Matrix&& A, const double B);
   Matrix operator-(const double A, const Matrix& B);
   Matrix&& operator-(const double A, Matrix&& B);
   Matrix operator-(const Matrix& A);
@@ -107,9 +107,9 @@ namespace Pinakas::Backend
   Matrix&& operator/(const Matrix& A, Matrix&& B);
   Matrix&& operator/(Matrix&& A, const Matrix& B);
   Matrix&& operator/(Matrix&& A, Matrix&& B);
-  inline Matrix& operator/=(Matrix& A, const double B);
-  inline Matrix operator/(const Matrix& A, const double B);
-  inline Matrix&& operator/(Matrix&& A, const double B);
+  Matrix& operator/=(Matrix& A, const double B);
+  Matrix operator/(const Matrix& A, const double B);
+  Matrix&& operator/(Matrix&& A, const double B);
   Matrix operator/(const double A, const Matrix& B);
   Matrix&& operator/(const double A, Matrix&& B);
 // -------------------------------------------------------------------------------
@@ -141,7 +141,8 @@ namespace Pinakas::Backend
 // -------------------------------------------------------------------------------
   double sum(const Matrix& matrix);
   double prod(const Matrix& matrix);
-  std::unique_ptr<Matrix[]> MGS(const Matrix& A);
+  Matrix MGS(Matrix A);
+  std::unique_ptr<Matrix[]> QR(Matrix A);
   Matrix div(const Matrix& A, Matrix B);
   std::unique_ptr<Matrix[]> linearize(const Matrix& xdata, const Matrix& ydata);
   std::unique_ptr<Matrix[]> linearize(const Matrix& xdata, Matrix&& ydata);
@@ -236,9 +237,9 @@ namespace Pinakas::Backend
       //
       inline Size size(void) const;
       //
-      inline Column col(size_t index);
+      inline Column col(size_t n);
       //
-      inline Row row(size_t index);
+      inline Row row(size_t m);
     private:
       // allocate memory block
       void allocate(const size_t M, const size_t N, char* address = nullptr);
@@ -284,9 +285,9 @@ namespace Pinakas::Backend
       double& operator()(size_t index) const;
       inline Size size(void) const;
     private:
-      Column(Matrix& matrix, const size_t N);
+      Column(Matrix& matrix, const size_t n);
       const Size size_;
-      const size_t N_;
+      const size_t n_;
       Matrix& matrix_;
   };
 
@@ -297,9 +298,9 @@ namespace Pinakas::Backend
       double& operator()(const size_t index) const;
       inline Size size(void) const;
     private:
-      Row(Matrix& matrix, const size_t M);
+      Row(Matrix& matrix, const size_t m);
       const Size size_;
-      const size_t M_;
+      const size_t m_;
       Matrix& matrix_;
   };
 }
