@@ -55,7 +55,7 @@
 #define tic	auto _start = std::chrono::high_resolution_clock::now()	
 #define toc	auto _stop = std::chrono::high_resolution_clock::now(); std::cout << "Time elapsed: " << std::chrono::duration_cast<std::chrono::milliseconds>(_stop - _start).count() << " ms\n"
 // --Pinakas library: backend forward declaration---------------------------------
-namespace Pinakas::Backend
+namespace Pinakas { namespace Backend
 {
   template<typename T>
   using List = std::initializer_list<T>;
@@ -66,6 +66,13 @@ namespace Pinakas::Backend
   struct Matrix;
   class Column;
   class Row;
+  // keywords
+  namespace Keyword
+  {
+    typedef struct {} End;
+    typedef struct {} Column;
+    typedef struct {} Row;
+  }
 // -------------------------------------------------------------------------------
   void validate_size(const Size size_A, const Size size_B, const std::string& op);
 // -------------------------------------------------------------------------------
@@ -149,7 +156,8 @@ namespace Pinakas::Backend
   std::unique_ptr<Matrix[]> QR(Matrix A);
   Matrix div(const Matrix& A, Matrix B);
   std::unique_ptr<Matrix[]> linearize(const Matrix& xdata, const Matrix& ydata);
-  Matrix linspace(const double x1, const double x2, const size_t N);
+  Matrix linspace(const double x1, const double x2, const size_t N, Keyword::Row = {});
+  Matrix linspace(const double x1, const double x2, const size_t N, Keyword::Column);
   Matrix iota(const size_t N);
   Matrix diff(const Matrix& A, size_t n);
   Matrix conv(const Matrix& A, const Matrix& B);
@@ -158,11 +166,18 @@ namespace Pinakas::Backend
   Matrix hann(const size_t L);
   double newton(const std::function<double(double)> function, const double tol, const size_t max_iteration, const double seed);
   void plot(std::string title, List<Pair<const Matrix&>> data_sets, bool persistent = true, bool remove = true, bool pause = false);
-}
+  void plot(std::string title, Pair<const Matrix&> data_set, bool persistent = true, bool remove = true, bool pause = false);
+}}
 // --Pinakas library: frontend forward declarations-------------------------------
 namespace Pinakas { inline namespace Frontend
 {
   using Backend::Matrix;
+  namespace Keyword
+  {
+    const Backend::Keyword::End end;
+    const Backend::Keyword::Column column;
+    const Backend::Keyword::Row row;
+  }
 // -------------------------------------------------------------------------------
   using Backend::floor;
   using Backend::round;
@@ -193,7 +208,7 @@ namespace Pinakas { inline namespace Frontend
   using Backend::plot;
 }}
 // --Pinakas library: backend struct and class definitions------------------------
-namespace Pinakas::Backend
+namespace Pinakas { namespace Backend
 {
   struct Size {
     size_t M, N, numel;
@@ -239,9 +254,10 @@ namespace Pinakas::Backend
       // indexing
       inline double* operator[](const size_t y) const;
       // bound-checked flat-indexing
-      inline double& operator()(const size_t index) const;
+      double& operator()(const size_t index) const;
+      double& operator()(Keyword::End) const;
       // bound-checked indexing
-      inline double& operator()(const size_t y, const size_t x) const;
+      double& operator()(const size_t y, const size_t x) const;
       //
       inline Size size(void) const &;
       Size size(void) && = delete;
@@ -314,13 +330,13 @@ namespace Pinakas::Backend
       const size_t m_;
       Matrix& matrix_;
   };
-}
+}}
 // --Pinakas library: operator overloads forward declarations----------------------
-namespace Pinakas::Backend
+namespace Pinakas { namespace Backend
 {
   std::ostream& operator<<(std::ostream& ostream, const Matrix& A);
   std::ostream& operator<<(std::ostream& ostream, const Size size);
   std::ostream& operator<<(std::ostream& ostream, const Column& A);
   std::ostream& operator<<(std::ostream& ostream, const Row& A);
-}
+}}
 #endif

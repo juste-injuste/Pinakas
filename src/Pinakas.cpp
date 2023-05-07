@@ -223,6 +223,11 @@ namespace Pinakas { namespace Backend
     }
     return data_[0][index];
   }
+
+  double& Matrix::operator()(Keyword::End) const
+  {
+    return data_[0][size_.numel - 1];
+  }
  
   double& Matrix::operator()(const size_t y, const size_t x) const 
   {
@@ -1151,9 +1156,20 @@ namespace Pinakas { namespace Backend
     return resampled;
   }
 
-  Matrix linspace(const double x1, const double x2, const size_t N)
+  Matrix linspace(const double x1, const double x2, const size_t N, Keyword::Row)
   {
     Matrix vector(1, N);
+    double step = (x2 - x1) / (N - 1);
+    vector[0][0]     = x1;
+    vector[0][N - 1] = x2;
+    for (size_t index = 1; index < (N - 1); ++index)
+      vector[0][index] = vector[0][index-1] + step;
+    return vector;
+  }
+
+  Matrix linspace(const double x1, const double x2, const size_t N, Keyword::Column)
+  {
+    Matrix vector(N, 1);
     double step = (x2 - x1) / (N - 1);
     vector[0][0]     = x1;
     vector[0][N - 1] = x2;
@@ -1344,7 +1360,6 @@ namespace Pinakas { namespace Backend
     if ((!gnuplot_on_system_path) && std::system("gnuplot --version"))
       throw std::runtime_error("gnuplot could not be found in the system path");
     gnuplot_on_system_path = true;
-    
     // validate that x and y have the same number of elements
     for (auto& data_set : data_sets) {
       if (data_set.first.size().numel != data_set.second.size().numel) {
@@ -1354,7 +1369,6 @@ namespace Pinakas { namespace Backend
         throw std::invalid_argument(error_message.str());
       }
     }
-
     // create filename
     const std::string filename = title + ".data";
     // create file
@@ -1362,7 +1376,6 @@ namespace Pinakas { namespace Backend
     // validate file opening
     if (!file)
       throw std::runtime_error("could not open " + filename);
-
     // write x and y data to file for each data set
     for (auto& data_set : data_sets) {
       const Matrix& x = data_set.first;
@@ -1372,7 +1385,6 @@ namespace Pinakas { namespace Backend
       // separate data sets
       file << "\n\n";
     }
-
     // close file
     file.close();
     // command pipeline
@@ -1398,16 +1410,28 @@ namespace Pinakas { namespace Backend
     if (remove)
       std::remove(filename.c_str());
   }
+
+  void plot(std::string title, Pair<const Matrix&> data_set, bool persistent, bool remove, bool pause)
+  {
+    plot(title, {data_set}, persistent, remove, pause);
+  }
 }}
 //
 int main()
 {
   using namespace Pinakas;
+  using namespace Keyword;
   //*
-  Matrix x = transpose(iota(10) + 1);
-  Matrix y = 0.01*(x^4) + 0.1*(x^3) + 2*(x^2) - x + 3;
-  Matrix w = {x^4, x^3, x^2, x, x^0};
-  plot("test", {{x, y}, {x, x*100}}, true, false, false);
+  Matrix datax = linspace(0, 5, 100, column) + Matrix(100, 1, {0, 0.1});
+  Matrix datay = 2*(datax^2) - datax + 3 - Matrix(datax.size(), {-2, 2});
+
+  auto   model = [](Matrix x) -> Matrix {return {x^2, x, x^0};};
+
+  Matrix coeff = div(datay, model(datax));
+
+  Matrix newx  = linspace(datax(0), datax(end), datax.size().numel, column);
+  Matrix newy  = mul(model(newx), coeff);
+  plot("test", {{datax, datay}, {newx, newy}});
   
   //*/
 
