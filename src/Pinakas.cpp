@@ -42,7 +42,7 @@ namespace Pinakas { namespace Backend
     #endif
     if (this != &other) {
       // allocate memory
-      allocate(other.size_.M, other.size_.N);
+      allocate(this, other.size_.M, other.size_.N);
       // assign value to matrix
       for (size_t index = 0; index < size_.numel; ++index)
         data_[0][index] = other[0][index];
@@ -66,7 +66,7 @@ namespace Pinakas { namespace Backend
     std::clog << "Matrix created !\n";
     #endif
     // allocate memory
-    allocate(M, N);
+    allocate(this, M, N);
   }
 
   Matrix::Matrix(const Size size)
@@ -79,7 +79,7 @@ namespace Pinakas { namespace Backend
     std::clog << "Matrix created !\n";
     #endif
     // allocate memory
-    allocate(M, N);
+    allocate(this, M, N);
     // assign value to matrix
     for (size_t index = 0; index < size_.numel; ++index)
       data_[0][index] = value;
@@ -95,7 +95,7 @@ namespace Pinakas { namespace Backend
     std::clog << "Matrix created !\n";
     #endif
     // allocate memory
-    allocate(M, N);
+    allocate(this, M, N);
     // random number generator
     std::random_device device;
     std::mt19937 generator(device());
@@ -115,7 +115,7 @@ namespace Pinakas { namespace Backend
     std::clog << "Matrix created !\n";
     #endif
     // allocate memory
-    allocate(1, list.size());
+    allocate(this, 1, list.size());
     // assign values into matrix
     size_t x = 0;
     for (double value : list)
@@ -138,7 +138,7 @@ namespace Pinakas { namespace Backend
       else temp_N = vector.size();
     }
     // allocate memory
-    allocate(values.size(), temp_N);
+    allocate(this, values.size(), temp_N);
     // assign values into matrix
     size_t y = 0;
     for (const List<const double>& vector : values) {
@@ -169,7 +169,7 @@ namespace Pinakas { namespace Backend
       temp_N += matrix.size_.N;
     }
     // allocate memory
-    allocate(temp_M, temp_N);
+    allocate(this, temp_M, temp_N);
     size_t index = 0;
     for (const Matrix& matrix : list) {
       for (size_t y = 0; y < matrix.size_.M; ++y)
@@ -179,29 +179,29 @@ namespace Pinakas { namespace Backend
     }
   }
 
-  void Matrix::allocate(const size_t M, const size_t N)
+  void allocate(Matrix* matrix, const size_t M, const size_t N)
   {
     // validate sizes
     if (!M) throw std::invalid_argument("vertical size is 0");
     if (!N) throw std::invalid_argument("horizontal size is 0");
     // allocate memory
-    memory_block_.reset(new char[sizeof(double*[M]) + sizeof(double[M][N])]);
+    matrix->memory_block_.reset(new char[sizeof(double*[M]) + sizeof(double[M][N])]);
     // get address of memory block
-    char* address = memory_block_.get();
+    char* address = matrix->memory_block_.get();
     // validate memory allocation
     if (!address) throw std::bad_alloc();
     // create rows into memory block
-    data_ = (double**) address;
+    matrix->data_ = (double**) address;
     // offset address
     address += sizeof(double*[M]);
     for (size_t y = 0; y < M; ++y) {
       // create columns into memory block
-      data_[y] = (double*) address;
+      matrix->data_[y] = (double*) address;
       // offset address
       address += sizeof(double[N]);
     }
     // save size information
-    size_ = {M, N, M*N};
+    matrix->size_ = {M, N, M*N};
   }
  
   double* Matrix::operator[](const size_t index) const
@@ -327,7 +327,7 @@ namespace Pinakas { namespace Backend
     #endif
     if (this != &B) {
       if ((size_ != B.size_) || !memory_block_.get())
-        allocate(B.size_.M, B.size_.N);
+        allocate(this, B.size_.M, B.size_.N);
       for (size_t index = 0; index < size_.numel; ++index)
         data_[0][index] = B[0][index];
     }
@@ -1355,6 +1355,21 @@ namespace Pinakas { namespace Backend
   {
     return ostream << size.N << 'x' << size.M;
   }
+
+  Matrix& reshape(Matrix& A, const size_t M, const size_t N)
+  {
+    if (A.size().numel != M*N) {
+      std::stringstream error_message;
+      error_message << "reshape: can't reshape " << A.size();
+      error_message << " array to " << M << 'x' << N << " array";
+      throw std::invalid_argument(error_message.str());
+    }
+    Matrix R(M, N);
+    for (size_t index = 0; index < R.size().numel; ++index)
+      R[0][index] = A[0][index];
+    A = R;
+    return A;
+  }
 }}
 //
 int main()
@@ -1368,8 +1383,8 @@ int main()
   //*/
   Matrix T = {{1, 2, 3},
               {4, 5, 6},
-              {7, 8, 9}};  
-  
+              {7, 8, 9},
+              {10, 11, 12}};
 
   //*
   //*/

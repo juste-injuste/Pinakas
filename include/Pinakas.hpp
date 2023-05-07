@@ -248,7 +248,7 @@ namespace Pinakas::Backend
       void row(size_t) && = delete;
     private:
       // allocate memory block
-      void allocate(const size_t M, const size_t N);
+      friend void allocate(Matrix* matrix, const size_t M, const size_t N);
       // information regarding matrix size
       Size size_;
       // memory block for data
