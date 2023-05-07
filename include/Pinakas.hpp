@@ -225,24 +225,30 @@ namespace Pinakas::Backend
       // join matrix (side-wise)
       Matrix(const List<const Matrix> list);
       //
-      Matrix& operator=(const Matrix& B);
-      Matrix& operator=(Matrix&& B);
-      Matrix& operator=(const double B);
-      // vector indexing
+      Matrix& operator=(const Matrix& B) &;
+      void operator=(const Matrix& B) && = delete;
+      Matrix& operator=(Matrix&& B) &;
+      void operator=(Matrix&& B) && = delete;
+      Matrix& operator=(const double B) &;
+      void operator=(const double B) && = delete;
+      // indexing
       inline double* operator[](const size_t y) const;
       // bound-checked flat-indexing
       inline double& operator()(const size_t index) const;
       // bound-checked indexing
       inline double& operator()(const size_t y, const size_t x) const;
       //
-      inline Size size(void) const;
+      inline Size size(void) const &;
+      Size size(void) && = delete;
       //
-      inline Column col(size_t n);
+      inline Column col(size_t n) &;
+      void col(size_t) && = delete;
       //
-      inline Row row(size_t m);
+      inline Row row(size_t m) &;
+      void row(size_t) && = delete;
     private:
       // allocate memory block
-      void allocate(const size_t M, const size_t N, char* address = nullptr);
+      void allocate(const size_t M, const size_t N);
       // information regarding matrix size
       Size size_;
       // memory block for data

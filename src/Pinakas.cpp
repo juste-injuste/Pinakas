@@ -129,7 +129,7 @@ namespace Pinakas { namespace Backend
     #endif
     // dimension validation
     size_t temp_N = 0;
-    for (List<const double> vector : values) {
+    for (const List<const double>& vector : values) {
       if (temp_N && (temp_N != vector.size())) {
         std::cerr << "vertical dimensions mismatch (" << temp_N << " vs " << vector.size() << ")\n";
         size_ = {0, 0, 0};
@@ -141,7 +141,7 @@ namespace Pinakas { namespace Backend
     allocate(values.size(), temp_N);
     // assign values into matrix
     size_t y = 0;
-    for (List<const double> vector : values) {
+    for (const List<const double>& vector : values) {
       size_t x = 0;
       for (double value : vector) {
         data_[y][x] = value;
@@ -159,7 +159,7 @@ namespace Pinakas { namespace Backend
     // dimension validation
     size_t temp_M = 0;
     size_t temp_N = 0;
-    for (Matrix matrix : list) {
+    for (const Matrix& matrix : list) {
       if (temp_M && (temp_M != matrix.size_.M)) {
         std::cerr << "vertical dimensions mismatch (" << temp_M << " vs " << matrix.size_.M << ")\n";
         size_ = {0, 0, 0};
@@ -171,7 +171,7 @@ namespace Pinakas { namespace Backend
     // allocate memory
     allocate(temp_M, temp_N);
     size_t index = 0;
-    for (Matrix matrix : list) {
+    for (const Matrix& matrix : list) {
       for (size_t y = 0; y < matrix.size_.M; ++y)
         for (size_t x = 0; x < matrix.size_.N; ++x)
           data_[y][x + index] = matrix[y][x];
@@ -179,14 +179,15 @@ namespace Pinakas { namespace Backend
     }
   }
 
-  void Matrix::allocate(const size_t M, const size_t N, char* address)
+  void Matrix::allocate(const size_t M, const size_t N)
   {
+    // validate sizes
     if (!M) throw std::invalid_argument("vertical size is 0");
     if (!N) throw std::invalid_argument("horizontal size is 0");
     // allocate memory
     memory_block_.reset(new char[sizeof(double*[M]) + sizeof(double[M][N])]);
     // get address of memory block
-    address = memory_block_.get();
+    char* address = memory_block_.get();
     // validate memory allocation
     if (!address) throw std::bad_alloc();
     // create rows into memory block
@@ -199,7 +200,7 @@ namespace Pinakas { namespace Backend
       // offset address
       address += sizeof(double[N]);
     }
-    // save sizeValue
+    // save size information
     size_ = {M, N, M*N};
   }
  
@@ -233,17 +234,17 @@ namespace Pinakas { namespace Backend
     return data_[y][x];
   }
   
-  Size Matrix::size(void) const
+  Size Matrix::size(void) const &
   {
     return size_;
   }
   
-  Column Matrix::col(size_t n)
+  Column Matrix::col(size_t n) &
   {
     return Column(*this, n);
   }
-
-  Row Matrix::row(size_t m)
+  
+  Row Matrix::row(size_t m) &
   {
     return Row(*this, m);
   }
@@ -319,22 +320,21 @@ namespace Pinakas { namespace Backend
     return Const_Iterator(*this, size_.numel);
   }
 // -------------------------------------------------------------------------------
-  Matrix& Matrix::operator=(const Matrix& B)
+  Matrix& Matrix::operator=(const Matrix& B) &
   {
     #ifdef LOGGING
     std::clog << "assigned\n";
     #endif
     if (this != &B) {
-      if (size_ != B.size_) allocate(B.size_.M, B.size_.N);
-      if (memory_block_.get()) {
-        for (size_t index = 0; index < size_.numel; ++index)
-          data_[0][index] = B[0][index];
-      }
+      if ((size_ != B.size_) || !memory_block_.get())
+        allocate(B.size_.M, B.size_.N);
+      for (size_t index = 0; index < size_.numel; ++index)
+        data_[0][index] = B[0][index];
     }
     return *this;
   }
 
-  Matrix& Matrix::operator=(Matrix&& B)
+  Matrix& Matrix::operator=(Matrix&& B) &
   {
     #ifdef LOGGING
     std::clog << "move assigned\n";
@@ -346,7 +346,7 @@ namespace Pinakas { namespace Backend
   }
 // -------------------------------------------------------------------------------
   
-  Matrix& Matrix::operator=(const double B)
+  Matrix& Matrix::operator=(const double B) &
   {
     for (size_t index = 0; index < size_.numel; ++index)
       data_[0][index] = B;
@@ -883,13 +883,7 @@ namespace Pinakas { namespace Backend
 // -------------------------------------------------------------------------------
   Matrix mul(const Matrix& A, const Matrix& B)
   {
-    if (A.size().N != B.size().M) {
-      std::stringstream error_message;
-      error_message << "operation mul : nonconformant arguments (";
-      error_message << "A is " << A.size().M << 'x' << A.size().N;
-      error_message << ", B is " << B.size().M << 'x' << B.size().N << ")\n";
-      throw std::invalid_argument(error_message.str());
-    }
+    validate_size(A.size(), B.size(), "mul");
     Matrix R(A.size().M, B.size().N, 0);
     for (size_t i = 0; i < B.size().N; i++)
       for (size_t j = 0; j < A.size().M; j++)
@@ -917,7 +911,8 @@ namespace Pinakas { namespace Backend
   {
     double minimum = std::numeric_limits<double>::max();
     for (size_t index = 0; index < matrix.size().numel; ++index)
-      if (matrix[0][index] < minimum) minimum = matrix[0][index];
+      if (matrix[0][index] < minimum)
+        minimum = matrix[0][index];
     return minimum;
   }
 
@@ -925,7 +920,8 @@ namespace Pinakas { namespace Backend
   {
     double minimum = std::numeric_limits<double>::max();
     for (size_t index = 0; index < column.size().numel; ++index)
-      if (column[index] < minimum) minimum = column[index];
+      if (column[index] < minimum)
+        minimum = column[index];
     return minimum;
   }
 
@@ -941,7 +937,8 @@ namespace Pinakas { namespace Backend
   {
     double maximum = std::numeric_limits<double>::min();
     for (size_t index = 0; index < matrix.size().numel; ++index)
-      if (matrix[0][index] > maximum) maximum = matrix[0][index];
+      if (matrix[0][index] > maximum)
+        maximum = matrix[0][index];
     return maximum;
   }
 
@@ -949,7 +946,8 @@ namespace Pinakas { namespace Backend
   {
     double maximum = std::numeric_limits<double>::min();
     for (size_t index = 0; index < column.size().numel; ++index)
-      if (column[index] > maximum) maximum = column[index];
+      if (column[index] > maximum)
+        maximum = column[index];
     return maximum;
   }
 
@@ -957,7 +955,8 @@ namespace Pinakas { namespace Backend
   {
     double maximum = std::numeric_limits<double>::min();
     for (size_t index = 0; index < row.size().numel; ++index)
-      if (row[index] > maximum) maximum = row[index];
+      if (row[index] > maximum)
+        maximum = row[index];
     return maximum;
   }
 // -------------------------------------------------------------------------------
@@ -1108,13 +1107,15 @@ namespace Pinakas { namespace Backend
   std::unique_ptr<Matrix[]> linearize(const Matrix& xdata, const Matrix& ydata)
   {
     size_t N = xdata.size().numel;
-    Matrix new_x(1, N, 0), new_y(1, N, 0);
-    double  step = (xdata[0][N-1] - xdata[0][0]) / (N - 1);
+    std::unique_ptr<Matrix[]> resampled(new Matrix[2]{Matrix(1, N, 0), Matrix(1, N, 0)});
+    Matrix& new_x = resampled[0];
+    Matrix& new_y = resampled[1];
+    double step = (xdata[0][N-1] - xdata[0][0]) / (N - 1);
     std::cout << "step: " << step << '\n';
-    double  x1, x2, y1, y2;
+    double x1, x2, y1, y2;
 
-    new_x[0][0]     = xdata[0][0];
-    new_y[0][0]     = ydata[0][0];
+    new_x[0][0] = xdata[0][0];
+    new_y[0][0] = ydata[0][0];
     new_x[0][N - 1] = xdata[0][N - 1];
     new_y[0][N - 1] = ydata[0][N - 1];
 
@@ -1128,9 +1129,7 @@ namespace Pinakas { namespace Backend
 
       new_y[0][index] = ((y1 - y2) * new_x[0][index] + x1 * y2 - x2 * y1) / (x1 - x2);
     }
-
-    Matrix* resampled = new Matrix[2]{new_x, new_y};
-    return std::unique_ptr<Matrix[]>(resampled);
+    return resampled;
   }
   
   std::unique_ptr<Matrix[]> linearize(const Matrix& xdata, Matrix&& ydata)
@@ -1290,35 +1289,6 @@ namespace Pinakas { namespace Backend
     return r;
   }
 
-  /*std::ostream& operator<<(std::ostream& ostream, const Matrix& A)
-  {
-    if (A.size().numel) {
-      size_t length = 1;
-      double minval = min(A);
-      double maxval = max(A);
-      if (maxval > 1000000) length = 6;
-      for (double val : A) {
-        std::cout << "fmoded: " << std::round(std::fmod(val, 1000000)/10) << '\n';
-      }
-      //if (minval < 0) ++length;
-      // get longest number
-      //double number = std::max(std::abs(min(A)), max(A));
-
-      // find length of longest number in characters
-      // size_t length = std::ceil(std::log10(number)) + (min(A) < 0);
-      // add matrix to ostream
-
-      
-      for (size_t y = 0; y < A.size().M; ++y) {
-        for (size_t x = 0; x < A.size().N; ++x)
-          ostream << std::setw(length) << A[y][x] << ' ';
-        ostream << '\n';
-      }
-      
-    }
-    return ostream;
-  }//*/
-
   std::ostream& operator<<(std::ostream& ostream, const Matrix& A)
   {
     if (A.size().numel) {
@@ -1351,7 +1321,6 @@ namespace Pinakas { namespace Backend
         std::stringstream ss;
         ss.copyfmt(ostream);
         ss << A[y];
-        std::cout << ss.str() << ' ';
         max_len = std::max(max_len, ss.str().length());
       }
 
@@ -1395,44 +1364,13 @@ int main()
   Matrix x = transpose(iota(1000) + 1);
   Matrix y = 0.01*(x^4) + 0.1*(x^3) + 2*(x^2) - x + 3;
   Matrix w = {x^4, x^3, x^2, x, x^0};
-  redo:
-  for (int i = 0; i < 5; ++i)
-  {
-    tic;
-    for (int j = 0; j < 1000; ++j)
-      div(y, w);
-    toc;
-  }
-  puts("----------");
-  for (int i = 0; i < 5; ++i)
-  {
-    tic;
-    for (int j = 0; j < 1000; ++j)
-      fastdiv(y, w);
-    toc;
-  }
-  std::cin.get();
-  goto redo;
-
-
 
   //*/
   Matrix T = {{1, 2, 3},
               {4, 5, 6},
-              {7, 8, 9}};
-  std::cout << "T:\n" << MGS(T);
+              {7, 8, 9}};  
   
-  std::cout << "T:\n" << div(y, w);
-  
-
-  //for (size_t M = 0; M < T.size().M; ++M) std::cout << "row(" << M << "):\n" << T.row(M);
-  //for (size_t N = 0; N < T.size().N; ++N) std::cout << "col(" << N << "):\n" << T.col(N);
 
   //*
   //*/
-
-  //std::cout << x.size();
-  //std::cout << x;
-  //resample(x, 2);
-  //std::cout << "x:\n" << resample(x, 2);
 }
