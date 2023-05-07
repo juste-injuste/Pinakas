@@ -1,11 +1,12 @@
 clc, clear, close all
 
 
+x = [1:5]';
 
-
-x = [0:9]';
+%y = 0.01*x.^4 + 0.1*x.^3 + 2*x.^2 - x.^1 + 3*x.^0;
 y = x.^2 - x + 3;
-x_work = [x.^2, x.^1, x.^0];
-[Q, R] = qr(x_work)
-Q*R
-x_work\y;
+w = [x.^2 x.^1 x.^0];
+%w = [x.^4 x.^3 x.^2 x.^1 x.^0];
+
+fastdiv(y, w)
+div(y, w)
