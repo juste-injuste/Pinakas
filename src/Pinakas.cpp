@@ -89,7 +89,7 @@ namespace Pinakas { namespace Backend
     : Matrix(size.M, size.N, value)
   {}
   
-  Matrix::Matrix(const size_t M, const size_t N, const Pair<double> range)
+  Matrix::Matrix(const size_t M, const size_t N, const Range range)
   {
     #ifdef LOGGING
     std::clog << "Matrix created !\n";
@@ -99,13 +99,13 @@ namespace Pinakas { namespace Backend
     // random number generator
     std::random_device device;
     std::mt19937 generator(device());
-    std::uniform_real_distribution<> uniform_distribution(range.first, range.second);
+    std::uniform_real_distribution<> uniform_distribution(range.min_, range.max_);
     // assign random value to matrix
     for (size_t index = 0; index < size_.numel; ++index)
       data_[0][index] = uniform_distribution(generator);
   }
   
-  Matrix::Matrix(const Size size, const Pair<double> range)
+  Matrix::Matrix(const Size size, const Range range)
     : Matrix(size.M, size.N, range)
   {}
   
@@ -243,20 +243,20 @@ namespace Pinakas { namespace Backend
     }
     return data_[y][x];
   }
-  
+ 
+  Slice Matrix::operator()(Keyword::Entire, const size_t n) &
+  {
+    return Slice(*this, n, Keyword::column);
+  }
+ 
+  Slice Matrix::operator()(const size_t m, Keyword::Entire) &
+  {
+    return Slice(*this, m, Keyword::row);
+  }
+    
   Size Matrix::size(void) const &
   {
     return size_;
-  }
-  
-  Column Matrix::col(size_t n) &
-  {
-    return Column(*this, n);
-  }
-  
-  Row Matrix::row(size_t m) &
-  {
-    return Row(*this, m);
   }
 // -------------------------------------------------------------------------------
   Matrix::Iterator::Iterator(Matrix& matrix, const size_t index)
@@ -363,59 +363,48 @@ namespace Pinakas { namespace Backend
     return *this;
   }
 // -------------------------------------------------------------------------------
-  Column::Column(Matrix& matrix, const size_t n)
+  Slice::Slice(Matrix& matrix, const size_t n, Keyword::Column)
     : // member initialization list,
     size_{matrix.size().M, 1, matrix.size().M},
-    n_(n),
+    fixed_(n),
+    col_row_(false),
     matrix_(matrix)
   {}
 
-  double& Column::operator[](const size_t index) const
+  Slice::Slice(Matrix& matrix, const size_t m, Keyword::Row)
+    : // member initialization list,
+    size_{1, matrix.size().N, matrix.size().N},
+    fixed_(m),
+    col_row_(true),
+    matrix_(matrix)
+  {}
+
+  double& Slice::operator[](const size_t index) const
   {
-    return matrix_[index][n_];
+    return col_row_ ? matrix_[fixed_][index] : matrix_[index][fixed_];
   }
 
-  double& Column::operator()(const size_t index) const
+  double& Slice::operator()(const size_t index) const
   {
-    if (index >= size().M) {
+    if (index >= size().numel) {
       std::stringstream error_message;
-      error_message << '(' << index << ") out of bound " << size().M - 1 << " (dimensions are " << size().M << "x1 )";
+      error_message << '(' << index << ") out of bound " << size().numel - 1 << " (dimensions are ";
+      error_message << (col_row_ ? 1 : size().numel) << 'x' << (col_row_ ? size().numel : 1) << " )";
       throw std::out_of_range(error_message.str());
     }
-    return matrix_[index][n_];
+    return col_row_ ? matrix_[fixed_][index] : matrix_[index][fixed_];
   }
 
-  Size Column::size(void) const
+  Size Slice::size(void) const
   {
     return size_;
   }
 // -------------------------------------------------------------------------------
-  Row::Row(Matrix& matrix, const size_t m)
+  Range::Range(double min, double max)
     : // member initialization list
-    size_{1, matrix.size().N, matrix.size().N},
-    m_(m),
-    matrix_(matrix)
+    min_(min),
+    max_(max)
   {}
-
-  double& Row::operator[](const size_t index) const
-  {
-    return matrix_[m_][index];
-  }
-
-  double& Row::operator()(const size_t index) const
-  {
-    if (index >= size().N) {
-      std::stringstream error_message;
-      error_message << '(' << index << ") out of bound " << size().N - 1 << " (dimensions are 1x" << size().N << ')';
-      throw std::out_of_range(error_message.str());
-    }
-    return matrix_[m_][index];
-  }
-
-  Size Row::size(void) const
-  {
-    return size_;
-  }
 // -------------------------------------------------------------------------------
   void validate_size(const Size size_A, const Size size_B, const std::string& op)
   {
@@ -443,6 +432,27 @@ namespace Pinakas { namespace Backend
     for (size_t index = 0; index < R.size().numel; ++index)
       R[0][index] = A[0][index] + B[0][index];
     return R;
+  }
+  
+  Matrix operator+(const Matrix& A, const Range range)
+  {
+    Matrix R(A.size());
+    std::random_device device;
+    std::mt19937 generator(device());
+    std::uniform_real_distribution<> uniform_distribution(range.min_, range.max_);
+    for (size_t index = 0; index < R.size().numel; ++index)
+      R[0][index] += A[0][index] + uniform_distribution(generator);
+    return R;
+  }
+  
+  Matrix&& operator+(Matrix&& A, const Range range)
+  {
+    std::random_device device;
+    std::mt19937 generator(device());
+    std::uniform_real_distribution<> uniform_distribution(range.min_, range.max_);
+    for (size_t index = 0; index < A.size().numel; ++index)
+      A[0][index] += uniform_distribution(generator);
+    return std::move(A);
   }
   
   Matrix&& operator+(const Matrix& A, Matrix&& B)
@@ -940,20 +950,12 @@ namespace Pinakas { namespace Backend
     return minimum;
   }
 
-  double min(const Column& column)
+  double min(const Slice& column)
   {
     double minimum = std::numeric_limits<double>::max();
     for (size_t index = 0; index < column.size().numel; ++index)
       if (column[index] < minimum)
         minimum = column[index];
-    return minimum;
-  }
-
-  double min(const Row& row)
-  {
-    double minimum = std::numeric_limits<double>::max();
-    for (size_t index = 0; index < row.size().numel; ++index)
-      if (row[index] < minimum) minimum = row[index];
     return minimum;
   }
 // -------------------------------------------------------------------------------
@@ -966,21 +968,12 @@ namespace Pinakas { namespace Backend
     return maximum;
   }
 
-  double max(const Column& column)
+  double max(const Slice& column)
   {
     double maximum = std::numeric_limits<double>::min();
     for (size_t index = 0; index < column.size().numel; ++index)
       if (column[index] > maximum)
         maximum = column[index];
-    return maximum;
-  }
-
-  double max(const Row& row)
-  {
-    double maximum = std::numeric_limits<double>::min();
-    for (size_t index = 0; index < row.size().numel; ++index)
-      if (row[index] > maximum)
-        maximum = row[index];
     return maximum;
   }
 // -------------------------------------------------------------------------------
@@ -1085,7 +1078,7 @@ namespace Pinakas { namespace Backend
     size_t i, j, k;
     // temporary variables
     double sum_of_squares, inorm, projection, substitution;
-    // QR decomposition using the modified Gram-Schmidt process
+    // reduced QR decomposition using the modified Gram-Schmidt process
     for (i = 0; i < N; ++i) {
       // calculate the squared Euclidean norm of B's i'th column 
       sum_of_squares = 0;
@@ -1128,14 +1121,14 @@ namespace Pinakas { namespace Backend
     return x;
   }
   
-  std::unique_ptr<Matrix[]> linearize(const Matrix& xdata, const Matrix& ydata)
+  std::pair<Matrix, Matrix> linearize(const DataSet data_set)
   {
+    const Matrix& xdata = data_set.first;
+    const Matrix& ydata = data_set.second;
     size_t N = xdata.size().numel;
-    std::unique_ptr<Matrix[]> resampled(new Matrix[2]{Matrix(1, N, 0), Matrix(1, N, 0)});
-    Matrix& new_x = resampled[0];
-    Matrix& new_y = resampled[1];
+    Matrix new_x(xdata.size(), 0);
+    Matrix new_y(ydata.size(), 0);
     double step = (xdata[0][N-1] - xdata[0][0]) / (N - 1);
-    std::cout << "step: " << step << '\n';
     double x1, x2, y1, y2;
 
     new_x[0][0] = xdata[0][0];
@@ -1153,14 +1146,14 @@ namespace Pinakas { namespace Backend
 
       new_y[0][index] = ((y1 - y2) * new_x[0][index] + x1 * y2 - x2 * y1) / (x1 - x2);
     }
-    return resampled;
+    return {new_x, new_y};
   }
 
   Matrix linspace(const double x1, const double x2, const size_t N, Keyword::Row)
   {
     Matrix vector(1, N);
     double step = (x2 - x1) / (N - 1);
-    vector[0][0]     = x1;
+    vector[0][0] = x1;
     vector[0][N - 1] = x2;
     for (size_t index = 1; index < (N - 1); ++index)
       vector[0][index] = vector[0][index-1] + step;
@@ -1186,7 +1179,7 @@ namespace Pinakas { namespace Backend
     return indices;
   }
 
-  Matrix diff(const Matrix& A, size_t n)
+  Matrix diff(const Matrix& A, Keyword::Row, size_t n)
   {
     if (n) {
       Matrix derivative(A.size().M, A.size().N - 1, 0);
@@ -1194,7 +1187,20 @@ namespace Pinakas { namespace Backend
         for (size_t x = 0; x < derivative.size().N; ++x)
           derivative[y][x] = A[y][x + 1] - A[y][x];
 
-      return diff(derivative, n - 1);
+      return diff(derivative, Keyword::row, n - 1);
+    }
+    return A;
+  }
+
+  Matrix diff(const Matrix& A, Keyword::Column, size_t n)
+  {
+    if (n) {
+      Matrix derivative(A.size().M - 1, A.size().N, 0);
+      for (size_t y = 0; y < derivative.size().M; ++y)
+        for (size_t x = 0; x < derivative.size().N; ++x)
+          derivative[y][x] = A[y+ 1][x] - A[y][x];
+
+      return diff(derivative, Keyword::column, n - 1);
     }
     return A;
   }
@@ -1309,41 +1315,26 @@ namespace Pinakas { namespace Backend
     return ostream;
   }
 
-  std::ostream& operator<<(std::ostream& ostream, const Column& A)
+  std::ostream& operator<<(std::ostream& ostream, const Slice& A)
   {
     if (A.size().numel) {
       std::size_t max_len = 0;
-
       for (size_t y = 0; y < A.size().numel; ++y) {
         std::stringstream ss;
         ss.copyfmt(ostream);
         ss << A[y];
         max_len = std::max(max_len, ss.str().length());
       }
-
-      for (size_t y = 0; y < A.size().numel; ++y) {
-        ostream << std::setw(max_len) << A[y] << '\n';
+      if (A.size().M == 1) {
+        ostream << std::setw(max_len) << A[0];
+        for (size_t x = 1; x < A.size().numel; ++x)
+            ostream << ' ' << std::setw(max_len) << A[x];
+        ostream << '\n';
       }
-    }
-    return ostream;
-  }
-
-  std::ostream& operator<<(std::ostream& ostream, const Row& A)
-  {
-    if (A.size().numel) {
-      std::size_t max_len = 0;
-
-      for (size_t x = 0; x < A.size().numel; ++x) {
-        std::stringstream ss;
-        ss.copyfmt(ostream);
-        ss << A[x];
-        max_len = std::max(max_len, ss.str().length());
+      else {
+        for (size_t y = 0; y < A.size().numel; ++y)
+          ostream << std::setw(max_len) << A[y] << '\n';
       }
-
-      ostream << std::setw(max_len) << A[0];
-      for (size_t x = 1; x < A.size().numel; ++x)
-          ostream << ' ' << std::setw(max_len) << A[x];
-      ostream << '\n';
     }
     return ostream;
   }
@@ -1353,7 +1344,7 @@ namespace Pinakas { namespace Backend
     return ostream << size.N << 'x' << size.M;
   }
 
-  void plot(std::string title, List<Pair<const Matrix&>> data_sets, bool persistent, bool remove, bool pause)
+  void plot(std::string title, List<DataSet> data_sets, bool persistent, bool remove, bool pause, bool lines)
   {
     // validate that gnuplot is in system path
     static bool gnuplot_on_system_path = false;
@@ -1362,10 +1353,12 @@ namespace Pinakas { namespace Backend
     gnuplot_on_system_path = true;
     // validate that x and y have the same number of elements
     for (auto& data_set : data_sets) {
-      if (data_set.first.size().numel != data_set.second.size().numel) {
+      const Matrix& xdata = data_set.first;
+      const Matrix& ydata = data_set.second;
+      if (xdata.size().numel != ydata.size().numel) {
         std::stringstream error_message;
-        error_message << "number of element mismatch (x has " << data_set.first.size().numel;
-        error_message << " elements,  y has " << data_set.second.size().numel << " elements)\n";
+        error_message << "number of element mismatch (x has " << xdata.size().numel;
+        error_message << " elements,  y has " << ydata.size().numel << " elements)\n";
         throw std::invalid_argument(error_message.str());
       }
     }
@@ -1397,10 +1390,10 @@ namespace Pinakas { namespace Backend
     // set plot title: -e "set title \"...\"
     gnuplot_pipeline << " -e \"set title \\\"" << title << "\\\"\"";
     // plot data: -e "plot '...'"
-    gnuplot_pipeline << " -e \"plot '" << filename << "' with lines\"";
+    gnuplot_pipeline << " -e \"plot '" << filename << (lines ? "' with lines\"" : "' \"");
     // plot remaining data sets
     for (size_t i = 1; i < data_sets.size(); ++i)
-      gnuplot_pipeline << " -e \"replot '" << filename << "' index " << i << " with lines\"";
+      gnuplot_pipeline << " -e \"replot '" << filename << "' index " << i << (lines ? " with lines\"" : " \"");
     // conditionally pause after plotting
     if (pause)
       gnuplot_pipeline << " -e \"pause -1 'press any key to continue...'\"";
@@ -1411,9 +1404,9 @@ namespace Pinakas { namespace Backend
       std::remove(filename.c_str());
   }
 
-  void plot(std::string title, Pair<const Matrix&> data_set, bool persistent, bool remove, bool pause)
+  void plot(std::string title, DataSet data_set, bool persistent, bool remove, bool pause, bool lines)
   {
-    plot(title, {data_set}, persistent, remove, pause);
+    plot(title, {data_set}, persistent, remove, pause, lines);
   }
 }}
 //
@@ -1421,24 +1414,25 @@ int main()
 {
   using namespace Pinakas;
   using namespace Keyword;
-  //*
-  Matrix datax = linspace(0, 5, 100, column) + Matrix(100, 1, {0, 0.1});
-  Matrix datay = 2*(datax^2) - datax + 3 - Matrix(datax.size(), {-2, 2});
-
-  auto   model = [](Matrix x) -> Matrix {return {x^2, x, x^0};};
-
-  Matrix coeff = div(datay, model(datax));
-
-  Matrix newx  = linspace(datax(0), datax(end), datax.size().numel, column);
-  Matrix newy  = mul(model(newx), coeff);
-  plot("test", {{datax, datay}, {newx, newy}});
   
+  Matrix xdata = linspace(0, 5, 20, column) + Range(-0.1, 0.1);
+  Matrix ydata = xdata * 2;
+  auto newdata = linearize({xdata, ydata});
+  
+  Matrix& xnew = newdata.first;
+  Matrix& ynew = newdata.second;
+
+  Matrix speed = diff(ydata, column);
+  Matrix time  = linspace(xdata(0), xdata(end), speed.size().numel);
+  Matrix speednew = diff(ynew, column);
+  Matrix timenew  = linspace(xnew(0), xnew(end), speednew.size().numel);
+  plot("test", {{xdata, ydata},{xnew, ynew}}, true, true, false, false);
+  plot("test", {{time, speed},{timenew, speednew}}, true, true, false, false);
+  
+/*
+
   //*/
 
-
-
-
-  
   /*
   Matrix T = {{1,  2,  3},
               {4,  5,  6},

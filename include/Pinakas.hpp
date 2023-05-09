@@ -6,7 +6,7 @@
 // 
 // --liscence---------------------------------------------------------------------
 // 
-// MIdouble License
+// MIT License
 // 
 // Copyright (c) 2023 Justin Asselin (juste-injuste)
 // 
@@ -20,12 +20,12 @@
 // The above copyright notice and this permission notice shall be included in all
 // copies or substantial portions of the Software.
 // 
-// THE SOFTWARE IS PROVIDED "AS IS", WITHOUdouble WARRANTY OF ANY KIND, EXPRESS OR
-// IMPLIED, INCLUDING BUdouble NOdouble LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-// FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENdouble SHALL THE
-// AUTHORS OR COPYRIGHdouble HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-// LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORdouble OR OTHERWISE, ARISING FROM,
-// OUdouble OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+// THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+// IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+// FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+// AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+// LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+// OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
 //  
 // --versions---------------------------------------------------------------------
@@ -42,7 +42,6 @@
 #include <memory>           // for std::unique_ptr
 #include <cmath>            // for math operations
 #include <algorithm>        // for std::min, std::max
-#include <chrono>           // for benchmarking
 #include <random>           // for random number generators
 #include <functional>       // for std::function<>
 #include <utility>          // for std::move
@@ -52,32 +51,38 @@
 #include <fstream>          // for ofstream
 #include <cstdlib>          // for std::system
 #include <cstdio>           // for std::remove
-#define tic	auto _start = std::chrono::high_resolution_clock::now()	
-#define toc	auto _stop = std::chrono::high_resolution_clock::now(); std::cout << "Time elapsed: " << std::chrono::duration_cast<std::chrono::milliseconds>(_stop - _start).count() << " ms\n"
+#include "Chronometro.hpp"
 // --Pinakas library: backend forward declaration---------------------------------
 namespace Pinakas { namespace Backend
 {
+  //
   template<typename T>
   using List = std::initializer_list<T>;
-  template<typename T>
-  using Pair = std::pair<T, T>;
-  typedef double Value;
-  struct Size;  
+  //
+  struct Size;
+  //
   struct Matrix;
-  class Column;
-  class Row;
+  //
+  class Slice;
   // keywords
   namespace Keyword
   {
-    typedef struct {} End;
-    typedef struct {} Column;
-    typedef struct {} Row;
+    const struct End {} end;
+    const struct Column {} column;
+    const struct Row {} row;
+    const struct Entire {} entire;
   }
+  //
+  struct Range;
+  //
+  typedef std::pair<const Matrix&, const Matrix&> DataSet;
 // -------------------------------------------------------------------------------
   void validate_size(const Size size_A, const Size size_B, const std::string& op);
 // -------------------------------------------------------------------------------
   Matrix& operator+=(Matrix& A, const Matrix& B);
   Matrix operator+(const Matrix& A, const Matrix& B);
+  Matrix operator+(const Matrix& A, const Range range);
+  Matrix&& operator+(Matrix&& A, const Range range);
   Matrix&& operator+(const Matrix& A, Matrix&& B);
   Matrix&& operator+(Matrix&& A, const Matrix& B);
   Matrix&& operator+(Matrix&& A, Matrix&& B);
@@ -155,29 +160,26 @@ namespace Pinakas { namespace Backend
   Matrix MGS(Matrix A);
   std::unique_ptr<Matrix[]> QR(Matrix A);
   Matrix div(const Matrix& A, Matrix B);
-  std::unique_ptr<Matrix[]> linearize(const Matrix& xdata, const Matrix& ydata);
+  std::pair<Matrix, Matrix> linearize(const DataSet data_set);
   Matrix linspace(const double x1, const double x2, const size_t N, Keyword::Row = {});
   Matrix linspace(const double x1, const double x2, const size_t N, Keyword::Column);
   Matrix iota(const size_t N);
-  Matrix diff(const Matrix& A, size_t n);
+  Matrix diff(const Matrix& A, Keyword::Row = {}, size_t n = 1);
+  Matrix diff(const Matrix& A, Keyword::Column, size_t n = 1);
   Matrix conv(const Matrix& A, const Matrix& B);
   Matrix blackman(const size_t L);
   Matrix hamming(const size_t L);
   Matrix hann(const size_t L);
   double newton(const std::function<double(double)> function, const double tol, const size_t max_iteration, const double seed);
-  void plot(std::string title, List<Pair<const Matrix&>> data_sets, bool persistent = true, bool remove = true, bool pause = false);
-  void plot(std::string title, Pair<const Matrix&> data_set, bool persistent = true, bool remove = true, bool pause = false);
+  void plot(std::string title, List<DataSet> data_sets, bool persistent = true, bool remove = true, bool pause = false, bool lines = true);
+  void plot(std::string title, DataSet data_set, bool persistent = true, bool remove = true, bool pause = false, bool lines = true);
 }}
 // --Pinakas library: frontend forward declarations-------------------------------
 namespace Pinakas { inline namespace Frontend
 {
   using Backend::Matrix;
-  namespace Keyword
-  {
-    const Backend::Keyword::End end;
-    const Backend::Keyword::Column column;
-    const Backend::Keyword::Row row;
-  }
+  using Backend::Range;
+  namespace Keyword = Backend::Keyword;
 // -------------------------------------------------------------------------------
   using Backend::floor;
   using Backend::round;
@@ -234,10 +236,10 @@ namespace Pinakas { namespace Backend
       Matrix(const size_t M, const size_t N, const double value);
       // create a matrix with the same dimensions as 'matrix' with a specific value
       inline Matrix(const Size size, double value);
-      // create a matrix MxN random values
-      Matrix(const size_t M, const size_t N, Pair<double> range);
-      // create a matrix with the same dimensions as 'matrix' with random values
-      inline Matrix(const Size size, const Pair<double> range);
+      // create a matrix MxN random values from a range
+      Matrix(const size_t M, const size_t N, Range range);
+      // create a matrix with the same dimensions as 'matrix' with random values from a range
+      inline Matrix(const Size size, const Range range);
       // create a matrix from specific values
       Matrix(const List<double> values);
       // create a matrix from specific values
@@ -246,11 +248,8 @@ namespace Pinakas { namespace Backend
       Matrix(const List<const Matrix> list);
       //
       Matrix& operator=(const Matrix& B) &;
-      void operator=(const Matrix& B) && = delete;
       Matrix& operator=(Matrix&& B) &;
-      void operator=(Matrix&& B) && = delete;
       Matrix& operator=(const double B) &;
-      void operator=(const double B) && = delete;
       // indexing
       inline double* operator[](const size_t y) const;
       // bound-checked flat-indexing
@@ -259,14 +258,10 @@ namespace Pinakas { namespace Backend
       // bound-checked indexing
       double& operator()(const size_t y, const size_t x) const;
       //
+      Slice operator()(Keyword::Entire, const size_t n) &;
+      Slice operator()(const size_t m, Keyword::Entire) &;
+      //
       inline Size size(void) const &;
-      Size size(void) && = delete;
-      //
-      inline Column col(size_t n) &;
-      void col(size_t) && = delete;
-      //
-      inline Row row(size_t m) &;
-      void row(size_t) && = delete;
     private:
       // allocate memory block
       friend void allocate(Matrix* matrix, const size_t M, const size_t N);
@@ -305,30 +300,24 @@ namespace Pinakas { namespace Backend
       Const_Iterator end(void) const;
   };
 
-  class Column {
+  class Slice {
     friend struct Matrix;
     public:
       inline double& operator[](size_t index) const;
       double& operator()(size_t index) const;
       inline Size size(void) const;
     private:
-      Column(Matrix& matrix, const size_t n);
+      Slice(Matrix& matrix, const size_t n, Keyword::Column);
+      Slice(Matrix& matrix, const size_t n, Keyword::Row);
       const Size size_;
-      const size_t n_;
+      const size_t fixed_;
+      const bool col_row_;
       Matrix& matrix_;
   };
 
-  class Row {
-    friend struct Matrix;
-    public:
-      inline double& operator[](const size_t index) const;
-      double& operator()(const size_t index) const;
-      inline Size size(void) const;
-    private:
-      Row(Matrix& matrix, const size_t m);
-      const Size size_;
-      const size_t m_;
-      Matrix& matrix_;
+  struct Range {
+    Range(double min, double max);
+    double min_, max_;
   };
 }}
 // --Pinakas library: operator overloads forward declarations----------------------
@@ -336,7 +325,6 @@ namespace Pinakas { namespace Backend
 {
   std::ostream& operator<<(std::ostream& ostream, const Matrix& A);
   std::ostream& operator<<(std::ostream& ostream, const Size size);
-  std::ostream& operator<<(std::ostream& ostream, const Column& A);
-  std::ostream& operator<<(std::ostream& ostream, const Row& A);
+  std::ostream& operator<<(std::ostream& ostream, const Slice& A);
 }}
 #endif
