@@ -45,7 +45,7 @@ namespace Pinakas { namespace Backend
       allocate(this, other.size_.M, other.size_.N);
       // assign value to matrix
       for (size_t index = 0; index < size_.numel; ++index)
-        data_[0][index] = other[0][index];
+        data_[index] = other[0][index];
     }
   }
   
@@ -82,7 +82,7 @@ namespace Pinakas { namespace Backend
     allocate(this, M, N);
     // assign value to matrix
     for (size_t index = 0; index < size_.numel; ++index)
-      data_[0][index] = value;
+      data_[index] = value;
   }
     
   Matrix::Matrix(const Size size, double value)
@@ -102,7 +102,7 @@ namespace Pinakas { namespace Backend
     std::uniform_real_distribution<> uniform_distribution(range.min_, range.max_);
     // assign random value to matrix
     for (size_t index = 0; index < size_.numel; ++index)
-      data_[0][index] = uniform_distribution(generator);
+      data_[index] = uniform_distribution(generator);
   }
   
   Matrix::Matrix(const Size size, const Range range)
@@ -119,7 +119,7 @@ namespace Pinakas { namespace Backend
     // assign values into matrix
     size_t x = 0;
     for (double value : list)
-      data_[0][x++] = value;
+      data_[x++] = value;
   }
   
   Matrix::Matrix(const List<const List<const double>> values)
@@ -144,7 +144,7 @@ namespace Pinakas { namespace Backend
     for (const List<const double>& vector : values) {
       size_t x = 0;
       for (double value : vector) {
-        data_[y][x] = value;
+        data_[x + y * size_.N] = value;
         ++x;
       }
       ++y;
@@ -174,7 +174,7 @@ namespace Pinakas { namespace Backend
     for (const Matrix& matrix : list) {
       for (size_t y = 0; y < matrix.size_.M; ++y)
         for (size_t x = 0; x < matrix.size_.N; ++x)
-          data_[y][x + index] = matrix[y][x];
+          data_[x + index + y * size_.N] = matrix[y][x];
       index += matrix.size_.N;
     }
   }
@@ -189,29 +189,22 @@ namespace Pinakas { namespace Backend
     else if (N == 0)
       throw std::invalid_argument("horizontal dimension is 0");
     // allocate memory
-    matrix->memory_block_.reset(new char[sizeof(double*[M]) + sizeof(double[M][N])]);
+    matrix->memory_block_.reset(new char[sizeof(double[M][N])]);
     // get address of memory block
     char* address = matrix->memory_block_.get();
     // validate memory allocation
     if (!address)
       throw std::bad_alloc();
-    // create rows into memory block
-    matrix->data_ = (double**) address;
-    // offset address
-    address += sizeof(double*[M]);
-    for (size_t y = 0; y < M; ++y) {
-      // create columns into memory block
-      matrix->data_[y] = (double*) address;
-      // offset address
-      address += sizeof(double[N]);
-    }
+
+    matrix->data_ = (double*) address;
+
     // save size information
     matrix->size_ = {M, N, M*N};
   }
  
   double* Matrix::operator[](const size_t index) const
   {
-    return data_[index];
+    return &data_[index*size_.N];
   }
  
   double& Matrix::operator()(const size_t index) const
@@ -221,12 +214,12 @@ namespace Pinakas { namespace Backend
       error_message << '(' << index << ") out of bound " << size_.numel - 1<< " (dimensions are " << size_ << ')';
       throw std::out_of_range(error_message.str());
     }
-    return data_[0][index];
+    return data_[index];
   }
 
   double& Matrix::operator()(Keyword::End) const
   {
-    return data_[0][size_.numel - 1];
+    return data_[size_.numel - 1];
   }
  
   double& Matrix::operator()(const size_t y, const size_t x) const 
@@ -241,7 +234,7 @@ namespace Pinakas { namespace Backend
       error_message << "(_," << x << ") out of bound " << size_.N << " (dimensions are " << size_ << ')';
       throw std::out_of_range(error_message.str());
     }
-    return data_[y][x];
+    return data_[x + y*size_.N];
   }
  
   Slice Matrix::operator()(Keyword::Entire, const size_t n) &
@@ -339,7 +332,7 @@ namespace Pinakas { namespace Backend
       if ((size_ != B.size_) || !memory_block_.get())
         allocate(this, B.size_.M, B.size_.N);
       for (size_t index = 0; index < size_.numel; ++index)
-        data_[0][index] = B[0][index];
+        data_[index] = B[0][index];
     }
     return *this;
   }
@@ -359,7 +352,7 @@ namespace Pinakas { namespace Backend
   Matrix& Matrix::operator=(const double B) &
   {
     for (size_t index = 0; index < size_.numel; ++index)
-      data_[0][index] = B;
+      data_[index] = B;
     return *this;
   }
 // -------------------------------------------------------------------------------
@@ -1413,6 +1406,7 @@ namespace Pinakas { namespace Backend
 int main()
 {
   using namespace Pinakas;
+  /*
   using namespace Keyword;
   
   Matrix xdata = linspace(0, 5, 20, column) + Range(-0.1, 0.1);
@@ -1429,14 +1423,17 @@ int main()
   plot("test", {{xdata, ydata},{xnew, ynew}}, true, true, false, false);
   plot("test", {{time, speed},{timenew, speednew}}, true, true, false, false);
   
-/*
+
 
   //*/
 
-  /*
+  //*
   Matrix T = {{1,  2,  3},
               {4,  5,  6},
               {7,  8,  9},
               {10, 11, 12}};
+  Matrix T2({T, T});
+
+  std::cout << T2;
   //*/
 }

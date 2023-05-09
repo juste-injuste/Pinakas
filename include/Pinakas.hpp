@@ -270,7 +270,7 @@ namespace Pinakas { namespace Backend
       // memory block for data
       std::unique_ptr<char[]> memory_block_;
       // data is a double[M][N] array
-      double** data_;
+      double* data_;
     public:
       class Iterator {
         public:
