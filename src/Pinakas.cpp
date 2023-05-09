@@ -204,7 +204,7 @@ namespace Pinakas { namespace Backend
  
   double* Matrix::operator[](const size_t index) const
   {
-    return &data_[index*size_.N];
+    return data_ + index*size_.N;
   }
  
   double& Matrix::operator()(const size_t index) const
