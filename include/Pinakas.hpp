@@ -75,6 +75,12 @@ namespace Pinakas { namespace Backend
   //
   struct Range;
   //
+  template<typename T>
+  class Iterator;
+  //
+  template<typename T>
+  class ConstIterator;
+  //
   typedef std::pair<const Matrix&, const Matrix&> DataSet;
 // -------------------------------------------------------------------------------
   void validate_size(const Size size_A, const Size size_B, const std::string& op);
@@ -230,6 +236,30 @@ namespace Pinakas { namespace Backend
       Matrix(Matrix&& matrix);
       // create a matrix MxN
       Matrix(const size_t M, const size_t N);
+      //
+      Matrix& operator=(const Matrix& other) &;
+      Matrix& operator=(Matrix&& other) &;
+      Matrix& operator=(const double value) &;
+      // indexing
+      inline double* operator[](const size_t y) const;
+      // bound-checked flat-indexing
+      double& operator()(const size_t index) const;
+      double& operator()(Keyword::End) const;
+      // bound-checked indexing
+      double& operator()(const size_t y, const size_t x) const;
+      //
+      Slice operator()(Keyword::Entire, const size_t n) &;
+      Slice operator()(const size_t m, Keyword::Entire) &;
+      // return matrix dimensions
+      inline Size size(void) const &;
+    private:
+      // information regarding matrix size
+      Size size_;
+      // data is a double[M][N] array
+      std::unique_ptr<double[]> data_;
+      // allocate data_
+      friend void allocate(Matrix* matrix, const size_t M, const size_t N);
+    public:
       // create a matrix with the same dimensions as 'matrix'
       inline Matrix(const Size size);
       // create a matrix MxN with a specific value
@@ -246,58 +276,11 @@ namespace Pinakas { namespace Backend
       Matrix(const List<const List<const double>> values);
       // join matrix (side-wise)
       Matrix(const List<const Matrix> list);
-      //
-      Matrix& operator=(const Matrix& B) &;
-      Matrix& operator=(Matrix&& B) &;
-      Matrix& operator=(const double B) &;
-      // indexing
-      inline double* operator[](const size_t y) const;
-      // bound-checked flat-indexing
-      double& operator()(const size_t index) const;
-      double& operator()(Keyword::End) const;
-      // bound-checked indexing
-      double& operator()(const size_t y, const size_t x) const;
-      //
-      Slice operator()(Keyword::Entire, const size_t n) &;
-      Slice operator()(const size_t m, Keyword::Entire) &;
-      //
-      inline Size size(void) const &;
-    private:
-      // allocate memory block
-      friend void allocate(Matrix* matrix, const size_t M, const size_t N);
-      // information regarding matrix size
-      Size size_;
-      // memory block for data
-      std::unique_ptr<char[]> memory_block_;
-      // data is a double[M][N] array
-      double* data_;
     public:
-      class Iterator {
-        public:
-          Iterator(Matrix& matrix, const size_t index);
-          bool operator==(const Iterator& other) const;
-          bool operator!=(const Iterator& other) const;
-          Iterator& operator++(void);
-          double& operator*(void) const;
-        private:
-          Matrix& matrix;
-          size_t index;
-      };
-      class Const_Iterator {
-      public:
-          Const_Iterator(const Matrix& matrix, const size_t index);
-          bool operator==(const Const_Iterator& other) const;
-          bool operator!=(const Const_Iterator& other) const;
-          Const_Iterator& operator++();
-          const double& operator*() const;
-      private:
-          const Matrix& matrix;
-          size_t index;
-      };
-      Iterator begin(void);
-      Iterator end(void);
-      Const_Iterator begin(void) const;
-      Const_Iterator end(void) const;
+      Iterator<Matrix> begin(void);
+      Iterator<Matrix> end(void);
+      ConstIterator<Matrix> begin(void) const;
+      ConstIterator<Matrix> end(void) const;
   };
 
   class Slice {
@@ -318,6 +301,32 @@ namespace Pinakas { namespace Backend
   struct Range {
     Range(double min, double max);
     double min_, max_;
+  };
+
+  template<typename T>
+  class Iterator {
+    public:
+      Iterator(T& matrix, const size_t index);
+      bool operator==(const Iterator& other) const;
+      bool operator!=(const Iterator& other) const;
+      Iterator& operator++(void);
+      double& operator*(void) const;
+    private:
+      T& matrix;
+      size_t index;
+  };
+
+  template<typename T>
+  class ConstIterator {
+    public:
+      ConstIterator(const T& matrix, const size_t index);
+      bool operator==(const ConstIterator& other) const;
+      bool operator!=(const ConstIterator& other) const;
+      ConstIterator& operator++();
+      const double& operator*() const;
+    private:
+      const T& matrix;
+      size_t index;
   };
 }}
 // --Pinakas library: operator overloads forward declarations----------------------
