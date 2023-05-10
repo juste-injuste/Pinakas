@@ -38,8 +38,12 @@
 #include <iostream>
 // --Chronometro library: backend forward declaration-----------------------------
 namespace Chronometro { namespace Backend {
-  enum Unit : char;
+  //
   class Stopwatch;
+  //
+  enum Unit : char {
+    ns = 0, us, ms, s, min, h
+  };
 }}
 // --Chronometro library: frontend forward declarations---------------------------
 namespace Chronometro { inline namespace Frontend {
@@ -48,18 +52,13 @@ namespace Chronometro { inline namespace Frontend {
 }}
 // --Pinakas library: backend struct and class definitions------------------------
 namespace Chronometro { namespace Backend {
-  enum Unit : char {
-    ns = 0, us, ms, s, min, h
-  };
-
   class Stopwatch {
     public:
+      // 
       Stopwatch(Unit unit = ms);
       ~Stopwatch();
-      void start(void);
-      void start(Unit unit);
-      void stop(void);
-      void stop(Unit unit);
+      void start(Unit unit = -1);
+      void stop(Unit unit = -1);
     private:
       Unit unit_;
       std::chrono::system_clock::time_point start_;
@@ -78,26 +77,20 @@ namespace Chronometro { namespace Backend {
     stop();
   }
 
-  void Stopwatch::start()
-  {
-    start_ = std::chrono::high_resolution_clock::now();
-  }
-
   void Stopwatch::start(Unit unit)
   {
-    unit_ = unit;
+    // if unit == -1 use predefined unit
+    unit_ = (unit == -1) ? unit_ : unit;
     start_ = std::chrono::high_resolution_clock::now();
   }
 
   void Stopwatch::stop(Unit unit)
   {
-    unit_ = unit;
-    stop();
-  }
-
-  void Stopwatch::stop(void)
-  {
+    // get current time
     auto stop = std::chrono::high_resolution_clock::now();
+    // if unit == -1 use predefined unit
+    unit_ = (unit == -1) ? unit_ : unit
+    // display elapsed time in unit_ units
     std::cout << "time elapsed: ";
     switch(unit_) {
       case ns:
