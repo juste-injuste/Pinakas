@@ -201,13 +201,10 @@ namespace Pinakas { namespace Backend
     }
 
     // allocate memory
-    matrix->data_.reset(new double[M][N]);
-
-    // get address of memory block
-    char* address = matrix->data_.get();
+    matrix->data_.reset((double*) new char[sizeof(double[M][N])]);
 
     // validate memory allocation
-    if (!address)
+    if (!matrix->data_.get())
       throw std::bad_alloc();
 
     // save size information
@@ -216,7 +213,7 @@ namespace Pinakas { namespace Backend
  
   double* Matrix::operator[](const size_t index) const
   {
-    return data_ + index*size_.N;
+    return data_.get() + index*size_.N;
   }
  
   double& Matrix::operator()(const size_t index) const
@@ -264,75 +261,85 @@ namespace Pinakas { namespace Backend
     return size_;
   }
 // -------------------------------------------------------------------------------
-  Matrix::Iterator::Iterator(Matrix& matrix, const size_t index)
+  template<typename T>
+  Iterator<T>::Iterator(T& matrix, const size_t index)
     : // member initialization list
     matrix(matrix),
     index(index)
   {}
 
-  bool Matrix::Iterator::operator==(const Iterator& other) const
+  template<typename T>
+  bool Iterator<T>::operator==(const Iterator<T>& other) const
   {
     return index == other.index;
   }
 
-  bool Matrix::Iterator::operator!=(const Iterator& other) const
+  template<typename T>
+  bool Iterator<T>::operator!=(const Iterator<T>& other) const
   {
     return this->index != other.index;
   }
 
-  Matrix::Iterator& Matrix::Iterator::operator++(void)
+  template<typename T>
+  Iterator<T>& Iterator<T>::operator++(void)
   {
     ++index;
     return *this;
   }
 
-  double& Matrix::Iterator::operator*(void) const
+  template<typename T>
+  double& Iterator<T>::operator*(void) const
   {
     return matrix[0][index];
   }
 // -------------------------------------------------------------------------------
-  Matrix::ConstIterator::ConstIterator(const Matrix& matrix, const size_t index)
+  template<typename T>
+  ConstIterator<T>::ConstIterator(const T& matrix, const size_t index)
     : matrix(matrix), index(index)
   {}
 
-  bool Matrix::ConstIterator::operator==(const ConstIterator& other) const
+  template<typename T>
+  bool ConstIterator<T>::operator==(const ConstIterator<T>& other) const
   {
     return index == other.index;
   }
 
-  bool Matrix::ConstIterator::operator!=(const ConstIterator& other) const
+  template<typename T>
+  bool ConstIterator<T>::operator!=(const ConstIterator<T>& other) const
   {
     return this->index != other.index;
   }
 
-  Matrix::ConstIterator& Matrix::ConstIterator::operator++()
+  template<typename T>
+  ConstIterator<T>& ConstIterator<T>::operator++()
   {
     ++index;
     return *this;
   }
   
-  const double& Matrix::ConstIterator::operator*(void) const
+  template<typename T>
+  const double& ConstIterator<T>::operator*(void) const
   {
     return matrix[0][index];
   }
 // -------------------------------------------------------------------------------
-  Matrix::Iterator Matrix::begin(void)
+  Iterator<Matrix> Matrix::begin(void)
   {
-    return Iterator(*this, 0);
+    return Iterator<Matrix>(*this, 0);
   }
 
-  Matrix::Iterator Matrix::end(void)
+  Iterator<Matrix> Matrix::end(void)
   {
-    return Iterator(*this, size_.numel);
+    return Iterator<Matrix>(*this, size_.numel);
   }
 
-  Matrix::ConstIterator Matrix::begin(void) const {
-    return ConstIterator(*this, 0);
+  ConstIterator<Matrix> Matrix::begin(void) const {
+    return ConstIterator<Matrix>(*this, 0);
   }
 
-  Matrix::ConstIterator Matrix::end(void) const
+  ConstIterator<Matrix> Matrix::end(void) const
   {
-    return ConstIterator(*this, size_.numel);
+    return ConstIterator<Matrix>(*this, size_.numel);
   }
 // -------------------------------------------------------------------------------
   Matrix& Matrix::operator=(const Matrix& other) &
@@ -442,9 +449,9 @@ namespace Pinakas { namespace Backend
   {
     validate_size(A.size(), B.size(), "+");
     Matrix res(A.size());
-    for (size_t index = 0; index < R.size().numel; ++index)
+    for (size_t index = 0; index < res.size().numel; ++index)
       res[0][index] = A[0][index] + B[0][index];
-    return R;
+    return res;
   }
   
   Matrix operator+(const Matrix& A, const Range range)
@@ -453,9 +460,9 @@ namespace Pinakas { namespace Backend
     std::random_device device;
     std::mt19937 generator(device());
     std::uniform_real_distribution<> uniform_distribution(range.min_, range.max_);
-    for (size_t index = 0; index < R.size().numel; ++index)
+    for (size_t index = 0; index < res.size().numel; ++index)
       res[0][index] += A[0][index] + uniform_distribution(generator);
-    return R;
+    return res;
   }
   
   Matrix&& operator+(Matrix&& A, const Range range)
@@ -502,9 +509,9 @@ namespace Pinakas { namespace Backend
   Matrix operator+(const Matrix& A, const double B)
   {
     Matrix res(A.size());
-    for (size_t index = 0; index < R.size().numel; ++index)
+    for (size_t index = 0; index < res.size().numel; ++index)
       res[0][index] = A[0][index] + B;
-    return R;
+    return res;
   }
   
   Matrix&& operator+(Matrix&& A, const double B)
@@ -517,9 +524,9 @@ namespace Pinakas { namespace Backend
   Matrix operator+(const double A, const Matrix& B)
   {
     Matrix res(B.size());
-    for (size_t index = 0; index < R.size().numel; ++index)
+    for (size_t index = 0; index < res.size().numel; ++index)
       res[0][index] = A + B[0][index];
-    return R;
+    return res;
   }
   
   Matrix&& operator+(const double A, Matrix&& B)
@@ -551,9 +558,9 @@ namespace Pinakas { namespace Backend
   {
     validate_size(A.size(), B.size(), "*");
     Matrix res(A.size());
-    for (size_t index = 0; index < R.size().numel; ++index)
+    for (size_t index = 0; index < res.size().numel; ++index)
       res[0][index] = A[0][index] * B[0][index];
-    return R;
+    return res;
   }
   
   Matrix&& operator*(const Matrix& A, Matrix&& B)
@@ -590,9 +597,9 @@ namespace Pinakas { namespace Backend
   Matrix operator*(const Matrix& A, const double B)
   {
     Matrix res(A.size());
-    for (size_t index = 0; index < R.size().numel; ++index)
+    for (size_t index = 0; index < res.size().numel; ++index)
       res[0][index] = A[0][index] * B;
-    return R;
+    return res;
   }
   
   Matrix&& operator*(Matrix&& A, const double B)
@@ -605,9 +612,9 @@ namespace Pinakas { namespace Backend
   Matrix operator*(const double A, const Matrix& B)
   {
     Matrix res(B.size());
-    for (size_t index = 0; index < R.size().numel; ++index)
+    for (size_t index = 0; index < res.size().numel; ++index)
       res[0][index] = A * B[0][index];
-    return R;
+    return res;
   }
   
   Matrix&& operator*(const double A, Matrix&& B)
@@ -629,9 +636,9 @@ namespace Pinakas { namespace Backend
   {
     validate_size(A.size(), B.size(), "-");
     Matrix res(A.size());
-    for (size_t index = 0; index < R.size().numel; ++index)
+    for (size_t index = 0; index < res.size().numel; ++index)
       res[0][index] = A[0][index] - B[0][index];
-    return R;
+    return res;
   }
 
   Matrix&& operator-(const Matrix& A, Matrix&& B)
@@ -668,9 +675,9 @@ namespace Pinakas { namespace Backend
   Matrix operator-(const Matrix& A, const double B)
   {
     Matrix res(A.size());
-    for (size_t index = 0; index < R.size().numel; ++index)
+    for (size_t index = 0; index < res.size().numel; ++index)
       res[0][index] = A[0][index] - B;
-    return R;
+    return res;
   }
   
   Matrix&& operator-(Matrix&& A, const double B)
@@ -683,9 +690,9 @@ namespace Pinakas { namespace Backend
   Matrix operator-(const double A, const Matrix& B)
   {
     Matrix res(B.size());
-    for (size_t index = 0; index < R.size().numel; ++index)
+    for (size_t index = 0; index < res.size().numel; ++index)
       res[0][index] = A - B[0][index];
-    return R;
+    return res;
   }
 
   Matrix&& operator-(const double A, Matrix&& B)
@@ -698,9 +705,9 @@ namespace Pinakas { namespace Backend
   Matrix operator-(const Matrix& A)
   {
     Matrix res(A.size());
-    for (size_t index = 0; index < R.size().numel; ++index)
+    for (size_t index = 0; index < res.size().numel; ++index)
       res[0][index] = -A[0][index];
-    return R;
+    return res;
   }
 
   Matrix&& operator-(Matrix&& A)
@@ -722,9 +729,9 @@ namespace Pinakas { namespace Backend
   {
     validate_size(A.size(), B.size(), "/");
     Matrix res(A.size());
-    for (size_t index = 0; index < R.size().numel; ++index)
+    for (size_t index = 0; index < res.size().numel; ++index)
       res[0][index] = A[0][index] / B[0][index];
-    return R;
+    return res;
   }
 
   Matrix&& operator/(const Matrix& A, Matrix&& B)
@@ -763,9 +770,9 @@ namespace Pinakas { namespace Backend
   {
     const double iB = 1 / B;
     Matrix res(A.size());
-    for (size_t index = 0; index < R.size().numel; ++index)
+    for (size_t index = 0; index < res.size().numel; ++index)
       res[0][index] = A[0][index] * iB;
-    return R;
+    return res;
   }
   
   Matrix&& operator/(Matrix&& A, const double B)
@@ -779,9 +786,9 @@ namespace Pinakas { namespace Backend
   Matrix operator/(const double A, const Matrix& B)
   {
     Matrix res(B.size());
-    for (size_t index = 0; index < R.size().numel; ++index)
+    for (size_t index = 0; index < res.size().numel; ++index)
       res[0][index] = A / B[0][index];
-    return R;
+    return res;
   }
 
   Matrix&& operator/(const double A, Matrix&& B)
@@ -803,9 +810,9 @@ namespace Pinakas { namespace Backend
   {
     validate_size(A.size(), B.size(), "^");
     Matrix res(A.size());
-    for (size_t index = 0; index < R.size().numel; ++index)
+    for (size_t index = 0; index < res.size().numel; ++index)
       res[0][index] = std::pow(A[0][index], B[0][index]);
-    return R;
+    return res;
   }
 
   Matrix&& operator^(const Matrix& A, Matrix&& B)
@@ -842,9 +849,9 @@ namespace Pinakas { namespace Backend
   Matrix operator^(const Matrix& A, const double B)
   {
     Matrix res(A.size());
-    for (size_t index = 0; index < R.size().numel; ++index)
+    for (size_t index = 0; index < res.size().numel; ++index)
       res[0][index] = std::pow(A[0][index], B);
-    return R;
+    return res;
   }
   
   Matrix&& operator^(Matrix&& A, const double B)
@@ -857,9 +864,9 @@ namespace Pinakas { namespace Backend
   Matrix operator^(const double A, const Matrix& B)
   {
     Matrix res(B.size());
-    for (size_t index = 0; index < R.size().numel; ++index)
+    for (size_t index = 0; index < res.size().numel; ++index)
       res[0][index] = std::pow(A, B[0][index]);
-    return R;
+    return res;
   }
 
   Matrix&& operator^(const double A, Matrix&& B)
@@ -872,9 +879,9 @@ namespace Pinakas { namespace Backend
   Matrix floor(const Matrix& A)
   {
     Matrix res(A.size(), 0);
-    for (size_t index = 0; index < R.size().numel; ++index)
+    for (size_t index = 0; index < res.size().numel; ++index)
       res[0][index] = std::floor(A[0][index]);
-    return R;
+    return res;
   }
 
   Matrix&& floor(Matrix&& A)
@@ -887,9 +894,9 @@ namespace Pinakas { namespace Backend
   Matrix round(const Matrix& A)
   {
     Matrix res(A.size(), 0);
-    for (size_t index = 0; index < R.size().numel; ++index)
+    for (size_t index = 0; index < res.size().numel; ++index)
       res[0][index] = std::round(A[0][index]);
-    return R;
+    return res;
   }
   
   Matrix&& round(Matrix&& A)
@@ -902,9 +909,9 @@ namespace Pinakas { namespace Backend
   Matrix ceil(Matrix& A)
   {
     Matrix res(A.size(), 0);
-    for (size_t index = 0; index < R.size().numel; ++index)
+    for (size_t index = 0; index < res.size().numel; ++index)
       res[0][index] = std::ceil(A[0][index]);
-    return R;
+    return res;
   }
   
   Matrix&& ceil(Matrix&& A)
@@ -928,7 +935,7 @@ namespace Pinakas { namespace Backend
       for (size_t j = 0; j < A.size().M; j++)
         for (size_t k = 0; k < A.size().N; k++)
           res[j][i] += A[j][k] * B[k][i];
-    return R;
+    return res;
   }
 // -------------------------------------------------------------------------------
   Matrix transpose(const Matrix& A)
@@ -937,7 +944,7 @@ namespace Pinakas { namespace Backend
     for (size_t y = 0; y < A.size().M; ++y)
       for (size_t x = 0; x < A.size().N; ++x)
         res[x][y] = A[y][x];
-    return R;
+    return res;
   }
 
   Matrix reshape(const Matrix& A, const size_t M, const size_t N)
@@ -949,9 +956,9 @@ namespace Pinakas { namespace Backend
       throw std::invalid_argument(error_message.str());
     }
     Matrix res(M, N);
-    for (size_t index = 0; index < R.size().numel; ++index)
+    for (size_t index = 0; index < res.size().numel; ++index)
       res[0][index] = A[0][index];
-    return R;
+    return res;
   }
 // -------------------------------------------------------------------------------
   double min(const Matrix& matrix)
@@ -1149,13 +1156,14 @@ namespace Pinakas { namespace Backend
   std::pair<Matrix, Matrix> linearize(const DataSet data_set)
   {
     // validate data set
-    if (data_set.first.size() != data_set.second.numel) {
-      std stringstream error_message << "";
+    if (data_set.first.size() != data_set.second.size()) {
+      std::stringstream error_message;
+      error_message << "";
       throw std::invalid_argument(error_message.str());
     }
 
     const Matrix& data_x = data_set.first;
-    const Matrix& data_x = data_set.second;
+    const Matrix& data_y = data_set.second;
     const size_t N = data_x.size().numel;
     const double step = (data_x[0][N-1] - data_x[0][0]) / (N - 1);
     Matrix lin_x(data_x.size(), 0);
@@ -1291,9 +1299,9 @@ namespace Pinakas { namespace Backend
 
   Matrix sinc(Matrix& A, double freq = 1) {
     Matrix res(A.size());
-    for (size_t index = 0; index < R.size().numel; ++index)
+    for (size_t index = 0; index < res.size().numel; ++index)
       res[0][index] = sinc(A[0][index], freq);
-    return R;
+    return res;
   }
 
   Matrix&& sinc(Matrix&& A, double freq = 1) {
@@ -1323,7 +1331,7 @@ namespace Pinakas { namespace Backend
       for (int n = 0; n<l; n++)
         res[0][i] += u[0][(i+n-o) < N ? std::abs(i+n-o) : (2*N-L - (i+n-o))] * hw[0][n];
 
-    return r;
+    return res;
   }
 
   std::ostream& operator<<(std::ostream& ostream, const Matrix& A)
