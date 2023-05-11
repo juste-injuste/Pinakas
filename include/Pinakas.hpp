@@ -179,6 +179,7 @@ namespace Pinakas { namespace Backend
   double newton(const std::function<double(double)> function, const double tol, const size_t max_iteration, const double seed);
   void plot(std::string title, List<DataSet> data_sets, bool persistent = true, bool remove = true, bool pause = false, bool lines = true);
   void plot(std::string title, DataSet data_set, bool persistent = true, bool remove = true, bool pause = false, bool lines = true);
+  void plot(std::string title, Matrix data, bool persistent = true, bool remove = true, bool pause = false, bool lines = true);
 }}
 // --Pinakas library: frontend forward declarations-------------------------------
 namespace Pinakas { inline namespace Frontend

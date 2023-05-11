@@ -1,7 +1,7 @@
 #include "mudelizer.hpp"
 
 
-matrix resample(matrix data, unsigned int L) {
+vector resample(vector data, unsigned int L) {
 	int N	= data.numel()*L;	// approximate new data lenght
 	int o	= 3 * L;			// offset for filter impulse
 	int l	= 2 * o + 1;		// filter impulse lenght
@@ -18,7 +18,7 @@ matrix resample(matrix data, unsigned int L) {
 		hw[n] 	= h*w;
 	}
 
-	matrix r(N-L+1);		// cropped convolution of upsampled data with windowed filter impulse
+	vector r(N-L+1);		// cropped convolution of upsampled data with windowed filter impulse
 	for (int i=0; i<N-L+1; i++) {
 		for (int n=0; n<l; n++) {
 			r[i] += u[(i+n-o) < N ? abs(i+n-o) : 2*N-L - (i+n-o)] * hw[n];

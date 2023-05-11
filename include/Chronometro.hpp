@@ -57,8 +57,8 @@ namespace Chronometro { namespace Backend {
       // 
       Stopwatch(Unit unit = ms);
       ~Stopwatch();
-      void start(Unit unit = -1);
-      void stop(Unit unit = -1);
+      void start(Unit unit = Unit(-1));
+      void stop(Unit unit = Unit(-1));
     private:
       Unit unit_;
       std::chrono::system_clock::time_point start_;
@@ -89,7 +89,7 @@ namespace Chronometro { namespace Backend {
     // get current time
     auto stop = std::chrono::high_resolution_clock::now();
     // if unit == -1 use predefined unit
-    unit_ = (unit == -1) ? unit_ : unit
+    unit_ = (unit == -1) ? unit_ : unit;
     // display elapsed time in unit_ units
     std::cout << "time elapsed: ";
     switch(unit_) {

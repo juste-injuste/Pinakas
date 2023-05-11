@@ -930,6 +930,7 @@ namespace Pinakas { namespace Backend
       error_message << ", B is " << B.size().M << 'x' << B.size().N << ")\n";
       throw std::invalid_argument(error_message.str());
     }
+
     Matrix res(A.size().M, B.size().N, 0);
     for (size_t i = 0; i < B.size().N; i++)
       for (size_t j = 0; j < A.size().M; j++)
@@ -1247,6 +1248,14 @@ namespace Pinakas { namespace Backend
     return A;
   }
 
+  Matrix rev(const Matrix& A)
+  {
+    size_t n = A.size().numel;
+    Matrix res(A.size());
+    for (size_t index = 0; index < n; ++index)
+      res[0][index] = A[0][n-1-index];
+  }
+
   Matrix conv(const Matrix& A, const Matrix& B)
   {
     Matrix convoluted(1, A.size().N + B.size().N - 1);
@@ -1293,45 +1302,85 @@ namespace Pinakas { namespace Backend
     return root;
   }
 
-  double sinc(double x, double freq = 1) {
-    return x != 0 ? sin(M_PI*x*freq)/(M_PI*x*freq) : 1;
+  double sinc(const double x, const double freq = 1) {
+    const double pi_x_freq = M_PI*x*freq;
+    return x == 0 ? 1 : std::sin(pi_x_freq)/(pi_x_freq);
   }
 
-  Matrix sinc(Matrix& A, double freq = 1) {
+  Matrix sinc(Matrix& A, const double freq = 1) {
     Matrix res(A.size());
     for (size_t index = 0; index < res.size().numel; ++index)
       res[0][index] = sinc(A[0][index], freq);
     return res;
   }
 
-  Matrix&& sinc(Matrix&& A, double freq = 1) {
+  Matrix&& sinc(Matrix&& A, const double freq = 1) {
     for (size_t index = 0; index < A.size().numel; ++index)
       A[0][index] = sinc(A[0][index], freq);
     return std::move(A);
   }
 
-  Matrix resample(Matrix data, int L) {
-    int N = data.size().numel*L; // approximate new data lenght
-    int o = 3 * L;     // offset for filter impulse
-    int l = 2 * o + 1; // filter impulse lenght
+  Matrix upsample(const Matrix& data, const size_t L)
+  {
+    Matrix upsampled(1, L * data.size().numel, 0);
+    for (size_t index = 0; index < data.size().numel; ++index)
+      upsampled[0][index*L] = data[0][index];
+    return upsampled;
+  }
 
-    Matrix u(1, N, 0); // upsampled data
-    for (size_t i = 0; i < data.size().numel; ++i) {
-      u[0][i*L] = data[0][i];
+  Matrix resample(Matrix data, const size_t L) {
+    // resampled data size
+    const size_t N = L * data.size().numel;
+    const size_t o	= 3 * L;			// offset for filter impulse
+    const size_t l	= 2 * o + 1;		// filter impulse lenght
+
+    Matrix upsampled = upsample(data, L);
+    Matrix filter = sinc(iota(l) - o, 1.0/L) * blackman(l);
+
+    Matrix r(1, N - L + 1); // Initialize the output vector r with the desired length
+
+    // Outer loop: Iterate through the output vector r
+    for (size_t i = 0; i < r.size().numel; i++) {
+        double sum = 0.0; // Initialize the sum for the current output element
+
+        // Inner loop: Iterate through the windowed filter impulse response hw
+        for (size_t n = 0; n < l; n++) {
+            int u_index = i + n - o; // Calculate the index for the upsampled data array u
+
+            // Check if the calculated index is within the bounds of the array u
+            if (u_index >= 0 && u_index < int(N)) {
+                sum += upsampled[0][u_index] * filter[0][n]; // Multiply the corresponding elements and accumulate the sum
+            }
+        }
+
+        r[0][i] = sum; // Store the sum in the output vector r at the current index
     }
 
-    auto temp = iota(l)-o;
-    std::cout << temp;
-    auto h = sinc(temp, 1/L); // windowed filter impulse
-    std::cout << h;
-    auto w = blackman(l); // upsampled data
-    auto hw = h * w;
-    Matrix res(1, N-L+1); // cropped convolution of upsampled data with windowed filter impulse
-    for (int i = 0; i<N-L+1; i++)
-      for (int n = 0; n<l; n++)
-        res[0][i] += u[0][(i+n-o) < N ? std::abs(i+n-o) : (2*N-L - (i+n-o))] * hw[0][n];
+    return r;
+  }
 
-    return res;
+  Matrix resample2(const Matrix& data, const size_t L)
+  {
+    // resampled data size
+    const int N = L * data.size().numel;
+    const int o	= 3 * L;			// offset for filter impulse
+    const int l	= 2 * o + 1;		// filter impulse lenght
+
+    Matrix upsampled = upsample(data, L);
+    Matrix filter = sinc(iota(l) - o, 1.0/L) * blackman(l);
+
+    Matrix resampled = Matrix(1, N-L+1, 0);
+    for (int i = 0; i < signed(resampled.size().numel); ++i) {
+      for (int n = 0; n < l; ++n) {
+        size_t idx;
+        if ((i + n - o) < N)
+          idx = std::abs(i+n-o);
+        else
+          idx = 2*N-L - (i+n-o);
+        resampled(i) += upsampled(idx) * filter(n);
+      }
+    }
+    return resampled;
   }
 
   std::ostream& operator<<(std::ostream& ostream, const Matrix& A)
@@ -1465,33 +1514,22 @@ namespace Pinakas { namespace Backend
   {
     plot(title, {data_set}, persistent, remove, pause, lines);
   }
+
+  void plot(std::string title, Matrix data, bool persistent, bool remove, bool pause, bool lines)
+  {
+    plot(title, DataSet(iota(data.size().numel), data), persistent, remove, pause, lines);
+  }
 }}
 //
 int main()
 {
   using namespace Pinakas;
-  /*
   using namespace Keyword;
-  
-  Matrix xdata = linspace(0, 5, 20, column) + Range(-0.1, 0.1);
-  Matrix ydata = xdata * 2;
-  auto newdata = linearize({xdata, ydata});
-  
-  Matrix& xnew = newdata.first;
-  Matrix& ynew = newdata.second;
-
-  Matrix speed = diff(ydata, column);
-  Matrix time  = linspace(xdata(0), xdata(end), speed.size().numel);
-  Matrix speednew = diff(ynew, column);
-  Matrix timenew  = linspace(xnew(0), xnew(end), speednew.size().numel);
-  plot("test", {{xdata, ydata},{xnew, ynew}}, true, true, false, false);
-  plot("test", {{time, speed},{timenew, speednew}}, true, true, false, false);
-  
-
-
+  Matrix a = linspace(1, 0, 10);
+  plot("blackman", resample2(a, 10), true, false);
   //*/
 
-  //*
+  /*
   Matrix T = {{1,  2,  3},
               {4,  5,  6},
               {7,  8,  9},
