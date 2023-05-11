@@ -2,7 +2,7 @@
 // 
 // Justin Asselin (juste-injuste)
 // justin.asselin@usherbrooke.ca
-// https://github.com/juste-injuste/Pinakas
+// https://github.com/juste-injuste/Chronometro
 // 
 // --liscence---------------------------------------------------------------------
 // 
@@ -29,42 +29,49 @@
 // SOFTWARE.
 //  
 // --versions---------------------------------------------------------------------
-// version 1.0.0
+// version 1.0.0 initial release
 // --inclusion guard--------------------------------------------------------------
 #ifndef CHRONOMETRO_HPP
 #define CHRONOMETRO_HPP
 // --necessary standard libraries-------------------------------------------------
 #include <chrono>
 #include <iostream>
+#include <functional>
 // --Chronometro library: backend forward declaration-----------------------------
 namespace Chronometro { namespace Backend {
-  //
+  // measure elapsed time
   class Stopwatch;
-  //
+  // displayed time units
   enum Unit : char {
     ns = 0, us, ms, s, min, h
   };
+  // benchmark function execution
+  void execution_speed(std::function<void(void)> function, size_t N = 1000, Unit unit = Unit(-1));
 }}
 // --Chronometro library: frontend forward declarations---------------------------
 namespace Chronometro { inline namespace Frontend {
   using Backend::Unit;
   using Backend::Stopwatch;
+  using Backend::execution_speed;
 }}
-// --Pinakas library: backend struct and class definitions------------------------
+// --Chronometro library: backend struct and class definitions--------------------
 namespace Chronometro { namespace Backend {
   class Stopwatch {
     public:
-      // 
       Stopwatch(Unit unit = ms);
       ~Stopwatch();
+      // restart stopwatch
       void start(Unit unit = Unit(-1));
+      // stop stopwatch and display elapsed time
       void stop(Unit unit = Unit(-1));
     private:
+      // units that will be displayed on stop
       Unit unit_;
+      // starting time
       std::chrono::system_clock::time_point start_;
   };
 }}
-// --Automata library: backend struct and class member definitions----------------
+// --Chronometro library: backend struct and class member definitions-------------
 namespace Chronometro { namespace Backend {
   Stopwatch::Stopwatch(Unit unit)
     : // member initialization list
@@ -79,16 +86,17 @@ namespace Chronometro { namespace Backend {
 
   void Stopwatch::start(Unit unit)
   {
-    // if unit == -1 use predefined unit
+    // if unit == -1, use previously set unit
     unit_ = (unit == -1) ? unit_ : unit;
+    // measure current time
     start_ = std::chrono::high_resolution_clock::now();
   }
 
   void Stopwatch::stop(Unit unit)
   {
-    // get current time
+    // measure current time
     auto stop = std::chrono::high_resolution_clock::now();
-    // if unit == -1 use predefined unit
+    // if unit == -1, use previously set unit
     unit_ = (unit == -1) ? unit_ : unit;
     // display elapsed time in unit_ units
     std::cout << "time elapsed: ";
@@ -112,6 +120,16 @@ namespace Chronometro { namespace Backend {
         std::cout << std::chrono::duration_cast<std::chrono::hours>(stop - start_).count() << 'h';
         return;
     }
+  }
+
+  void execution_speed(std::function<void(void)> function, size_t N, Unit unit)
+  {
+    // start stopwatch
+    Stopwatch stopwatch(unit);
+    // execute function N times
+    for (size_t iteration = 0; iteration < N; ++iteration)
+      function();
+    // stopwatch stops and displays elapsed time at the end of the function
   }
 }}
 #endif
