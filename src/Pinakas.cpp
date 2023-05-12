@@ -1254,6 +1254,7 @@ namespace Pinakas { namespace Backend
     Matrix res(A.size());
     for (size_t index = 0; index < n; ++index)
       res[0][index] = A[0][n-1-index];
+    return res;
   }
 
   Matrix conv(const Matrix& A, const Matrix& B)
@@ -1302,21 +1303,33 @@ namespace Pinakas { namespace Backend
     return root;
   }
 
-  double sinc(const double x, const double freq = 1) {
-    const double pi_x_freq = M_PI*x*freq;
-    return x == 0 ? 1 : std::sin(pi_x_freq)/(pi_x_freq);
-  }
-
-  Matrix sinc(Matrix& A, const double freq = 1) {
+  Matrix sin(Matrix& A) {
     Matrix res(A.size());
     for (size_t index = 0; index < res.size().numel; ++index)
-      res[0][index] = sinc(A[0][index], freq);
+      res[0][index] = std::sin(A[0][index]);
     return res;
   }
 
-  Matrix&& sinc(Matrix&& A, const double freq = 1) {
+  Matrix&& sin(Matrix&& A) {
     for (size_t index = 0; index < A.size().numel; ++index)
-      A[0][index] = sinc(A[0][index], freq);
+      A[0][index] = std::sin(A[0][index]);
+    return std::move(A);
+  }
+
+  double sinc(const double x) {
+    return x == 0 ? 1 : std::sin(M_PI*x)/(M_PI*x);
+  }
+
+  Matrix sinc(Matrix& A) {
+    Matrix res(A.size());
+    for (size_t index = 0; index < res.size().numel; ++index)
+      res[0][index] = sinc(A[0][index]);
+    return res;
+  }
+
+  Matrix&& sinc(Matrix&& A) {
+    for (size_t index = 0; index < A.size().numel; ++index)
+      A[0][index] = sinc(A[0][index]);
     return std::move(A);
   }
 
@@ -1328,59 +1341,53 @@ namespace Pinakas { namespace Backend
     return upsampled;
   }
 
-  Matrix resample(Matrix data, const size_t L) {
-    // resampled data size
-    const size_t N = L * data.size().numel;
-    const size_t o	= 3 * L;			// offset for filter impulse
-    const size_t l	= 2 * o + 1;		// filter impulse lenght
-
-    Matrix upsampled = upsample(data, L);
-    Matrix filter = sinc(iota(l) - o, 1.0/L) * blackman(l);
-
-    Matrix r(1, N - L + 1); // Initialize the output vector r with the desired length
-
-    // Outer loop: Iterate through the output vector r
-    for (size_t i = 0; i < r.size().numel; i++) {
-        double sum = 0.0; // Initialize the sum for the current output element
-
-        // Inner loop: Iterate through the windowed filter impulse response hw
-        for (size_t n = 0; n < l; n++) {
-            int u_index = i + n - o; // Calculate the index for the upsampled data array u
-
-            // Check if the calculated index is within the bounds of the array u
-            if (u_index >= 0 && u_index < int(N)) {
-                sum += upsampled[0][u_index] * filter[0][n]; // Multiply the corresponding elements and accumulate the sum
-            }
-        }
-
-        r[0][i] = sum; // Store the sum in the output vector r at the current index
-    }
-
-    return r;
-  }
-
-  Matrix resample2(const Matrix& data, const size_t L)
+  Matrix resample(const Matrix& data, const size_t L)
   {
-    // resampled data size
-    const int N = L * data.size().numel;
-    const int o	= 3 * L;			// offset for filter impulse
-    const int l	= 2 * o + 1;		// filter impulse lenght
+    const size_t N      = data.size().numel;
+	  const size_t offset = L * 2.4;
+	  const size_t length = 2*offset + 1;
+    const size_t drop   = N * 0.9;
+    const size_t response_size = (3*N - 2*drop) * L;
 
-    Matrix upsampled = upsample(data, L);
-    Matrix filter = sinc(iota(l) - o, 1.0/L) * blackman(l);
-
-    Matrix resampled = Matrix(1, N-L+1, 0);
-    for (int i = 0; i < signed(resampled.size().numel); ++i) {
-      for (int n = 0; n < l; ++n) {
-        size_t idx;
-        if ((i + n - o) < N)
-          idx = std::abs(i+n-o);
-        else
-          idx = 2*N-L - (i+n-o);
-        resampled(i) += upsampled(idx) * filter(n);
+    Matrix reflected(1, response_size, 0);
+    size_t n = 0;
+    // store and upsample left reflected data
+    for (size_t index = 0; index < (N-drop); ++index) {
+        reflected[0][n] = 2*data[0][0] - data[0][N-drop-index];
+        n += L;
+    }
+    // first index of useful resampled data
+    const size_t first = n;
+    // store and upsample data
+    for (size_t index = 0; index < N; ++index) {
+        reflected[0][n] = data[0][index];
+        n += L;
+    }
+    // last index of useful resampled data
+    const size_t last = n - L + 1;
+    // store and upsample right reflected data
+    for (size_t index = 0; index < (N-drop); ++index) {
+        reflected[0][n] = 2*data[0][N-1] - data[0][N-2-index];
+        n += L;
+    }
+    
+    // design filter
+	  const Matrix filter = sinc((iota(length)-offset)/L) * blackman(length);
+    
+    Matrix resampled(1, response_size, 0);
+    for (size_t index_reflected = 0; index_reflected < response_size; ++index_reflected) {
+      for (size_t index_filter = 0; index_filter < length; ++index_filter) {
+        size_t index = index_reflected + index_filter - offset;
+        if (index < response_size)
+          resampled[0][index] += reflected[0][index_reflected] * filter[0][index_filter];
       }
     }
-    return resampled;
+    
+    Matrix output(1, last - first);
+    for (size_t index = 0; index < (last - first); ++index)
+      output[0][index] = resampled[0][index + first];
+    
+    return output;
   }
 
   std::ostream& operator<<(std::ostream& ostream, const Matrix& A)
@@ -1432,7 +1439,7 @@ namespace Pinakas { namespace Backend
 
   std::ostream& operator<<(std::ostream& ostream, const Size size)
   {
-    return ostream << size.N << 'x' << size.M;
+    return ostream << size.M << 'x' << size.N;
   }
 
   void plot(std::string title, List<DataSet> data_sets, bool persistent, bool remove, bool pause, bool lines)
@@ -1525,9 +1532,20 @@ int main()
 {
   using namespace Pinakas;
   using namespace Keyword;
-  Matrix a = linspace(1, 0, 10);
-  plot("blackman", resample2(a, 10), true, false);
-  //*/
+  size_t N = 10;
+  size_t L = 20;
+  Matrix x = linspace(0, 1, N);
+  Matrix y = (x^2) + sin(x*5)/5 + Range(0, 0.2);
+  y = y * 2 - max(2*y)/2;
+  Matrix y2;
+  {
+    Chronometro::Stopwatch sw;
+    y2 = resample(y, L);
+    std::cout << y2.size();
+  }
+  auto x2 = linspace(0, 1, y2.size().numel);
+  plot("blackman", {{x, y}, {x2, y2}}, true, false);
+  std::cout << y2(Keyword::end);//*/
 
   /*
   Matrix T = {{1,  2,  3},

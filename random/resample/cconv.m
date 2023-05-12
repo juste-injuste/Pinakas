@@ -1,19 +1,19 @@
 function convoluted = cconv(A, B)
-    lenA = size(A, 2);
-    lenB = size(B, 2);
-    lenC = lenA + lenB - 1;
-    start = floor((lenB - 1) / 2) + 1;
-    stop = start + lenA - 1;
-    convoluted = zeros(1, lenC);
+    outputSize = max(numel(A), numel(B));
 
-    % compute cropped convolution
-    for x_A = 1:lenA
-        x_B_start = max(start - x_A, 1);
-        x_B_end = min(stop - x_A + 1, lenB);
-        for x_B = x_B_start:x_B_end
-            convoluted(x_A) = convoluted(x_A) + A(x_A - x_B + start) * B(x_B);
+    convoluted = zeros(1, outputSize);
+    startIdx = floor((size(B, 2) - 1) / 2); % Starting index for convolution
+    endIdx = size(A, 2) + floor((size(B, 2) - 1) / 2); % Ending index for convolution
+
+    for x_A = 1:size(A, 2)
+        for x_B = 1:size(B, 2)
+            convIndex = x_A + x_B - startIdx;
+            if convIndex >= 1 && convIndex <= outputSize
+                convoluted(1, convIndex) = convoluted(1, convIndex) + A(1, x_A) * B(1, x_B);
+            end
         end
     end
 
-    convoluted = convoluted(start:stop);
+    convoluted = convoluted(1:size(A, 2));
+
 end

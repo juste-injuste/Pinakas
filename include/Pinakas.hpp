@@ -177,6 +177,13 @@ namespace Pinakas { namespace Backend
   Matrix hamming(const size_t L);
   Matrix hann(const size_t L);
   double newton(const std::function<double(double)> function, const double tol, const size_t max_iteration, const double seed);
+  double sinc(const double x);
+  Matrix sin(Matrix& A);
+  Matrix&& sin(Matrix&& A);
+  Matrix sinc(Matrix& A);
+  Matrix&& sinc(Matrix&& A);
+  Matrix upsample(const Matrix& data, const size_t L);
+  Matrix resample(const Matrix& data, const size_t L);
   void plot(std::string title, List<DataSet> data_sets, bool persistent = true, bool remove = true, bool pause = false, bool lines = true);
   void plot(std::string title, DataSet data_set, bool persistent = true, bool remove = true, bool pause = false, bool lines = true);
   void plot(std::string title, Matrix data, bool persistent = true, bool remove = true, bool pause = false, bool lines = true);
@@ -215,6 +222,7 @@ namespace Pinakas { inline namespace Frontend
   using Backend::hann;
   using Backend::newton;
   using Backend::plot;
+  using Backend::resample;
 }}
 // --Pinakas library: backend struct and class definitions------------------------
 namespace Pinakas { namespace Backend
