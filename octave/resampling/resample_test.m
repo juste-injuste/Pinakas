@@ -13,7 +13,7 @@ clc, clear, close all
     xOpt = linspace(0, 1, N*L-L+1);
     yOpt = f(xOpt);
 
-    y2 = resample(y, L, 0, 3.5);
+    y2 = resample(y, L, 2, 3.5);
     %[i sum((yOpt-y2).^2)]
     % {
     figure, hold on

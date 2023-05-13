@@ -170,21 +170,39 @@ namespace Pinakas { namespace Backend
   Matrix linspace(const double x1, const double x2, const size_t N, Keyword::Row = {});
   Matrix linspace(const double x1, const double x2, const size_t N, Keyword::Column);
   Matrix iota(const size_t N);
+  Matrix reverse(const Matrix& A);
+  Matrix&& reverse(Matrix&& A);
   Matrix diff(const Matrix& A, Keyword::Row = {}, size_t n = 1);
   Matrix diff(const Matrix& A, Keyword::Column, size_t n = 1);
   Matrix conv(const Matrix& A, const Matrix& B);
-  Matrix blackman(const size_t L);
-  Matrix hamming(const size_t L);
-  Matrix hann(const size_t L);
+  Matrix blackman(const size_t N);
+  Matrix blackman(const Matrix& signal);
+  Matrix&& blackman(Matrix&& signal);Matrix nuttall(const size_t N);
+  Matrix&& blackman_exact(Matrix&& signal);Matrix nuttall(const size_t N);
+  Matrix blackman_exact(const size_t N);
+  Matrix blackman_exact(const Matrix& signal);
+  Matrix&& blackman_nuttall(Matrix&& signal);Matrix nuttall(const size_t N);
+  Matrix blackman_nuttall(const size_t N);
+  Matrix blackman_nuttall(const Matrix& signal);
+  Matrix&& blackman_harris(Matrix&& signal);Matrix nuttall(const size_t N);
+  Matrix blackman_harris(const size_t N);
+  Matrix blackman_harris(const Matrix& signal);
+  Matrix nuttall(const Matrix& signal);
+  Matrix&& nuttall(Matrix&& signal);
+  Matrix hamming(const size_t N);
+  Matrix hann(const size_t N);
   double newton(const std::function<double(double)> function, const double tol, const size_t max_iteration, const double seed);
   double sinc(const double x);
   Matrix sin(Matrix& A);
   Matrix&& sin(Matrix&& A);
   Matrix sinc(Matrix& A);
   Matrix&& sinc(Matrix&& A);
-  Matrix resample(const Matrix& data, const size_t L, const size_t keep = 2, const double alpha = 3.5);
+  Matrix sinc_impulse(const size_t length, const double frequency);
+  Matrix resample(const Matrix& data, const size_t L);
+  Matrix resample(const Matrix& data, const size_t L, const size_t keep, const double alpha);
   void plot(std::string title, List<DataSet> data_sets, bool persistent = true, bool remove = true, bool pause = false, bool lines = true);
   void plot(std::string title, DataSet data_set, bool persistent = true, bool remove = true, bool pause = false, bool lines = true);
+  void plot(std::string title, List<Matrix> data_sets, bool persistent = true, bool remove = true, bool pause = false, bool lines = true);
   void plot(std::string title, Matrix data, bool persistent = true, bool remove = true, bool pause = false, bool lines = true);
 }}
 // --Pinakas library: frontend forward declarations-------------------------------
@@ -217,11 +235,17 @@ namespace Pinakas { inline namespace Frontend
   using Backend::diff;
   using Backend::conv;
   using Backend::blackman;
+  using Backend::blackman_exact;
+  using Backend::blackman_nuttall;
+  using Backend::blackman_harris;
+  using Backend::nuttall;
   using Backend::hamming;
   using Backend::hann;
   using Backend::newton;
   using Backend::plot;
   using Backend::resample;
+  using Backend::sinc_impulse;
+  using Backend::reverse;
 }}
 // --Pinakas library: backend struct and class definitions------------------------
 namespace Pinakas { namespace Backend

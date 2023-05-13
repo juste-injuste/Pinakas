@@ -1138,14 +1138,14 @@ namespace Pinakas { namespace Backend
     }
 
     // solve linear system Rx = Qt*b using back substitution
-    for (i = N - 1; i < N; --i) {
+    for (i = N-1; i < N; --i) {
       // calculate appropriate Qt*b component
       substitution = 0;
       for (j = 0; j < M; ++j)
         substitution += Q[j][i] * b[j][0];
 
       // back substitution of previously solved x components
-      for (k = N - 1; k > i; --k)
+      for (k = N-1; k > i; --k)
         substitution -= R[i][k] * x[k][0];
 
       // solve x's i'th component
@@ -1166,19 +1166,19 @@ namespace Pinakas { namespace Backend
     const Matrix& data_x = data_set.first;
     const Matrix& data_y = data_set.second;
     const size_t N = data_x.size().numel;
-    const double step = (data_x[0][N-1] - data_x[0][0]) / (N - 1);
+    const double step = (data_x[0][N-1] - data_x[0][0]) / (N-1);
     Matrix lin_x(data_x.size(), 0);
     Matrix lin_y(data_y.size(), 0);
 
     // set starting and ending value of linearized data set
     lin_x[0][0] = data_x[0][0];
     lin_y[0][0] = data_y[0][0];
-    lin_x[0][N - 1] = data_x[0][N - 1];
-    lin_y[0][N - 1] = data_y[0][N - 1];
+    lin_x[0][N-1] = data_x[0][N-1];
+    lin_y[0][N-1] = data_y[0][N-1];
 
     // build linearly spaced x data and its associated y value
     double x1, x2, y1, y2;
-    for (size_t index = 1; index < (N - 1); ++index) {
+    for (size_t index = 1; index < (N-1); ++index) {
       // build linearly spaced x data
       lin_x[0][index] = lin_x[0][index-1] + step;
 
@@ -1195,10 +1195,10 @@ namespace Pinakas { namespace Backend
   Matrix linspace(const double x1, const double x2, const size_t N, Keyword::Row)
   {
     Matrix vector(1, N);
-    double step = (x2 - x1) / (N - 1);
+    double step = (x2 - x1) / (N-1);
     vector[0][0] = x1;
-    vector[0][N - 1] = x2;
-    for (size_t index = 1; index < (N - 1); ++index)
+    vector[0][N-1] = x2;
+    for (size_t index = 1; index < (N-1); ++index)
       vector[0][index] = vector[0][index-1] + step;
     return vector;
   }
@@ -1206,10 +1206,10 @@ namespace Pinakas { namespace Backend
   Matrix linspace(const double x1, const double x2, const size_t N, Keyword::Column)
   {
     Matrix vector(N, 1);
-    double step = (x2 - x1) / (N - 1);
+    double step = (x2 - x1) / (N-1);
     vector[0][0]     = x1;
-    vector[0][N - 1] = x2;
-    for (size_t index = 1; index < (N - 1); ++index)
+    vector[0][N-1] = x2;
+    for (size_t index = 1; index < (N-1); ++index)
       vector[0][index] = vector[0][index-1] + step;
     return vector;
   }
@@ -1225,7 +1225,7 @@ namespace Pinakas { namespace Backend
   Matrix diff(const Matrix& A, Keyword::Row, size_t n)
   {
     if (n) {
-      Matrix derivative(A.size().M, A.size().N - 1, 0);
+      Matrix derivative(A.size().M, A.size().N-1, 0);
       for (size_t y = 0; y < derivative.size().M; ++y)
         for (size_t x = 0; x < derivative.size().N; ++x)
           derivative[y][x] = A[y][x + 1] - A[y][x];
@@ -1248,7 +1248,7 @@ namespace Pinakas { namespace Backend
     return A;
   }
 
-  Matrix rev(const Matrix& A)
+  Matrix reverse(const Matrix& A)
   {
     size_t n = A.size().numel;
     Matrix res(A.size());
@@ -1257,39 +1257,224 @@ namespace Pinakas { namespace Backend
     return res;
   }
 
+  Matrix&& reverse(Matrix&& A)
+  {
+    for (size_t k = 0; k < (A.size().numel >> 1); ++k)
+      std::swap(A[0][k], A[0][A.size().numel-1 - k]);
+    return std::move(A);
+  }
+
   Matrix conv(const Matrix& A, const Matrix& B)
   {
-    Matrix convoluted(1, A.size().N + B.size().N - 1);
-    for (size_t x_A = 0; x_A < A.size().N; ++x_A)
-      for (size_t x_B = 0; x_B < B.size().N; ++x_B)
-        convoluted[0][x_A + x_B] += A[0][x_A] * B[0][x_B];
+    Matrix convoluted(1, A.size().N + B.size().N-1);
+    for (size_t i = 0; i < A.size().N; ++i)
+      for (size_t j = 0; j < B.size().N; ++j)
+        convoluted[0][i + j] += A[0][i] * B[0][j];
     return convoluted;
   }
-
-  Matrix blackman(const size_t L)
+// -------------------------------------------------------------------------------
+  Matrix blackman(const size_t N)
   {
-    Matrix window(1, L);
-    for (size_t index = 0; index < L; ++index)
-      window[0][index] = 0.42 - 0.5*std::cos(2*M_PI*index/(L-1)) + 0.08*std::cos(4*M_PI*index/(L - 1));
+    Matrix window(1, N);
+    for (size_t k = 0; k < N; ++k)
+      window[0][k] = 0.42 - 0.5*std::cos(2*M_PI*k/(N-1))
+                          + 0.08*std::cos(4*M_PI*k/(N-1));
     return window;
   }
 
-  Matrix hamming(const size_t L)
+  Matrix blackman(const Matrix& signal)
   {
-    Matrix window(1, L);
-    for (size_t index = 0; index < L; ++index)
-      window[0][index] = 0.54 - 0.46 * std::cos(2*M_PI*index/(L - 1));
+    const size_t N = signal.size().numel;
+    Matrix windowed(1, N);
+    for (size_t k = 0; k < N; ++k)
+      windowed[0][k] = signal[0][k] * (0.42 - 0.5*std::cos(2*M_PI*k/(N-1))
+                                            + 0.08*std::cos(4*M_PI*k/(N-1)));
+    return windowed;
+  }
+
+  Matrix&& blackman(Matrix&& signal)
+  {
+    const size_t N = signal.size().numel;
+    for (size_t k = 0; k < N; ++k)
+      signal[0][k] *= 0.42 - 0.5*std::cos(2*M_PI*k/(N-1))
+                           + 0.08*std::cos(4*M_PI*k/(N-1));
+    return std::move(signal);
+  }
+// -------------------------------------------------------------------------------
+  Matrix blackman_exact(const size_t N)
+  {
+    Matrix window(1, N);
+    for (size_t k = 0; k < N; ++k)
+      window[0][k] = 0.42659 - 0.49656*std::cos(2*M_PI*k/(N-1))
+                             + 0.076849*std::cos(4*M_PI*k/(N-1));
     return window;
   }
 
-  Matrix hann(const size_t L)
+  Matrix blackman_exact(const Matrix& signal)
   {
-    Matrix window(1, L);
-    for (size_t index = 0; index < L; ++index)
-      window[0][index] = 0.5*(1-cos(2*M_PI*index/(L-1)));
+    const size_t N = signal.size().numel;
+    Matrix windowed(1, N);
+    for (size_t k = 0; k < N; ++k)
+      windowed[0][k] = signal[0][k] * (0.42659 - 0.49656*std::cos(2*M_PI*k/(N-1))
+                                               + 0.076849*std::cos(4*M_PI*k/(N-1)));
+    return windowed;
+  }
+
+  Matrix&& blackman_exact(Matrix&& signal)
+  {
+    const size_t N = signal.size().numel;
+    for (size_t k = 0; k < N; ++k)
+      signal[0][k] *= 0.42659 - 0.49656*std::cos(2*M_PI*k/(N-1))
+                              + 0.076849*std::cos(4*M_PI*k/(N-1));
+    return std::move(signal);
+  }
+// -------------------------------------------------------------------------------
+  Matrix nuttall(const size_t N)
+  {
+    Matrix window(1, N);
+    for (size_t k = 0; k < N; ++k) {
+      window[0][k] = 0.355768 - 0.487396*std::cos(2*M_PI*k/(N-1))
+                              + 0.144232*std::cos(4*M_PI*k/(N-1))
+                              - 0.012604*std::cos(6*M_PI*k/(N-1));
+    }
     return window;
   }
 
+  Matrix nuttall(const Matrix& signal)
+  {
+    const size_t N = signal.size().numel;
+    Matrix windowed(1, N);
+    for (size_t k = 0; k < N; ++k)
+      windowed[0][k] = signal[0][k]*(0.355768 - 0.487396*std::cos(2*M_PI*k/(N-1))
+                                              + 0.144232*std::cos(4*M_PI*k/(N-1))
+                                              + 0.012604*std::cos(6*M_PI*k/(N-1)));
+    return windowed;
+  }
+
+  Matrix&& nuttall(Matrix&& signal)
+  {
+    const size_t N = signal.size().numel;
+    for (size_t k = 0; k < N; ++k)
+      signal[0][k] *= 0.355768 - 0.487396*std::cos(2*M_PI*k/(N-1))
+                               + 0.144232*std::cos(4*M_PI*k/(N-1))
+                               - 0.012604*std::cos(6*M_PI*k/(N-1));
+    return std::move(signal);
+  }
+// -------------------------------------------------------------------------------
+  Matrix blackman_nuttall(const size_t N)
+  {
+    Matrix window(1, N);
+    for (size_t k = 0; k < N; ++k) {
+      window[0][k] = 0.3635819 - 0.4891775*std::cos(2*M_PI*k/(N-1))
+                               + 0.1365995*std::cos(4*M_PI*k/(N-1))
+                               - 0.0106411*std::cos(6*M_PI*k/(N-1));
+    }
+    return window;
+  }
+
+  Matrix blackman_nuttall(const Matrix& signal)
+  {
+    const size_t N = signal.size().numel;
+    Matrix windowed(1, N);
+    for (size_t k = 0; k < N; ++k)
+      windowed[0][k] = signal[0][k]*(0.3635819 - 0.4891775*std::cos(2*M_PI*k/(N-1))
+                                               + 0.1365995*std::cos(4*M_PI*k/(N-1))
+                                               - 0.0106411*std::cos(6*M_PI*k/(N-1)));
+    return windowed;
+  }
+
+  Matrix&& blackman_nuttall(Matrix&& signal)
+  {
+    const size_t N = signal.size().numel;
+    for (size_t k = 0; k < N; ++k)
+      signal[0][k] *= 0.3635819 - 0.4891775*std::cos(2*M_PI*k/(N-1))
+                                + 0.1365995*std::cos(4*M_PI*k/(N-1))
+                                - 0.0106411*std::cos(6*M_PI*k/(N-1));
+    return std::move(signal);
+  }
+// -------------------------------------------------------------------------------
+  Matrix blackman_harris(const size_t N)
+  {
+    Matrix window(1, N);
+    for (size_t k = 0; k < N; ++k) {
+      window[0][k] = 0.35875 - 0.48829*std::cos(2*M_PI*k/(N-1))
+                             + 0.14128*std::cos(4*M_PI*k/(N-1))
+                             - 0.01168*std::cos(6*M_PI*k/(N-1));
+    }
+    return window;
+  }
+
+  Matrix blackman_harris(const Matrix& signal)
+  {
+    const size_t N = signal.size().numel;
+    Matrix windowed(1, N);
+    for (size_t k = 0; k < N; ++k)
+      windowed[0][k] = signal[0][k]*(0.35875 - 0.48829*std::cos(2*M_PI*k/(N-1))
+                                             + 0.14128*std::cos(4*M_PI*k/(N-1))
+                                             - 0.01168*std::cos(6*M_PI*k/(N-1)));
+    return windowed;
+  }
+
+  Matrix&& blackman_harris(Matrix&& signal)
+  {
+    const size_t N = signal.size().numel;
+    for (size_t k = 0; k < N; ++k)
+      signal[0][k] *= 0.35875 - 0.48829*std::cos(2*M_PI*k/(N-1))
+                              + 0.14128*std::cos(4*M_PI*k/(N-1))
+                              - 0.01168*std::cos(6*M_PI*k/(N-1));
+    return std::move(signal);
+  }
+// -------------------------------------------------------------------------------
+  Matrix hamming(const size_t N)
+  {
+    Matrix window(1, N);
+    for (size_t k = 0; k < N; ++k)
+      window[0][k] = 0.54 - 0.46 * std::cos(2*M_PI*k/(N-1));
+    return window;
+  }
+
+  Matrix hamming(const Matrix& signal)
+  {
+    const size_t N = signal.size().numel;
+    Matrix windowed(1, N);
+    for (size_t k = 0; k < N; ++k)
+      windowed[0][k] = signal[0][k]*(0.54 - 0.46 * std::cos(2*M_PI*k/(N-1)));
+    return windowed;
+  }
+
+  Matrix&& hamming(Matrix&& signal)
+  {
+    const size_t N = signal.size().numel;
+    for (size_t k = 0; k < N; ++k)
+      signal[0][k] *= 0.54 - 0.46 * std::cos(2*M_PI*k/(N-1));
+    return std::move(signal);
+  }
+// -------------------------------------------------------------------------------
+  Matrix hann(const size_t N)
+  {
+    Matrix window(1, N);
+    for (size_t k = 0; k < N; ++k)
+      window[0][k] = 0.5*(1-cos(2*M_PI*k/(N-1)));
+    return window;
+  }
+
+  Matrix hann(const Matrix& signal)
+  {
+    const size_t N = signal.size().numel;
+    Matrix windowed(1, N);
+    for (size_t k = 0; k < N; ++k)
+      windowed[0][k] = signal[0][k]*(0.5*(1-cos(2*M_PI*k/(N-1))));
+    return windowed;
+  }
+
+  Matrix&& hann(Matrix&& signal)
+  {
+    const size_t N = signal.size().numel;
+    for (size_t k = 0; k < N; ++k)
+      signal[0][k] *= 0.5*(1-cos(2*M_PI*k/(N-1)));
+    return std::move(signal);
+  }
+// -------------------------------------------------------------------------------
   double newton(const std::function<double(double)> function, const double tol, const size_t max_iteration, const double seed)
   {
     const double half_tol = tol*0.5;
@@ -1341,6 +1526,66 @@ namespace Pinakas { namespace Backend
     return upsampled;
   }
 
+  Matrix resample(const Matrix& data, const size_t L)
+  {
+    const size_t N      = data.size().numel;
+    // offset to impulse center
+	  const size_t offset = L*3.5;
+    // length of impulse
+	  const size_t length = 2*offset + 1;
+    // indices to the first and last upsampled data elements in the symetrically extended data
+    const size_t first  = L*2;
+    const size_t last   = L*(N+1);
+    
+    // temporary variables
+    size_t i, j, k;
+
+    // symetrically extended data vector
+    Matrix extended(1, (N + 4) * L, 0);
+    // store and upsample left symetrical data
+    extended[0][0] = 2*data[0][0] - data[0][2];
+    extended[0][L] = 2*data[0][0] - data[0][1];
+    // store and upsample right symetrical data
+    extended[0][last + L]   = 2*data[0][N-1] - data[0][N-2];
+    extended[0][last + L*2] = 2*data[0][N-1] - data[0][N-3];
+    // store and upsample data
+    for (k = 0; k < N; ++k)
+      extended[0][L*k + first] = data[0][k];
+    
+    // design low-pass interpolation filter
+	  const Matrix filter = blackman(sinc_impulse(length, 1.0/L));
+
+    // interpolate upsampled data using a cropped convolution
+    Matrix resampled(1, last - first + 1, 0);
+    for (i = 0; i < extended.size().numel; ++i) {
+      for (j = 0; j < filter.size().numel; ++j) {
+        k = i + j - offset;
+        // skips if the index is not within the upsampled data range
+        if ((first <= k) && (k <= last))
+          resampled[0][k - first] += extended[0][i] * filter[0][j];
+      }
+    }
+       
+    return resampled;
+  }
+
+  Matrix sinc_impulse(const size_t length, const double frequency)
+  {
+    // validate impulse length
+    if (!(length%2))
+      throw std::invalid_argument("impulse length must be odd");
+
+    // offset to the impulse center
+    const signed offset = (length-1) * 0.5;
+
+    // compute impulse
+    Matrix impulse(1, length);
+    for (signed k = 0; k < signed(length) ; ++k)
+      impulse[0][k] = sinc((k-offset) * frequency);
+
+    return impulse;
+  }
+
   Matrix resample(const Matrix& data, const size_t L, const size_t keep, const double alpha)
   {
     const size_t N      = data.size().numel;
@@ -1360,22 +1605,22 @@ namespace Pinakas { namespace Backend
     // store and upsample left symetrical data
     k = 0;
     for (i = 0; i < keep; ++i) {
-        extended[0][k] = 2*data[0][0] - data[0][keep - i];
-        k += L;
+      extended[0][k] = 2*data[0][0] - data[0][keep - i];
+      k += L;
     }
     // store and upsample data
     for (i = 0; i < N; ++i) {
-        extended[0][k] = data[0][i];
-        k += L;
+      extended[0][k] = data[0][i];
+      k += L;
     }
     // store and upsample right symetrical data
     for (i = 0; i < keep; ++i) {
-        extended[0][k] = 2*data[0][N-1] - data[0][N-2 - i];
-        k += L;
+      extended[0][k] = 2*data[0][N-1] - data[0][N-2 - i];
+      k += L;
     }
     
     // design low-pass interpolation filter
-	  const Matrix filter = sinc((iota(length)-offset)/L) * blackman(length);
+	  const Matrix filter = blackman(sinc_impulse(length, 1.0/L));
     
     // interpolate upsampled data using a cropped convolution
     Matrix resampled(1, last - first + 1, 0);
@@ -1523,9 +1768,78 @@ namespace Pinakas { namespace Backend
     plot(title, {data_set}, persistent, remove, pause, lines);
   }
 
+  void plot(std::string title, List<Matrix> data, bool persistent, bool remove, bool pause, bool lines)
+  {
+    // validate that gnuplot is in system path
+    static bool gnuplot_on_system_path = false;
+    if ((!gnuplot_on_system_path) && std::system("gnuplot --version"))
+      throw std::runtime_error("gnuplot could not be found in the system path");
+    gnuplot_on_system_path = true;
+
+    // create filename
+    const std::string filename = title + ".data";
+
+    // create temporary file
+    std::ofstream file(filename);
+
+    // validate file opening
+    if (!file)
+      throw std::runtime_error("could not open " + filename);
+
+    // write x and y data to file for each data set
+    for (auto& set : data) {
+      for (size_t k = 0; k < set.size().numel; ++k)
+        file << k << ' ' << set[0][k] << '\n';
+      // separate data sets
+      file << "\n\n";
+    }
+
+    // close file
+    file.close();
+
+    // command pipeline
+    std::stringstream gnuplot_pipeline;
+
+    // launch gnuplot
+    gnuplot_pipeline << "gnuplot";
+
+    // conditionally set plot to persistent
+    if (persistent)
+      gnuplot_pipeline << " -persistent";
+
+    // set plot title: -e "set title \"...\"
+    gnuplot_pipeline << " -e \"set title \\\"" << title << "\\\"\"";
+
+    // plot data: -e "plot '...'"
+    gnuplot_pipeline << " -e \"plot '" << filename << (lines ? "' with lines\"" : "' \"");
+
+    // plot remaining data sets
+    for (size_t k = 1; k < data.size(); ++k)
+      gnuplot_pipeline << " -e \"replot '" << filename << "' index " << k << (lines ? " with lines\"" : " \"");
+
+    // conditionally pause after plotting
+    if (pause)
+      gnuplot_pipeline << " -e \"pause -1 'press any key to continue...'\"";
+
+    // execute command pipeline
+    std::system(gnuplot_pipeline.str().c_str());
+
+    // conditionally remove file after creation
+    if (remove)
+      std::remove(filename.c_str());
+  }
+
   void plot(std::string title, Matrix data, bool persistent, bool remove, bool pause, bool lines)
   {
-    plot(title, DataSet(iota(data.size().numel), data), persistent, remove, pause, lines);
+    plot(title, {data}, persistent, remove, pause, lines);
+  }
+
+  double rms(const Matrix& data)
+  {
+    double result = 0;
+    for (size_t k = 0; k < data.size().numel; ++k)
+      result += data[0][k] * data[0][k];
+    return result;
   }
 }}
 //
@@ -1533,23 +1847,20 @@ int main()
 {
   using namespace Pinakas;
   using namespace Keyword;
+
+  //*
+  auto f = [](const Matrix& x){return (x^2) + sin(x*5)/5 - 2;};// + Range(0, 0.2);
   size_t N = 100;
-  size_t L = 10;
+  size_t L = 100;
   
-  Matrix x = linspace(0, 1, N);
-  Matrix y = (x^2) + sin(x*5)/5 - 2 + Range(0, 0.2);
-  
-  Matrix y2;
-  {
-    Chronometro::Stopwatch sw;
-    y2 = resample(y, L, 0);
-  }
-  Matrix x2 = linspace(0, 1, y2.size().numel);
- 
-  plot("blackman", {{x, y}, {x2, y2}}, true, false);
+  Matrix y = f(linspace(0, 1, N));
+  Matrix y_new  = resample(y, L);
+  Matrix y_true = f(linspace(0, 1, y_new.size().numel));
+  std::cout << "rms : " << rms(y_true-y_new) << '\n';
+  plot("blackman", {y_new, y_true});
   
   //*/
-
+  
   /*
   Matrix T = {{1,  2,  3},
               {4,  5,  6},
