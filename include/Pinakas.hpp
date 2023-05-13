@@ -182,8 +182,7 @@ namespace Pinakas { namespace Backend
   Matrix&& sin(Matrix&& A);
   Matrix sinc(Matrix& A);
   Matrix&& sinc(Matrix&& A);
-  Matrix upsample(const Matrix& data, const size_t L);
-  Matrix resample(const Matrix& data, const size_t L);
+  Matrix resample(const Matrix& data, const size_t L, const size_t keep = 2, const double alpha = 3.5);
   void plot(std::string title, List<DataSet> data_sets, bool persistent = true, bool remove = true, bool pause = false, bool lines = true);
   void plot(std::string title, DataSet data_set, bool persistent = true, bool remove = true, bool pause = false, bool lines = true);
   void plot(std::string title, Matrix data, bool persistent = true, bool remove = true, bool pause = false, bool lines = true);

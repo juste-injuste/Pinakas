@@ -1,6 +1,6 @@
-clc, clear, close all, pkg load signal
-    f = @(x) 2*(x.^2 + sin(x*5)/5) - 2 + rand(size(x))/5;
-    N = 10;
+clc, clear, close all
+    f = @(x) x.^2 + sin(x*5)/5 - 2;% + rand(size(x))/5;
+    N = 20;
     L = 10;
     x = linspace(0, 1, N);
     y = f(x);
@@ -13,12 +13,11 @@ clc, clear, close all, pkg load signal
     xOpt = linspace(0, 1, N*L-L+1);
     yOpt = f(xOpt);
 
-    %for i = 0:10
-      y2 = resample3(y, L, 2, 3.5);
-      %[i sum((yOpt-y2).^2)]
-    %end
-
+    y2 = resample(y, L, 0, 3.5);
+    %[i sum((yOpt-y2).^2)]
+    % {
     figure, hold on
     plot(x, y, "xk", "linestyle", '-')
     plot(linspace(x(1), x(end), numel(y2)), y2, 'b')
-    %plot(xOpt, yOpt, 'm')
+    plot(xOpt, yOpt, 'm')
+    %}

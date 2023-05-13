@@ -1341,53 +1341,54 @@ namespace Pinakas { namespace Backend
     return upsampled;
   }
 
-  Matrix resample(const Matrix& data, const size_t L)
+  Matrix resample(const Matrix& data, const size_t L, const size_t keep, const double alpha)
   {
     const size_t N      = data.size().numel;
-	  const size_t offset = L * 2.4;
+    // offset to impulse center
+	  const size_t offset = L*alpha;
+    // length of impulse
 	  const size_t length = 2*offset + 1;
-    const size_t drop   = N * 0.9;
-    const size_t response_size = (3*N - 2*drop) * L;
+    // indices to the first and last upsampled data elements in the symetrically extended data
+    const size_t first  = L*keep;
+    const size_t last   = L*(keep + N-1);
+    
+    // temporary variables
+    size_t i, j, k;
 
-    Matrix reflected(1, response_size, 0);
-    size_t n = 0;
-    // store and upsample left reflected data
-    for (size_t index = 0; index < (N-drop); ++index) {
-        reflected[0][n] = 2*data[0][0] - data[0][N-drop-index];
-        n += L;
+    // symetrically extended data vector
+    Matrix extended(1, (N + 2*keep) * L, 0);
+    // store and upsample left symetrical data
+    k = 0;
+    for (i = 0; i < keep; ++i) {
+        extended[0][k] = 2*data[0][0] - data[0][keep - i];
+        k += L;
     }
-    // first index of useful resampled data
-    const size_t first = n;
     // store and upsample data
-    for (size_t index = 0; index < N; ++index) {
-        reflected[0][n] = data[0][index];
-        n += L;
+    for (i = 0; i < N; ++i) {
+        extended[0][k] = data[0][i];
+        k += L;
     }
-    // last index of useful resampled data
-    const size_t last = n - L + 1;
-    // store and upsample right reflected data
-    for (size_t index = 0; index < (N-drop); ++index) {
-        reflected[0][n] = 2*data[0][N-1] - data[0][N-2-index];
-        n += L;
+    // store and upsample right symetrical data
+    for (i = 0; i < keep; ++i) {
+        extended[0][k] = 2*data[0][N-1] - data[0][N-2 - i];
+        k += L;
     }
     
-    // design filter
+    // design low-pass interpolation filter
 	  const Matrix filter = sinc((iota(length)-offset)/L) * blackman(length);
     
-    Matrix resampled(1, response_size, 0);
-    for (size_t index_reflected = 0; index_reflected < response_size; ++index_reflected) {
-      for (size_t index_filter = 0; index_filter < length; ++index_filter) {
-        size_t index = index_reflected + index_filter - offset;
-        if (index < response_size)
-          resampled[0][index] += reflected[0][index_reflected] * filter[0][index_filter];
+    // interpolate upsampled data using a cropped convolution
+    Matrix resampled(1, last - first + 1, 0);
+    for (i = 0; i < extended.size().numel; ++i) {
+      for (j = 0; j < filter.size().numel; ++j) {
+        k = i + j - offset;
+        // skips if the index is not within the upsampled data range
+        if ((first <= k) && (k <= last))
+          resampled[0][k - first] += extended[0][i] * filter[0][j];
       }
     }
-    
-    Matrix output(1, last - first);
-    for (size_t index = 0; index < (last - first); ++index)
-      output[0][index] = resampled[0][index + first];
-    
-    return output;
+       
+    return resampled;
   }
 
   std::ostream& operator<<(std::ostream& ostream, const Matrix& A)
@@ -1532,20 +1533,22 @@ int main()
 {
   using namespace Pinakas;
   using namespace Keyword;
-  size_t N = 10;
-  size_t L = 20;
+  size_t N = 20;
+  size_t L = 10;
+  
   Matrix x = linspace(0, 1, N);
-  Matrix y = (x^2) + sin(x*5)/5 + Range(0, 0.2);
-  y = y * 2 - max(2*y)/2;
+  Matrix y = (x^2) + sin(x*5)/5 - 2;// + Range(0, 0.2);
+  std::cout << y;
   Matrix y2;
   {
     Chronometro::Stopwatch sw;
-    y2 = resample(y, L);
-    std::cout << y2.size();
+    y2 = resample(y, L, 0, 3.5);
   }
-  auto x2 = linspace(0, 1, y2.size().numel);
+  Matrix x2 = linspace(0, 1, y2.size().numel);
+ 
   plot("blackman", {{x, y}, {x2, y2}}, true, false);
-  std::cout << y2(Keyword::end);//*/
+  
+  //*/
 
   /*
   Matrix T = {{1,  2,  3},

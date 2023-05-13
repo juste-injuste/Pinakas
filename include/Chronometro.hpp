@@ -102,22 +102,22 @@ namespace Chronometro { namespace Backend {
     std::cout << "time elapsed: ";
     switch(unit_) {
       case ns:
-        std::cout << std::chrono::duration_cast<std::chrono::nanoseconds>(stop - start_).count() << "ns";
+        std::cout << std::chrono::duration_cast<std::chrono::nanoseconds>(stop - start_).count() << "ns\n";
         return;
       case us:
-        std::cout << std::chrono::duration_cast<std::chrono::microseconds>(stop - start_).count() << "us";
+        std::cout << std::chrono::duration_cast<std::chrono::microseconds>(stop - start_).count() << "us\n";
         return;
       case ms:
-        std::cout << std::chrono::duration_cast<std::chrono::milliseconds>(stop - start_).count() << "ms";
+        std::cout << std::chrono::duration_cast<std::chrono::milliseconds>(stop - start_).count() << "ms\n";
         return;
       case s:
-        std::cout << std::chrono::duration_cast<std::chrono::seconds>(stop - start_).count() << 's';
+        std::cout << std::chrono::duration_cast<std::chrono::seconds>(stop - start_).count() << "s\n";
         return;
       case min:
-        std::cout << std::chrono::duration_cast<std::chrono::minutes>(stop - start_).count() << "min";
+        std::cout << std::chrono::duration_cast<std::chrono::minutes>(stop - start_).count() << "min\n";
         return;
       case h:
-        std::cout << std::chrono::duration_cast<std::chrono::hours>(stop - start_).count() << 'h';
+        std::cout << std::chrono::duration_cast<std::chrono::hours>(stop - start_).count() << "h\n";
         return;
     }
   }
