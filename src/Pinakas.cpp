@@ -1533,16 +1533,16 @@ int main()
 {
   using namespace Pinakas;
   using namespace Keyword;
-  size_t N = 20;
+  size_t N = 100;
   size_t L = 10;
   
   Matrix x = linspace(0, 1, N);
-  Matrix y = (x^2) + sin(x*5)/5 - 2;// + Range(0, 0.2);
-  std::cout << y;
+  Matrix y = (x^2) + sin(x*5)/5 - 2 + Range(0, 0.2);
+  
   Matrix y2;
   {
     Chronometro::Stopwatch sw;
-    y2 = resample(y, L, 0, 3.5);
+    y2 = resample(y, L, 0);
   }
   Matrix x2 = linspace(0, 1, y2.size().numel);
  
