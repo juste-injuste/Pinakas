@@ -161,14 +161,16 @@ namespace Pinakas { namespace Backend
   Matrix reshape(const Matrix& A, const size_t M, const size_t N);
 // -------------------------------------------------------------------------------
   double min(const Matrix& matrix);
+  double min(const Slice& column);
   double max(const Matrix& matrix);
+  double min(const Slice& column);
 // -------------------------------------------------------------------------------
   double sum(const Matrix& matrix);
   double prod(const Matrix& matrix);
   Matrix MGS(Matrix A);
   std::unique_ptr<Matrix[]> QR(Matrix A);
   Matrix div(const Matrix& A, Matrix B);
-  std::pair<Matrix, Matrix> linearize(const DataSet data_set);
+  std::unique_ptr<Matrix[]> linearize(const Matrix& data_x, const Matrix& data_y);
   Matrix linspace(const double x1, const double x2, const size_t N);
   Matrix linspace(const double x1, const double x2, const size_t N, Keyword::Column);
   Matrix iota(const size_t N);
