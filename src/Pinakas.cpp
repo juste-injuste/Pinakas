@@ -1639,15 +1639,12 @@ namespace Pinakas { namespace Backend
       }
     }
 
-    // create filename
-    const std::string filename = title + ".data";
-
     // create temporary file
-    std::ofstream file(filename);
+    std::ofstream file("gnuplot.data");
 
     // validate file opening
     if (!file)
-      throw std::runtime_error("could not open " + filename);
+      throw std::runtime_error("could not open gnuplot.data");
 
     // write x and y data to file for each data set
     for (auto& data_set : data_sets) {
@@ -1671,16 +1668,20 @@ namespace Pinakas { namespace Backend
     // conditionally set plot to persistent
     if (persistent)
       gnuplot_pipeline << " -persistent";
-
-    // set plot title: -e "set title \"...\"
-    gnuplot_pipeline << " -e \"set title \\\"" << title << "\\\";";
-    gnuplot_pipeline << " plot '" << filename << "' index 0" << (lines ? " with lines" : "");
-    gnuplot_pipeline << " title '" << title << " 0'";
+   
+    // plot all data sets
+    gnuplot_pipeline << " -e \"set title \\\"gnuplot\\\"; plot 'gnuplot.data'";
     
-    for (size_t k = 1; k < data_sets.size(); ++k)
-      gnuplot_pipeline << ",'' index " << 1 << (lines ? " with lines" : "") << " title '" << title << ' ' << k << '\'';
-
+    for (size_t k = 0; k < data_sets.size(); ++k) {
+      if (k)
+        gnuplot_pipeline << ", ''";
+      gnuplot_pipeline << " index " << k;
+      if (lines)
+        gnuplot_pipeline << " with lines";
+      gnuplot_pipeline << " title '" << title << '\'';
+    }
     gnuplot_pipeline << '"';
+    
     // conditionally pause after plotting
     if (pause)
       gnuplot_pipeline << " -e \"pause -1 'press any key to continue...'\"";
@@ -1690,7 +1691,7 @@ namespace Pinakas { namespace Backend
 
     // conditionally remove file after creation
     if (remove)
-      std::remove(filename.c_str());
+      std::remove("gnuplot.data");
   }
 
   void plot(List<std::string> titles, List<DataSet> data_sets, bool persistent, bool remove, bool pause, bool lines)
@@ -1716,15 +1717,12 @@ namespace Pinakas { namespace Backend
     if (titles.size() != data_sets.size())
       std::clog << "warning: plot: number of titles does not equal number of data sets\n";
 
-    // create filename
-    const std::string filename = "gnuplot_data.data";
-
     // create temporary file
-    std::ofstream file(filename);
+    std::ofstream file("gnuplot.data");
 
     // validate file opening
     if (!file)
-      throw std::runtime_error("could not open " + filename);
+      throw std::runtime_error("could not open gnuplot.data");
 
     // write x and y data to file for each data set
     for (auto& data_set : data_sets) {
@@ -1748,18 +1746,19 @@ namespace Pinakas { namespace Backend
     // conditionally set plot to persistent
     if (persistent)
       gnuplot_pipeline << " -persistent";
-
-    // set plot title: -e "set title \"...\"
-    gnuplot_pipeline << " -e \"set title \\\"gnuplot\\\";";
-    
+   
     // plot all data sets
-    gnuplot_pipeline << " plot '" << filename;
+    gnuplot_pipeline << " -e \"set title \\\"gnuplot\\\"; plot 'gnuplot.data'";
     size_t k = 0;
     for (std::string title : titles) {
-      gnuplot_pipeline << (k ? ",''" : "\'") << " index " << k << (lines ? " with lines" : "") << " title '" << title << '\'';
+      if (k)
+        gnuplot_pipeline << ", ''";
+      gnuplot_pipeline << " index " << k;
+      if (lines)
+        gnuplot_pipeline << " with lines";
+      gnuplot_pipeline << " title '" << title << '\'';
       k++;
     }
-
     gnuplot_pipeline << '"';
 
     // conditionally pause after plotting
@@ -1771,7 +1770,7 @@ namespace Pinakas { namespace Backend
 
     // conditionally remove file after creation
     if (remove)
-      std::remove(filename.c_str());
+      std::remove("gnuplot.data");
   }
 
   void plot(std::string title, DataSet data_set, bool persistent, bool remove, bool pause, bool lines)
