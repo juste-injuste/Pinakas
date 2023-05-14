@@ -167,7 +167,10 @@ namespace Pinakas { namespace Backend
 // -------------------------------------------------------------------------------
   double sum(const Matrix& matrix);
   double prod(const Matrix& matrix);
-  Matrix MGS(Matrix A);
+  double avg(const Matrix& A);
+  double rms(const Matrix &A);
+  double geo(const Matrix& A);
+  Matrix orthogonalize(Matrix A);
   std::unique_ptr<Matrix[]> QR(Matrix A);
   Matrix div(const Matrix& A, Matrix B);
   std::unique_ptr<Matrix[]> linearize(const Matrix& data_x, const Matrix& data_y);
@@ -177,8 +180,13 @@ namespace Pinakas { namespace Backend
   Matrix reverse(const Matrix& A);
   Matrix&& reverse(Matrix&& A);
   Matrix diff(const Matrix& A, size_t n = 1);
-  Matrix diff(const Matrix& A, Keyword::Column, size_t n = 1);
   Matrix conv(const Matrix& A, const Matrix& B);
+  Matrix xcorr(const Matrix &A, const Matrix &B);
+  Matrix acorr(const Matrix &A);
+  Matrix Rxx(const Matrix &A);
+  Matrix Rxx(const Matrix &A, const size_t K);
+  Matrix lpc(const Matrix &A, const size_t p);
+  Matrix toeplitz(const Matrix& A, size_t K);
   Matrix blackman(const size_t N);
   Matrix blackman(const Matrix& signal);
   Matrix&& blackman(Matrix&& signal);
@@ -223,7 +231,10 @@ namespace Pinakas { inline namespace Frontend
 // -------------------------------------------------------------------------------
   using Backend::sum;
   using Backend::prod;
-  using Backend::MGS;
+  using Backend::avg;
+  using Backend::rms;
+  using Backend::geo;
+  using Backend::orthogonalize;
   using Backend::QR;
   using Backend::div;
   using Backend::linearize;
@@ -231,6 +242,11 @@ namespace Pinakas { inline namespace Frontend
   using Backend::iota;
   using Backend::diff;
   using Backend::conv;
+  using Backend::xcorr;
+  using Backend::acorr;
+  using Backend::Rxx;
+  using Backend::lpc;
+  using Backend::toeplitz;
   using Backend::blackman;
   using Backend::hamming;
   using Backend::hann;
