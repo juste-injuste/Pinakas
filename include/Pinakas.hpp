@@ -89,6 +89,8 @@ namespace Pinakas { namespace Backend
   Matrix operator+(const Matrix& A, const Matrix& B);
   Matrix operator+(const Matrix& A, const Random range);
   Matrix&& operator+(Matrix&& A, const Random range);
+  Matrix operator+(const Random range, const Matrix& A);
+  Matrix&& operator+(const Random range, Matrix&& A);
   Matrix&& operator+(const Matrix& A, Matrix&& B);
   Matrix&& operator+(Matrix&& A, const Matrix& B);
   Matrix&& operator+(Matrix&& A, Matrix&& B);
@@ -194,11 +196,8 @@ namespace Pinakas { namespace Backend
   Matrix resample(const Matrix& data, const size_t L);
   Matrix resample(const Matrix& data, const size_t L, const size_t keep, const double alpha);
   void plot(std::string title, List<DataSet> data_sets, bool persistent = true, bool remove = true, bool pause = false, bool lines = true);
+  void plot(List<std::string> titles, List<DataSet> data_sets, bool persistent = true, bool remove = true, bool pause = false, bool lines = true);
   void plot(std::string title, DataSet data_set, bool persistent = true, bool remove = true, bool pause = false, bool lines = true);
-  /*
-  void plot(std::string title, List<Matrix> data_sets, bool persistent = true, bool remove = true, bool pause = false, bool lines = true);
-  void plot(std::string title, Matrix data, bool persistent = true, bool remove = true, bool pause = false, bool lines = true);
-  //*/
   double rms(const Matrix& A);
 }}
 // --Pinakas library: frontend forward declarations-------------------------------

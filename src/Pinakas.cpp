@@ -151,7 +151,7 @@ namespace Pinakas { namespace Backend
     size_t temp_N = 0;
     for (const List<const double>& vector : values) {
       if (temp_N && (temp_N != vector.size())) {
-        std::cerr << "vertical dimensions mismatch (" << temp_N << " vs " << vector.size() << ")\n";
+        std::cerr << "error: vertical dimensions mismatch (" << temp_N << " vs " << vector.size() << ")\n";
         size_ = {0, 0, 0};
         return;
       }
@@ -186,7 +186,7 @@ namespace Pinakas { namespace Backend
     size_t temp_N = 0;
     for (const Matrix& matrix : list) {
       if (temp_M && (temp_M != matrix.size_.M)) {
-        std::cerr << "vertical dimensions mismatch (" << temp_M << " vs " << matrix.size_.M << ")\n";
+        std::cerr << "error: horizontal dimensions mismatch (" << temp_M << " vs " << matrix.size_.M << ")\n";
         size_ = {0, 0, 0};
         return;
       }
@@ -212,7 +212,7 @@ namespace Pinakas { namespace Backend
     // validate sizes
     if ((M == 0) || (N == 0)) {
       std::stringstream error_message;
-      error_message << "invalid dimensions are " << M << 'x' << N;
+      error_message << "error: allocate: dimensions are " << M << 'x' << N;
       throw std::invalid_argument(error_message.str());
     }
 
@@ -449,7 +449,7 @@ namespace Pinakas { namespace Backend
   {
     if (size_A != size_B) {
       std::stringstream error_message;
-      error_message << "operator " << op << ": nonconformant arguments (";
+      error_message << "error: operator " << op << ": nonconformant arguments (";
       error_message << "A is " << size_A.M << 'x' << size_A.N;
       error_message << ", B is " << size_B.M << 'x' << size_B.N << ")\n";
       throw std::invalid_argument(error_message.str());
@@ -485,6 +485,27 @@ namespace Pinakas { namespace Backend
   }
   
   Matrix&& operator+(Matrix&& A, const Random range)
+  {
+    std::random_device device;
+    std::mt19937 generator(device());
+    std::uniform_real_distribution<> uniform_distribution(range.min_, range.max_);
+    for (size_t index = 0; index < A.numel; ++index)
+      A[0][index] += uniform_distribution(generator);
+    return std::move(A);
+  }
+  
+  Matrix operator+(const Random range, const Matrix& A)
+  {
+    Matrix result(A.size());
+    std::random_device device;
+    std::mt19937 generator(device());
+    std::uniform_real_distribution<> uniform_distribution(range.min_, range.max_);
+    for (size_t index = 0; index < result.numel; ++index)
+      result[0][index] += A[0][index] + uniform_distribution(generator);
+    return result;
+  }
+  
+  Matrix&& operator+(const Random range, Matrix&& A)
   {
     std::random_device device;
     std::mt19937 generator(device());
@@ -944,7 +965,7 @@ namespace Pinakas { namespace Backend
   {
     if (A.size().N != B.size().M) {
       std::stringstream error_message;
-      error_message << "operator mul: nonconformant arguments (";
+      error_message << "error: mul: nonconformant arguments (";
       error_message << "A is " << A.size().M << 'x' << A.size().N;
       error_message << ", B is " << B.size().M << 'x' << B.size().N << ")\n";
       throw std::invalid_argument(error_message.str());
@@ -971,7 +992,7 @@ namespace Pinakas { namespace Backend
   {
     if (A.numel != M*N) {
       std::stringstream error_message;
-      error_message << "reshape: can't reshape " << A.size();
+      error_message << "error: reshape: can't reshape " << A.size().M << 'x' << A.size().N;
       error_message << " array to " << M << 'x' << N << " array";
       throw std::invalid_argument(error_message.str());
     }
@@ -1099,7 +1120,7 @@ namespace Pinakas { namespace Backend
     // verify vertical dimensions
     if (b.size().M != A.size().M) {
       std::stringstream error_message;
-      error_message << "operator div: vertical dimensions mismatch (b is ";
+      error_message << "error: div: vertical dimensions mismatch (b is ";
       error_message << b.size().M << "x_, A is " << A.size().M << "x_)\n";
       throw std::invalid_argument(error_message.str());
     }
@@ -1107,7 +1128,7 @@ namespace Pinakas { namespace Backend
     // verify that b is a column matrix
     if (b.size().N != 1) {
       std::stringstream error_message;
-      error_message << "operator div: horizontal dimension is not 1 (b is " << "_x" << A.size().N << ")\n";
+      error_message << "error: div: horizontal dimension is not 1 (b is " << "_x" << A.size().N << ")\n";
       throw std::invalid_argument(error_message.str());
     }
 
@@ -1425,7 +1446,7 @@ namespace Pinakas { namespace Backend
   {
     // validate impulse length
     if (!(length%2))
-      throw std::invalid_argument("impulse length must be odd");
+      throw std::invalid_argument("error: sinc_impulse: impulse length must be odd");
 
     // offset to the impulse center
     const signed offset = (length-1) * 0.5;
@@ -1603,7 +1624,7 @@ namespace Pinakas { namespace Backend
     // validate that gnuplot is in system path
     static bool gnuplot_on_system_path = false;
     if ((!gnuplot_on_system_path) && std::system("gnuplot --version"))
-      throw std::runtime_error("gnuplot could not be found in the system path");
+      throw std::runtime_error("error: plot: gnuplot could not be found in the system path");
     gnuplot_on_system_path = true;
 
     // validate that x and y have the same number of elements
@@ -1612,7 +1633,7 @@ namespace Pinakas { namespace Backend
       const Matrix& ydata = data_set.second;
       if (xdata.numel != ydata.numel) {
         std::stringstream error_message;
-        error_message << "number of element mismatch (x has " << xdata.numel;
+        error_message << "error: plot: number of element mismatch (x has " << xdata.numel;
         error_message << " elements,  y has " << ydata.numel << " elements)\n";
         throw std::invalid_argument(error_message.str());
       }
@@ -1652,15 +1673,14 @@ namespace Pinakas { namespace Backend
       gnuplot_pipeline << " -persistent";
 
     // set plot title: -e "set title \"...\"
-    gnuplot_pipeline << " -e \"set title \\\"" << title << "\\\"\"";
+    gnuplot_pipeline << " -e \"set title \\\"" << title << "\\\";";
+    gnuplot_pipeline << " plot '" << filename << "' index 0" << (lines ? " with lines" : "");
+    gnuplot_pipeline << " title '" << title << " 0'";
+    
+    for (size_t k = 1; k < data_sets.size(); ++k)
+      gnuplot_pipeline << ",'' index " << 1 << (lines ? " with lines" : "") << " title '" << title << ' ' << k << '\'';
 
-    // plot data: -e "plot '...'"
-    gnuplot_pipeline << " -e \"plot '" << filename << (lines ? "' with lines\"" : "' \"");
-
-    // plot remaining data sets
-    for (size_t i = 1; i < data_sets.size(); ++i)
-      gnuplot_pipeline << " -e \"replot '" << filename << "' index " << i << (lines ? " with lines\"" : " \"");
-
+    gnuplot_pipeline << '"';
     // conditionally pause after plotting
     if (pause)
       gnuplot_pipeline << " -e \"pause -1 'press any key to continue...'\"";
@@ -1673,21 +1693,31 @@ namespace Pinakas { namespace Backend
       std::remove(filename.c_str());
   }
 
-  void plot(std::string title, DataSet data_set, bool persistent, bool remove, bool pause, bool lines)
-  {
-    plot(title, {data_set}, persistent, remove, pause, lines);
-  }
-  /*
-  void plot(std::string title, List<Matrix> data, bool persistent, bool remove, bool pause, bool lines)
+  void plot(List<std::string> titles, List<DataSet> data_sets, bool persistent, bool remove, bool pause, bool lines)
   {
     // validate that gnuplot is in system path
     static bool gnuplot_on_system_path = false;
     if ((!gnuplot_on_system_path) && std::system("gnuplot --version"))
-      throw std::runtime_error("gnuplot could not be found in the system path");
+      throw std::runtime_error("error: plot: gnuplot could not be found in the system path");
     gnuplot_on_system_path = true;
 
+    // validate that x and y have the same number of elements
+    for (auto& data_set : data_sets) {
+      const Matrix& xdata = data_set.first;
+      const Matrix& ydata = data_set.second;
+      if (xdata.numel != ydata.numel) {
+        std::stringstream error_message;
+        error_message << "error: plot: number of element mismatch (x has " << xdata.numel;
+        error_message << " elements,  y has " << ydata.numel << " elements)\n";
+        throw std::invalid_argument(error_message.str());
+      }
+    }
+
+    if (titles.size() != data_sets.size())
+      std::clog << "warning: plot: number of titles does not equal number of data sets\n";
+
     // create filename
-    const std::string filename = title + ".data";
+    const std::string filename = "gnuplot_data.data";
 
     // create temporary file
     std::ofstream file(filename);
@@ -1697,9 +1727,11 @@ namespace Pinakas { namespace Backend
       throw std::runtime_error("could not open " + filename);
 
     // write x and y data to file for each data set
-    for (auto& set : data) {
-      for (size_t k = 0; k < set.numel; ++k)
-        file << k << ' ' << set[0][k] << '\n';
+    for (auto& data_set : data_sets) {
+      const Matrix& x = data_set.first;
+      const Matrix& y = data_set.second;
+      for (size_t index = 0; index < x.numel; ++index)
+        file << x[0][index] << ' ' << y[0][index] << '\n';
       // separate data sets
       file << "\n\n";
     }
@@ -1718,14 +1750,17 @@ namespace Pinakas { namespace Backend
       gnuplot_pipeline << " -persistent";
 
     // set plot title: -e "set title \"...\"
-    gnuplot_pipeline << " -e \"set title \\\"" << title << "\\\"\"";
+    gnuplot_pipeline << " -e \"set title \\\"gnuplot\\\";";
+    
+    // plot all data sets
+    gnuplot_pipeline << " plot '" << filename;
+    size_t k = 0;
+    for (std::string title : titles) {
+      gnuplot_pipeline << (k ? ",''" : "\'") << " index " << k << (lines ? " with lines" : "") << " title '" << title << '\'';
+      k++;
+    }
 
-    // plot data: -e "plot '...'"
-    gnuplot_pipeline << " -e \"plot '" << filename << (lines ? "' with lines\"" : "' \"");
-
-    // plot remaining data sets
-    for (size_t k = 1; k < data.size(); ++k)
-      gnuplot_pipeline << " -e \"replot '" << filename << "' index " << k << (lines ? " with lines\"" : " \"");
+    gnuplot_pipeline << '"';
 
     // conditionally pause after plotting
     if (pause)
@@ -1739,11 +1774,11 @@ namespace Pinakas { namespace Backend
       std::remove(filename.c_str());
   }
 
-  void plot(std::string title, Matrix data, bool persistent, bool remove, bool pause, bool lines)
+  void plot(std::string title, DataSet data_set, bool persistent, bool remove, bool pause, bool lines)
   {
-    plot(title, {data}, persistent, remove, pause, lines);
+    plot(title, {data_set}, persistent, remove, pause, lines);
   }
-  //*/
+
   double rms(const Matrix& A)
   {
     const size_t n = A.numel;
@@ -1760,14 +1795,14 @@ int main()
   using namespace Keyword;
 
   //*
-  auto f = [](const Matrix& x){return (x^2) + sin(x*5)/5 - 2;};// + Random(0, 0.2);
+  auto f = [](const Matrix& x){return (x^2) + sin(x*5)/5 - 2 + Random(0, 0.2);};
   size_t N = 100;
   size_t L = 100;
   
   Matrix y     = f(linspace(0, 1, N));
   Matrix y_new = resample(y, L);
-  plot("blackman", {{linspace(0, 1, y.numel), y}, {linspace(0, 1, y_new.numel), y_new}});
-  
+  plot({"original", "interpolated"}, {{linspace(0, 1, y.numel), y}, {linspace(0, 1, y_new.numel), y_new}}, true, false);
+ 
   //*/
   
   /*
