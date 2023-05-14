@@ -73,7 +73,7 @@ namespace Pinakas { namespace Backend
     const struct Entire {} entire;
   }
   //
-  struct Range;
+  struct Random;
   //
   template<typename T>
   class Iterator;
@@ -87,8 +87,8 @@ namespace Pinakas { namespace Backend
 // -------------------------------------------------------------------------------
   Matrix& operator+=(Matrix& A, const Matrix& B);
   Matrix operator+(const Matrix& A, const Matrix& B);
-  Matrix operator+(const Matrix& A, const Range range);
-  Matrix&& operator+(Matrix&& A, const Range range);
+  Matrix operator+(const Matrix& A, const Random range);
+  Matrix&& operator+(Matrix&& A, const Random range);
   Matrix&& operator+(const Matrix& A, Matrix&& B);
   Matrix&& operator+(Matrix&& A, const Matrix& B);
   Matrix&& operator+(Matrix&& A, Matrix&& B);
@@ -167,30 +167,23 @@ namespace Pinakas { namespace Backend
   std::unique_ptr<Matrix[]> QR(Matrix A);
   Matrix div(const Matrix& A, Matrix B);
   std::pair<Matrix, Matrix> linearize(const DataSet data_set);
-  Matrix linspace(const double x1, const double x2, const size_t N, Keyword::Row = {});
+  Matrix linspace(const double x1, const double x2, const size_t N);
   Matrix linspace(const double x1, const double x2, const size_t N, Keyword::Column);
   Matrix iota(const size_t N);
   Matrix reverse(const Matrix& A);
   Matrix&& reverse(Matrix&& A);
-  Matrix diff(const Matrix& A, Keyword::Row = {}, size_t n = 1);
+  Matrix diff(const Matrix& A, size_t n = 1);
   Matrix diff(const Matrix& A, Keyword::Column, size_t n = 1);
   Matrix conv(const Matrix& A, const Matrix& B);
   Matrix blackman(const size_t N);
   Matrix blackman(const Matrix& signal);
-  Matrix&& blackman(Matrix&& signal);Matrix nuttall(const size_t N);
-  Matrix&& blackman_exact(Matrix&& signal);Matrix nuttall(const size_t N);
-  Matrix blackman_exact(const size_t N);
-  Matrix blackman_exact(const Matrix& signal);
-  Matrix&& blackman_nuttall(Matrix&& signal);Matrix nuttall(const size_t N);
-  Matrix blackman_nuttall(const size_t N);
-  Matrix blackman_nuttall(const Matrix& signal);
-  Matrix&& blackman_harris(Matrix&& signal);Matrix nuttall(const size_t N);
-  Matrix blackman_harris(const size_t N);
-  Matrix blackman_harris(const Matrix& signal);
-  Matrix nuttall(const Matrix& signal);
-  Matrix&& nuttall(Matrix&& signal);
+  Matrix&& blackman(Matrix&& signal);
   Matrix hamming(const size_t N);
+  Matrix hamming(const Matrix& signal);
+  Matrix&& hamming(Matrix&& signal);
   Matrix hann(const size_t N);
+  Matrix hann(const Matrix& signal);
+  Matrix&& hann(Matrix&& signal);
   double newton(const std::function<double(double)> function, const double tol, const size_t max_iteration, const double seed);
   double sinc(const double x);
   Matrix sin(Matrix& A);
@@ -202,14 +195,17 @@ namespace Pinakas { namespace Backend
   Matrix resample(const Matrix& data, const size_t L, const size_t keep, const double alpha);
   void plot(std::string title, List<DataSet> data_sets, bool persistent = true, bool remove = true, bool pause = false, bool lines = true);
   void plot(std::string title, DataSet data_set, bool persistent = true, bool remove = true, bool pause = false, bool lines = true);
+  /*
   void plot(std::string title, List<Matrix> data_sets, bool persistent = true, bool remove = true, bool pause = false, bool lines = true);
   void plot(std::string title, Matrix data, bool persistent = true, bool remove = true, bool pause = false, bool lines = true);
+  //*/
+  double rms(const Matrix& A);
 }}
 // --Pinakas library: frontend forward declarations-------------------------------
 namespace Pinakas { inline namespace Frontend
 {
   using Backend::Matrix;
-  using Backend::Range;
+  using Backend::Random;
   namespace Keyword = Backend::Keyword;
 // -------------------------------------------------------------------------------
   using Backend::floor;
@@ -235,10 +231,6 @@ namespace Pinakas { inline namespace Frontend
   using Backend::diff;
   using Backend::conv;
   using Backend::blackman;
-  using Backend::blackman_exact;
-  using Backend::blackman_nuttall;
-  using Backend::blackman_harris;
-  using Backend::nuttall;
   using Backend::hamming;
   using Backend::hann;
   using Backend::newton;
@@ -292,6 +284,7 @@ namespace Pinakas { namespace Backend
       // allocate data_
       friend void allocate(Matrix* matrix, const size_t M, const size_t N);
     public:
+      const size_t& numel;
       // create a matrix with the same dimensions as 'matrix'
       inline Matrix(const Size size);
       // create a matrix MxN with a specific value
@@ -299,9 +292,9 @@ namespace Pinakas { namespace Backend
       // create a matrix with the same dimensions as 'matrix' with a specific value
       inline Matrix(const Size size, double value);
       // create a matrix MxN random values from a range
-      Matrix(const size_t M, const size_t N, Range range);
+      Matrix(const size_t M, const size_t N, Random range);
       // create a matrix with the same dimensions as 'matrix' with random values from a range
-      inline Matrix(const Size size, const Range range);
+      inline Matrix(const Size size, const Random range);
       // create a matrix from specific values
       Matrix(const List<double> values);
       // create a matrix from specific values
@@ -321,6 +314,7 @@ namespace Pinakas { namespace Backend
       inline double& operator[](size_t index) const;
       double& operator()(size_t index) const;
       inline Size size(void) const;
+      const size_t& numel;
     private:
       Slice(Matrix& matrix, const size_t n, Keyword::Column);
       Slice(Matrix& matrix, const size_t n, Keyword::Row);
@@ -330,8 +324,8 @@ namespace Pinakas { namespace Backend
       Matrix& matrix_;
   };
 
-  struct Range {
-    Range(double min, double max);
+  struct Random {
+    Random(double min, double max);
     double min_, max_;
   };
 

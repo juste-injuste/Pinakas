@@ -24,7 +24,8 @@ namespace Pinakas { namespace Backend
   Matrix::Matrix()
     : // member initialization list
     size_{0, 0, 0},
-    data_(nullptr)
+    data_(nullptr),
+    numel(size_.numel)
   {
     #ifdef LOGGING
     std::clog << "Matrix created ! (empty)\n";
@@ -32,6 +33,8 @@ namespace Pinakas { namespace Backend
   }
   
   Matrix::Matrix(const Matrix& other)
+    : // member initialization list
+    numel(size_.numel)
   {
     #ifdef LOGGING
     std::clog << "Matrix copied !\n";
@@ -50,7 +53,8 @@ namespace Pinakas { namespace Backend
   Matrix::Matrix(Matrix&& other)
     : // member initialization list
     size_(other.size_),
-    data_(other.data_.release())
+    data_(other.data_.release()),
+    numel(size_.numel)
   {
     #ifdef LOGGING
     std::clog << "Matrix moved !\n";
@@ -58,6 +62,8 @@ namespace Pinakas { namespace Backend
   }
     
   Matrix::Matrix(const size_t M, const size_t N)
+    : // member initialization list
+    numel(size_.numel)
   {
     #ifdef LOGGING
     std::clog << "Matrix created !\n";
@@ -72,6 +78,8 @@ namespace Pinakas { namespace Backend
   {}
   
   Matrix::Matrix(const size_t M, const size_t N, const double value)
+    : // member initialization list
+    numel(size_.numel)
   {
     #ifdef LOGGING
     std::clog << "Matrix created !\n";
@@ -89,7 +97,9 @@ namespace Pinakas { namespace Backend
     : Matrix(size.M, size.N, value)
   {}
   
-  Matrix::Matrix(const size_t M, const size_t N, const Range range)
+  Matrix::Matrix(const size_t M, const size_t N, const Random range)
+    : // member initialization list
+    numel(size_.numel)
   {
     #ifdef LOGGING
     std::clog << "Matrix created !\n";
@@ -108,11 +118,13 @@ namespace Pinakas { namespace Backend
       data_[index] = uniform_distribution(generator);
   }
   
-  Matrix::Matrix(const Size size, const Range range)
+  Matrix::Matrix(const Size size, const Random range)
     : Matrix(size.M, size.N, range)
   {}
   
   Matrix::Matrix(const List<double> list)
+    : // member initialization list
+    numel(size_.numel)
   {
     #ifdef LOGGING
     std::clog << "Matrix created !\n";
@@ -128,6 +140,8 @@ namespace Pinakas { namespace Backend
   }
   
   Matrix::Matrix(const List<const List<const double>> values)
+    : // member initialization list
+    numel(size_.numel)
   {
     #ifdef LOGGING
     std::clog << "Matrix created !\n";
@@ -160,6 +174,8 @@ namespace Pinakas { namespace Backend
   }
     
   Matrix::Matrix(const List<const Matrix> list)
+    : // member initialization list
+    numel(size_.numel)
   {
     #ifdef LOGGING
     std::clog << "Matrix created !\n";
@@ -196,7 +212,7 @@ namespace Pinakas { namespace Backend
     // validate sizes
     if ((M == 0) || (N == 0)) {
       std::stringstream error_message;
-      error_message << "invalid didimensions are " << M << 'x' << N;
+      error_message << "invalid dimensions are " << M << 'x' << N;
       throw std::invalid_argument(error_message.str());
     }
 
@@ -383,7 +399,8 @@ namespace Pinakas { namespace Backend
   }
 // -------------------------------------------------------------------------------
   Slice::Slice(Matrix& matrix, const size_t n, Keyword::Column)
-    : // member initialization list,
+    : // member initialization list
+    numel(size_.numel),
     size_{matrix.size().M, 1, matrix.size().M},
     fixed_(n),
     col_row_(false),
@@ -391,7 +408,9 @@ namespace Pinakas { namespace Backend
   {}
 
   Slice::Slice(Matrix& matrix, const size_t m, Keyword::Row)
-    : // member initialization list,
+    : // member initialization list
+    
+    numel(size_.numel),
     size_{1, matrix.size().N, matrix.size().N},
     fixed_(m),
     col_row_(true),
@@ -420,7 +439,7 @@ namespace Pinakas { namespace Backend
     return size_;
   }
 // -------------------------------------------------------------------------------
-  Range::Range(double min, double max)
+  Random::Random(double min, double max)
     : // member initialization list
     min_(min),
     max_(max)
@@ -440,7 +459,7 @@ namespace Pinakas { namespace Backend
   Matrix& operator+=(Matrix& A, const Matrix& B)
   {
     validate_size(A.size(), B.size(), "+=");
-    for (size_t index = 0; index < A.size().numel; ++index)
+    for (size_t index = 0; index < A.numel; ++index)
       A[0][index] += B[0][index];
     return A;
   }
@@ -448,29 +467,29 @@ namespace Pinakas { namespace Backend
   Matrix operator+(const Matrix& A, const Matrix& B)
   {
     validate_size(A.size(), B.size(), "+");
-    Matrix res(A.size());
-    for (size_t index = 0; index < res.size().numel; ++index)
-      res[0][index] = A[0][index] + B[0][index];
-    return res;
+    Matrix result(A.size());
+    for (size_t index = 0; index < result.numel; ++index)
+      result[0][index] = A[0][index] + B[0][index];
+    return result;
   }
   
-  Matrix operator+(const Matrix& A, const Range range)
+  Matrix operator+(const Matrix& A, const Random range)
   {
-    Matrix res(A.size());
+    Matrix result(A.size());
     std::random_device device;
     std::mt19937 generator(device());
     std::uniform_real_distribution<> uniform_distribution(range.min_, range.max_);
-    for (size_t index = 0; index < res.size().numel; ++index)
-      res[0][index] += A[0][index] + uniform_distribution(generator);
-    return res;
+    for (size_t index = 0; index < result.numel; ++index)
+      result[0][index] += A[0][index] + uniform_distribution(generator);
+    return result;
   }
   
-  Matrix&& operator+(Matrix&& A, const Range range)
+  Matrix&& operator+(Matrix&& A, const Random range)
   {
     std::random_device device;
     std::mt19937 generator(device());
     std::uniform_real_distribution<> uniform_distribution(range.min_, range.max_);
-    for (size_t index = 0; index < A.size().numel; ++index)
+    for (size_t index = 0; index < A.numel; ++index)
       A[0][index] += uniform_distribution(generator);
     return std::move(A);
   }
@@ -478,7 +497,7 @@ namespace Pinakas { namespace Backend
   Matrix&& operator+(const Matrix& A, Matrix&& B)
   {
     validate_size(A.size(), B.size(), "+");
-    for (size_t index = 0; index < B.size().numel; ++index)
+    for (size_t index = 0; index < B.numel; ++index)
       B[0][index] += A[0][index];
     return std::move(B);
   }
@@ -486,7 +505,7 @@ namespace Pinakas { namespace Backend
   Matrix&& operator+(Matrix&& A, const Matrix& B)
   {
     validate_size(A.size(), B.size(), "+");
-    for (size_t index = 0; index < A.size().numel; ++index)
+    for (size_t index = 0; index < A.numel; ++index)
       A[0][index] += B[0][index];
     return std::move(A);
   }
@@ -494,44 +513,44 @@ namespace Pinakas { namespace Backend
   Matrix&& operator+(Matrix&& A, Matrix&& B)
   {
     validate_size(A.size(), B.size(), "+");
-    for (size_t index = 0; index < A.size().numel; ++index)
+    for (size_t index = 0; index < A.numel; ++index)
       A[0][index] += B[0][index];
     return std::move(A);
   }
   
   Matrix& operator+=(Matrix& A, const double B)
   {
-    for (size_t index = 0; index < A.size().numel; ++index)
+    for (size_t index = 0; index < A.numel; ++index)
       A[0][index] += B;
     return A;
   }
   
   Matrix operator+(const Matrix& A, const double B)
   {
-    Matrix res(A.size());
-    for (size_t index = 0; index < res.size().numel; ++index)
-      res[0][index] = A[0][index] + B;
-    return res;
+    Matrix result(A.size());
+    for (size_t index = 0; index < result.numel; ++index)
+      result[0][index] = A[0][index] + B;
+    return result;
   }
   
   Matrix&& operator+(Matrix&& A, const double B)
   {
-    for (size_t index = 0; index < A.size().numel; ++index)
+    for (size_t index = 0; index < A.numel; ++index)
       A[0][index] += B;
     return std::move(A += B);
   }
   
   Matrix operator+(const double A, const Matrix& B)
   {
-    Matrix res(B.size());
-    for (size_t index = 0; index < res.size().numel; ++index)
-      res[0][index] = A + B[0][index];
-    return res;
+    Matrix result(B.size());
+    for (size_t index = 0; index < result.numel; ++index)
+      result[0][index] = A + B[0][index];
+    return result;
   }
   
   Matrix&& operator+(const double A, Matrix&& B)
   {
-    for (size_t index = 0; index < B.size().numel; ++index)
+    for (size_t index = 0; index < B.numel; ++index)
       B[0][index] += A;
     return std::move(B);
   }
@@ -549,7 +568,7 @@ namespace Pinakas { namespace Backend
   Matrix& operator*=(Matrix& A, const Matrix& B)
   {
     validate_size(A.size(), B.size(), "*=");
-    for (size_t index = 0; index < A.size().numel; ++index)
+    for (size_t index = 0; index < A.numel; ++index)
       A[0][index] *= B[0][index];
     return A;
   }
@@ -557,16 +576,16 @@ namespace Pinakas { namespace Backend
   Matrix operator*(const Matrix& A, const Matrix& B)
   {
     validate_size(A.size(), B.size(), "*");
-    Matrix res(A.size());
-    for (size_t index = 0; index < res.size().numel; ++index)
-      res[0][index] = A[0][index] * B[0][index];
-    return res;
+    Matrix result(A.size());
+    for (size_t index = 0; index < result.numel; ++index)
+      result[0][index] = A[0][index] * B[0][index];
+    return result;
   }
   
   Matrix&& operator*(const Matrix& A, Matrix&& B)
   {
     validate_size(A.size(), B.size(), "*");
-    for (size_t index = 0; index < B.size().numel; ++index)
+    for (size_t index = 0; index < B.numel; ++index)
       B[0][index] *= A[0][index];
     return std::move(B);
   }
@@ -574,7 +593,7 @@ namespace Pinakas { namespace Backend
   Matrix&& operator*(Matrix&& A, const Matrix& B)
   {
     validate_size(A.size(), B.size(), "*");
-    for (size_t index = 0; index < A.size().numel; ++index)
+    for (size_t index = 0; index < A.numel; ++index)
       A[0][index] *= B[0][index];
     return std::move(A);
   }
@@ -582,44 +601,44 @@ namespace Pinakas { namespace Backend
   Matrix&& operator*(Matrix&& A, Matrix&& B)
   {
     validate_size(A.size(), B.size(), "*");
-    for (size_t index = 0; index < A.size().numel; ++index)
+    for (size_t index = 0; index < A.numel; ++index)
       A[0][index] *= B[0][index];
     return std::move(A);
   }
 // -------------------------------------------------------------------------------
   Matrix& operator*=(Matrix& A, const double B)
   {
-    for (size_t index = 0; index < A.size().numel; ++index)
+    for (size_t index = 0; index < A.numel; ++index)
       A[0][index] *= B;
     return A;
   }
   
   Matrix operator*(const Matrix& A, const double B)
   {
-    Matrix res(A.size());
-    for (size_t index = 0; index < res.size().numel; ++index)
-      res[0][index] = A[0][index] * B;
-    return res;
+    Matrix result(A.size());
+    for (size_t index = 0; index < result.numel; ++index)
+      result[0][index] = A[0][index] * B;
+    return result;
   }
   
   Matrix&& operator*(Matrix&& A, const double B)
   {
-    for (size_t index = 0; index < A.size().numel; ++index)
+    for (size_t index = 0; index < A.numel; ++index)
       A[0][index] *= B;
     return std::move(A *= B);
   }
   
   Matrix operator*(const double A, const Matrix& B)
   {
-    Matrix res(B.size());
-    for (size_t index = 0; index < res.size().numel; ++index)
-      res[0][index] = A * B[0][index];
-    return res;
+    Matrix result(B.size());
+    for (size_t index = 0; index < result.numel; ++index)
+      result[0][index] = A * B[0][index];
+    return result;
   }
   
   Matrix&& operator*(const double A, Matrix&& B)
   {
-    for (size_t index = 0; index < B.size().numel; ++index)
+    for (size_t index = 0; index < B.numel; ++index)
       B[0][index] *= A;
     return std::move(B);
   }
@@ -627,7 +646,7 @@ namespace Pinakas { namespace Backend
   Matrix& operator-=(Matrix& A, const Matrix& B)
   {
     validate_size(A.size(), B.size(), "-=");
-    for (size_t index = 0; index < A.size().numel; ++index)
+    for (size_t index = 0; index < A.numel; ++index)
       A[0][index] -= B[0][index];
     return A;
   }
@@ -635,16 +654,16 @@ namespace Pinakas { namespace Backend
   Matrix operator-(const Matrix& A, const Matrix& B)
   {
     validate_size(A.size(), B.size(), "-");
-    Matrix res(A.size());
-    for (size_t index = 0; index < res.size().numel; ++index)
-      res[0][index] = A[0][index] - B[0][index];
-    return res;
+    Matrix result(A.size());
+    for (size_t index = 0; index < result.numel; ++index)
+      result[0][index] = A[0][index] - B[0][index];
+    return result;
   }
 
   Matrix&& operator-(const Matrix& A, Matrix&& B)
   {
     validate_size(A.size(), B.size(), "-");
-    for (size_t index = 0; index < B.size().numel; ++index)
+    for (size_t index = 0; index < B.numel; ++index)
       B[0][index] = A[0][index] - B[0][index];
     return std::move(B);
   }
@@ -652,7 +671,7 @@ namespace Pinakas { namespace Backend
   Matrix&& operator-(Matrix&& A, const Matrix& B)
   {
     validate_size(A.size(), B.size(), "-");
-    for (size_t index = 0; index < A.size().numel; ++index)
+    for (size_t index = 0; index < A.numel; ++index)
       A[0][index] -= B[0][index];
     return std::move(A);
   }
@@ -660,59 +679,59 @@ namespace Pinakas { namespace Backend
   Matrix&& operator-(Matrix&& A, Matrix&& B)
   {
     validate_size(A.size(), B.size(), "-");
-    for (size_t index = 0; index < B.size().numel; ++index)
+    for (size_t index = 0; index < B.numel; ++index)
       A[0][index] -= B[0][index];
     return std::move(A);
   }
 
   Matrix& operator-=(Matrix& A, const double B)
   {
-    for (size_t index = 0; index < A.size().numel; ++index)
+    for (size_t index = 0; index < A.numel; ++index)
       A[0][index] -= B;
     return A;
   }
 
   Matrix operator-(const Matrix& A, const double B)
   {
-    Matrix res(A.size());
-    for (size_t index = 0; index < res.size().numel; ++index)
-      res[0][index] = A[0][index] - B;
-    return res;
+    Matrix result(A.size());
+    for (size_t index = 0; index < result.numel; ++index)
+      result[0][index] = A[0][index] - B;
+    return result;
   }
   
   Matrix&& operator-(Matrix&& A, const double B)
   {
-    for (size_t index = 0; index < A.size().numel; ++index)
+    for (size_t index = 0; index < A.numel; ++index)
       A[0][index] -= B;
     return std::move(A);
   }
 
   Matrix operator-(const double A, const Matrix& B)
   {
-    Matrix res(B.size());
-    for (size_t index = 0; index < res.size().numel; ++index)
-      res[0][index] = A - B[0][index];
-    return res;
+    Matrix result(B.size());
+    for (size_t index = 0; index < result.numel; ++index)
+      result[0][index] = A - B[0][index];
+    return result;
   }
 
   Matrix&& operator-(const double A, Matrix&& B)
   {
-    for (size_t index = 0; index < B.size().numel; ++index)
+    for (size_t index = 0; index < B.numel; ++index)
       B[0][index] = A - B[0][index];
     return std::move(B);
   }
 
   Matrix operator-(const Matrix& A)
   {
-    Matrix res(A.size());
-    for (size_t index = 0; index < res.size().numel; ++index)
-      res[0][index] = -A[0][index];
-    return res;
+    Matrix result(A.size());
+    for (size_t index = 0; index < result.numel; ++index)
+      result[0][index] = -A[0][index];
+    return result;
   }
 
   Matrix&& operator-(Matrix&& A)
   {
-    for (size_t index = 0; index < A.size().numel; ++index)
+    for (size_t index = 0; index < A.numel; ++index)
       A[0][index] = -A[0][index];
     return std::move(A);
   }
@@ -720,7 +739,7 @@ namespace Pinakas { namespace Backend
   Matrix& operator/=(Matrix& A, const Matrix& B)
   {
     validate_size(A.size(), B.size(), "/=");
-    for (size_t index = 0; index < A.size().numel; ++index)
+    for (size_t index = 0; index < A.numel; ++index)
       A[0][index] /= B[0][index];
     return A;
   }
@@ -728,16 +747,16 @@ namespace Pinakas { namespace Backend
   Matrix operator/(const Matrix& A, const Matrix& B)
   {
     validate_size(A.size(), B.size(), "/");
-    Matrix res(A.size());
-    for (size_t index = 0; index < res.size().numel; ++index)
-      res[0][index] = A[0][index] / B[0][index];
-    return res;
+    Matrix result(A.size());
+    for (size_t index = 0; index < result.numel; ++index)
+      result[0][index] = A[0][index] / B[0][index];
+    return result;
   }
 
   Matrix&& operator/(const Matrix& A, Matrix&& B)
   {
     validate_size(A.size(), B.size(), "/");
-    for (size_t index = 0; index < B.size().numel; ++index)
+    for (size_t index = 0; index < B.numel; ++index)
       B[0][index] = A[0][index] / B[0][index];
     return std::move(B);
   }
@@ -745,7 +764,7 @@ namespace Pinakas { namespace Backend
   Matrix&& operator/(Matrix&& A, const Matrix& B)
   {
     validate_size(A.size(), B.size(), "/");
-    for (size_t index = 0; index < A.size().numel; ++index)
+    for (size_t index = 0; index < A.numel; ++index)
       A[0][index] /= B[0][index];
     return std::move(A);
   }
@@ -753,7 +772,7 @@ namespace Pinakas { namespace Backend
   Matrix&& operator/(Matrix&& A, Matrix&& B)
   {
     validate_size(A.size(), B.size(), "/");
-    for (size_t index = 0; index < A.size().numel; ++index)
+    for (size_t index = 0; index < A.numel; ++index)
       A[0][index] /= B[0][index];
     return std::move(A);
   }
@@ -761,7 +780,7 @@ namespace Pinakas { namespace Backend
   Matrix& operator/=(Matrix& A, const double B)
   {
     const double iB = 1 / B;
-    for (size_t index = 0; index < A.size().numel; ++index)
+    for (size_t index = 0; index < A.numel; ++index)
       A[0][index] *= iB;
     return A;
   }
@@ -769,31 +788,31 @@ namespace Pinakas { namespace Backend
   Matrix operator/(const Matrix& A, const double B)
   {
     const double iB = 1 / B;
-    Matrix res(A.size());
-    for (size_t index = 0; index < res.size().numel; ++index)
-      res[0][index] = A[0][index] * iB;
-    return res;
+    Matrix result(A.size());
+    for (size_t index = 0; index < result.numel; ++index)
+      result[0][index] = A[0][index] * iB;
+    return result;
   }
   
   Matrix&& operator/(Matrix&& A, const double B)
   {
     const double iB = 1 / B;
-    for (size_t index = 0; index < A.size().numel; ++index)
+    for (size_t index = 0; index < A.numel; ++index)
       A[0][index] *= iB;
     return std::move(A);
   }
 
   Matrix operator/(const double A, const Matrix& B)
   {
-    Matrix res(B.size());
-    for (size_t index = 0; index < res.size().numel; ++index)
-      res[0][index] = A / B[0][index];
-    return res;
+    Matrix result(B.size());
+    for (size_t index = 0; index < result.numel; ++index)
+      result[0][index] = A / B[0][index];
+    return result;
   }
 
   Matrix&& operator/(const double A, Matrix&& B)
   {
-    for (size_t index = 0; index < B.size().numel; ++index)
+    for (size_t index = 0; index < B.numel; ++index)
       B[0][index] = A / B[0][index];
     return std::move(B);
   }
@@ -801,7 +820,7 @@ namespace Pinakas { namespace Backend
   Matrix& operator^=(Matrix& A, const Matrix& B)
   {
     validate_size(A.size(), B.size(), "^=");
-    for (size_t index = 0; index < A.size().numel; ++index)
+    for (size_t index = 0; index < A.numel; ++index)
       A[0][index] = std::pow(A[0][index], B[0][index]);
     return A;
   }
@@ -809,16 +828,16 @@ namespace Pinakas { namespace Backend
   Matrix operator^(const Matrix& A, const Matrix& B)
   {
     validate_size(A.size(), B.size(), "^");
-    Matrix res(A.size());
-    for (size_t index = 0; index < res.size().numel; ++index)
-      res[0][index] = std::pow(A[0][index], B[0][index]);
-    return res;
+    Matrix result(A.size());
+    for (size_t index = 0; index < result.numel; ++index)
+      result[0][index] = std::pow(A[0][index], B[0][index]);
+    return result;
   }
 
   Matrix&& operator^(const Matrix& A, Matrix&& B)
   {
     validate_size(A.size(), B.size(), "^");
-    for (size_t index = 0; index < B.size().numel; ++index)
+    for (size_t index = 0; index < B.numel; ++index)
       B[0][index] = std::pow(A[0][index], B[0][index]);
     return std::move(B);
   }
@@ -826,7 +845,7 @@ namespace Pinakas { namespace Backend
   Matrix&& operator^(Matrix&& A, const Matrix& B)
   {
     validate_size(A.size(), B.size(), "^");
-    for (size_t index = 0; index < A.size().numel; ++index)
+    for (size_t index = 0; index < A.numel; ++index)
       A[0][index] = std::pow(A[0][index], B[0][index]);
     return std::move(A);
   }
@@ -834,89 +853,89 @@ namespace Pinakas { namespace Backend
   Matrix&& operator^(Matrix&& A, Matrix&& B)
   {
     validate_size(A.size(), B.size(), "^");
-    for (size_t index = 0; index < A.size().numel; ++index)
+    for (size_t index = 0; index < A.numel; ++index)
       A[0][index] = std::pow(A[0][index], B[0][index]);
     return std::move(A);
   }
 // -------------------------------------------------------------------------------
   Matrix& operator^=(Matrix& A, const double B)
   {
-    for (size_t index = 0; index < A.size().numel; ++index)
+    for (size_t index = 0; index < A.numel; ++index)
       A[0][index] = std::pow(A[0][index], B);
     return A;
   }
 
   Matrix operator^(const Matrix& A, const double B)
   {
-    Matrix res(A.size());
-    for (size_t index = 0; index < res.size().numel; ++index)
-      res[0][index] = std::pow(A[0][index], B);
-    return res;
+    Matrix result(A.size());
+    for (size_t index = 0; index < result.numel; ++index)
+      result[0][index] = std::pow(A[0][index], B);
+    return result;
   }
   
   Matrix&& operator^(Matrix&& A, const double B)
   {
-    for (size_t index = 0; index < A.size().numel; ++index)
+    for (size_t index = 0; index < A.numel; ++index)
       A[0][index] = std::pow(A[0][index], B);
     return std::move(A);
   }
 
   Matrix operator^(const double A, const Matrix& B)
   {
-    Matrix res(B.size());
-    for (size_t index = 0; index < res.size().numel; ++index)
-      res[0][index] = std::pow(A, B[0][index]);
-    return res;
+    Matrix result(B.size());
+    for (size_t index = 0; index < result.numel; ++index)
+      result[0][index] = std::pow(A, B[0][index]);
+    return result;
   }
 
   Matrix&& operator^(const double A, Matrix&& B)
   {
-    for (size_t index = 0; index < B.size().numel; ++index)
+    for (size_t index = 0; index < B.numel; ++index)
       B[0][index] = std::pow(A, B[0][index]);
     return std::move(B);
   }
 // -------------------------------------------------------------------------------
   Matrix floor(const Matrix& A)
   {
-    Matrix res(A.size(), 0);
-    for (size_t index = 0; index < res.size().numel; ++index)
-      res[0][index] = std::floor(A[0][index]);
-    return res;
+    Matrix result(A.size(), 0);
+    for (size_t index = 0; index < result.numel; ++index)
+      result[0][index] = std::floor(A[0][index]);
+    return result;
   }
 
   Matrix&& floor(Matrix&& A)
   {
-    for (size_t index = 0; index < A.size().numel; ++index)
+    for (size_t index = 0; index < A.numel; ++index)
       A[0][index] = std::floor(A[0][index]);
     return std::move(A);
   }
 // -------------------------------------------------------------------------------
   Matrix round(const Matrix& A)
   {
-    Matrix res(A.size(), 0);
-    for (size_t index = 0; index < res.size().numel; ++index)
-      res[0][index] = std::round(A[0][index]);
-    return res;
+    Matrix result(A.size(), 0);
+    for (size_t index = 0; index < result.numel; ++index)
+      result[0][index] = std::round(A[0][index]);
+    return result;
   }
   
   Matrix&& round(Matrix&& A)
   {
-    for (size_t index = 0; index < A.size().numel; ++index)
+    for (size_t index = 0; index < A.numel; ++index)
       A[0][index] = std::round(A[0][index]);
     return std::move(A);
   }
 // -------------------------------------------------------------------------------
   Matrix ceil(Matrix& A)
   {
-    Matrix res(A.size(), 0);
-    for (size_t index = 0; index < res.size().numel; ++index)
-      res[0][index] = std::ceil(A[0][index]);
-    return res;
+    Matrix result(A.size(), 0);
+    for (size_t index = 0; index < result.numel; ++index)
+      result[0][index] = std::ceil(A[0][index]);
+    return result;
   }
   
   Matrix&& ceil(Matrix&& A)
   {
-    for (size_t index = 0; index < A.size().numel; ++index)
+    for (size_t index = 0; index < A.numel; ++index)
       A[0][index] = std::round(A[0][index]);
     return std::move(A);
   }
@@ -931,41 +950,41 @@ namespace Pinakas { namespace Backend
       throw std::invalid_argument(error_message.str());
     }
 
-    Matrix res(A.size().M, B.size().N, 0);
+    Matrix result(A.size().M, B.size().N, 0);
     for (size_t i = 0; i < B.size().N; i++)
       for (size_t j = 0; j < A.size().M; j++)
         for (size_t k = 0; k < A.size().N; k++)
-          res[j][i] += A[j][k] * B[k][i];
-    return res;
+          result[j][i] += A[j][k] * B[k][i];
+    return result;
   }
 // -------------------------------------------------------------------------------
   Matrix transpose(const Matrix& A)
   {
-    Matrix res(A.size().N, A.size().M);
+    Matrix result(A.size().N, A.size().M);
     for (size_t y = 0; y < A.size().M; ++y)
       for (size_t x = 0; x < A.size().N; ++x)
-        res[x][y] = A[y][x];
-    return res;
+        result[x][y] = A[y][x];
+    return result;
   }
 
   Matrix reshape(const Matrix& A, const size_t M, const size_t N)
   {
-    if (A.size().numel != M*N) {
+    if (A.numel != M*N) {
       std::stringstream error_message;
       error_message << "reshape: can't reshape " << A.size();
       error_message << " array to " << M << 'x' << N << " array";
       throw std::invalid_argument(error_message.str());
     }
-    Matrix res(M, N);
-    for (size_t index = 0; index < res.size().numel; ++index)
-      res[0][index] = A[0][index];
-    return res;
+    Matrix result(M, N);
+    for (size_t index = 0; index < result.numel; ++index)
+      result[0][index] = A[0][index];
+    return result;
   }
 // -------------------------------------------------------------------------------
   double min(const Matrix& matrix)
   {
     double minimum = std::numeric_limits<double>::max();
-    for (size_t index = 0; index < matrix.size().numel; ++index)
+    for (size_t index = 0; index < matrix.numel; ++index)
       if (matrix[0][index] < minimum)
         minimum = matrix[0][index];
     return minimum;
@@ -974,7 +993,7 @@ namespace Pinakas { namespace Backend
   double min(const Slice& column)
   {
     double minimum = std::numeric_limits<double>::max();
-    for (size_t index = 0; index < column.size().numel; ++index)
+    for (size_t index = 0; index < column.numel; ++index)
       if (column[index] < minimum)
         minimum = column[index];
     return minimum;
@@ -983,7 +1002,7 @@ namespace Pinakas { namespace Backend
   double max(const Matrix& matrix)
   {
     double maximum = std::numeric_limits<double>::min();
-    for (size_t index = 0; index < matrix.size().numel; ++index)
+    for (size_t index = 0; index < matrix.numel; ++index)
       if (matrix[0][index] > maximum)
         maximum = matrix[0][index];
     return maximum;
@@ -992,7 +1011,7 @@ namespace Pinakas { namespace Backend
   double max(const Slice& column)
   {
     double maximum = std::numeric_limits<double>::min();
-    for (size_t index = 0; index < column.size().numel; ++index)
+    for (size_t index = 0; index < column.numel; ++index)
       if (column[index] > maximum)
         maximum = column[index];
     return maximum;
@@ -1001,7 +1020,7 @@ namespace Pinakas { namespace Backend
   double sum(const Matrix& matrix)
   {
     double summation = 0;
-    for (size_t index = 0; index < matrix.size().numel; ++index)
+    for (size_t index = 0; index < matrix.numel; ++index)
       summation += matrix[0][index];
     return summation;
   }
@@ -1009,7 +1028,7 @@ namespace Pinakas { namespace Backend
   double prod(const Matrix& matrix)
   {
     double product = 0;
-    for (size_t index = 0; index < matrix.size().numel; ++index)
+    for (size_t index = 0; index < matrix.numel; ++index)
       product *= matrix[0][index];
     return product;
   }
@@ -1165,7 +1184,7 @@ namespace Pinakas { namespace Backend
 
     const Matrix& data_x = data_set.first;
     const Matrix& data_y = data_set.second;
-    const size_t N = data_x.size().numel;
+    const size_t N = data_x.numel;
     const double step = (data_x[0][N-1] - data_x[0][0]) / (N-1);
     Matrix lin_x(data_x.size(), 0);
     Matrix lin_y(data_y.size(), 0);
@@ -1192,7 +1211,7 @@ namespace Pinakas { namespace Backend
     return {lin_x, lin_y};
   }
 
-  Matrix linspace(const double x1, const double x2, const size_t N, Keyword::Row)
+  Matrix linspace(const double x1, const double x2, const size_t N)
   {
     Matrix vector(1, N);
     double step = (x2 - x1) / (N-1);
@@ -1222,7 +1241,7 @@ namespace Pinakas { namespace Backend
     return indices;
   }
 
-  Matrix diff(const Matrix& A, Keyword::Row, size_t n)
+  Matrix diff(const Matrix& A, size_t n)
   {
     if (n) {
       Matrix derivative(A.size().M, A.size().N-1, 0);
@@ -1230,7 +1249,7 @@ namespace Pinakas { namespace Backend
         for (size_t x = 0; x < derivative.size().N; ++x)
           derivative[y][x] = A[y][x + 1] - A[y][x];
 
-      return diff(derivative, Keyword::row, n - 1);
+      return diff(derivative, n - 1);
     }
     return A;
   }
@@ -1250,17 +1269,17 @@ namespace Pinakas { namespace Backend
 
   Matrix reverse(const Matrix& A)
   {
-    size_t n = A.size().numel;
-    Matrix res(A.size());
+    size_t n = A.numel;
+    Matrix result(A.size());
     for (size_t index = 0; index < n; ++index)
-      res[0][index] = A[0][n-1-index];
-    return res;
+      result[0][index] = A[0][n-1-index];
+    return result;
   }
 
   Matrix&& reverse(Matrix&& A)
   {
-    for (size_t k = 0; k < (A.size().numel >> 1); ++k)
-      std::swap(A[0][k], A[0][A.size().numel-1 - k]);
+    for (size_t k = 0; k < (A.numel >> 1); ++k)
+      std::swap(A[0][k], A[0][A.numel-1 - k]);
     return std::move(A);
   }
 
@@ -1284,7 +1303,7 @@ namespace Pinakas { namespace Backend
 
   Matrix blackman(const Matrix& signal)
   {
-    const size_t N = signal.size().numel;
+    const size_t N = signal.numel;
     Matrix windowed(1, N);
     for (size_t k = 0; k < N; ++k)
       windowed[0][k] = signal[0][k] * (0.42 - 0.5*std::cos(2*M_PI*k/(N-1))
@@ -1294,134 +1313,10 @@ namespace Pinakas { namespace Backend
 
   Matrix&& blackman(Matrix&& signal)
   {
-    const size_t N = signal.size().numel;
+    const size_t N = signal.numel;
     for (size_t k = 0; k < N; ++k)
       signal[0][k] *= 0.42 - 0.5*std::cos(2*M_PI*k/(N-1))
                            + 0.08*std::cos(4*M_PI*k/(N-1));
-    return std::move(signal);
-  }
-// -------------------------------------------------------------------------------
-  Matrix blackman_exact(const size_t N)
-  {
-    Matrix window(1, N);
-    for (size_t k = 0; k < N; ++k)
-      window[0][k] = 0.42659 - 0.49656*std::cos(2*M_PI*k/(N-1))
-                             + 0.076849*std::cos(4*M_PI*k/(N-1));
-    return window;
-  }
-
-  Matrix blackman_exact(const Matrix& signal)
-  {
-    const size_t N = signal.size().numel;
-    Matrix windowed(1, N);
-    for (size_t k = 0; k < N; ++k)
-      windowed[0][k] = signal[0][k] * (0.42659 - 0.49656*std::cos(2*M_PI*k/(N-1))
-                                               + 0.076849*std::cos(4*M_PI*k/(N-1)));
-    return windowed;
-  }
-
-  Matrix&& blackman_exact(Matrix&& signal)
-  {
-    const size_t N = signal.size().numel;
-    for (size_t k = 0; k < N; ++k)
-      signal[0][k] *= 0.42659 - 0.49656*std::cos(2*M_PI*k/(N-1))
-                              + 0.076849*std::cos(4*M_PI*k/(N-1));
-    return std::move(signal);
-  }
-// -------------------------------------------------------------------------------
-  Matrix nuttall(const size_t N)
-  {
-    Matrix window(1, N);
-    for (size_t k = 0; k < N; ++k) {
-      window[0][k] = 0.355768 - 0.487396*std::cos(2*M_PI*k/(N-1))
-                              + 0.144232*std::cos(4*M_PI*k/(N-1))
-                              - 0.012604*std::cos(6*M_PI*k/(N-1));
-    }
-    return window;
-  }
-
-  Matrix nuttall(const Matrix& signal)
-  {
-    const size_t N = signal.size().numel;
-    Matrix windowed(1, N);
-    for (size_t k = 0; k < N; ++k)
-      windowed[0][k] = signal[0][k]*(0.355768 - 0.487396*std::cos(2*M_PI*k/(N-1))
-                                              + 0.144232*std::cos(4*M_PI*k/(N-1))
-                                              + 0.012604*std::cos(6*M_PI*k/(N-1)));
-    return windowed;
-  }
-
-  Matrix&& nuttall(Matrix&& signal)
-  {
-    const size_t N = signal.size().numel;
-    for (size_t k = 0; k < N; ++k)
-      signal[0][k] *= 0.355768 - 0.487396*std::cos(2*M_PI*k/(N-1))
-                               + 0.144232*std::cos(4*M_PI*k/(N-1))
-                               - 0.012604*std::cos(6*M_PI*k/(N-1));
-    return std::move(signal);
-  }
-// -------------------------------------------------------------------------------
-  Matrix blackman_nuttall(const size_t N)
-  {
-    Matrix window(1, N);
-    for (size_t k = 0; k < N; ++k) {
-      window[0][k] = 0.3635819 - 0.4891775*std::cos(2*M_PI*k/(N-1))
-                               + 0.1365995*std::cos(4*M_PI*k/(N-1))
-                               - 0.0106411*std::cos(6*M_PI*k/(N-1));
-    }
-    return window;
-  }
-
-  Matrix blackman_nuttall(const Matrix& signal)
-  {
-    const size_t N = signal.size().numel;
-    Matrix windowed(1, N);
-    for (size_t k = 0; k < N; ++k)
-      windowed[0][k] = signal[0][k]*(0.3635819 - 0.4891775*std::cos(2*M_PI*k/(N-1))
-                                               + 0.1365995*std::cos(4*M_PI*k/(N-1))
-                                               - 0.0106411*std::cos(6*M_PI*k/(N-1)));
-    return windowed;
-  }
-
-  Matrix&& blackman_nuttall(Matrix&& signal)
-  {
-    const size_t N = signal.size().numel;
-    for (size_t k = 0; k < N; ++k)
-      signal[0][k] *= 0.3635819 - 0.4891775*std::cos(2*M_PI*k/(N-1))
-                                + 0.1365995*std::cos(4*M_PI*k/(N-1))
-                                - 0.0106411*std::cos(6*M_PI*k/(N-1));
-    return std::move(signal);
-  }
-// -------------------------------------------------------------------------------
-  Matrix blackman_harris(const size_t N)
-  {
-    Matrix window(1, N);
-    for (size_t k = 0; k < N; ++k) {
-      window[0][k] = 0.35875 - 0.48829*std::cos(2*M_PI*k/(N-1))
-                             + 0.14128*std::cos(4*M_PI*k/(N-1))
-                             - 0.01168*std::cos(6*M_PI*k/(N-1));
-    }
-    return window;
-  }
-
-  Matrix blackman_harris(const Matrix& signal)
-  {
-    const size_t N = signal.size().numel;
-    Matrix windowed(1, N);
-    for (size_t k = 0; k < N; ++k)
-      windowed[0][k] = signal[0][k]*(0.35875 - 0.48829*std::cos(2*M_PI*k/(N-1))
-                                             + 0.14128*std::cos(4*M_PI*k/(N-1))
-                                             - 0.01168*std::cos(6*M_PI*k/(N-1)));
-    return windowed;
-  }
-
-  Matrix&& blackman_harris(Matrix&& signal)
-  {
-    const size_t N = signal.size().numel;
-    for (size_t k = 0; k < N; ++k)
-      signal[0][k] *= 0.35875 - 0.48829*std::cos(2*M_PI*k/(N-1))
-                              + 0.14128*std::cos(4*M_PI*k/(N-1))
-                              - 0.01168*std::cos(6*M_PI*k/(N-1));
     return std::move(signal);
   }
 // -------------------------------------------------------------------------------
@@ -1435,16 +1330,16 @@ namespace Pinakas { namespace Backend
 
   Matrix hamming(const Matrix& signal)
   {
-    const size_t N = signal.size().numel;
+    const size_t N = signal.numel;
     Matrix windowed(1, N);
     for (size_t k = 0; k < N; ++k)
-      windowed[0][k] = signal[0][k]*(0.54 - 0.46 * std::cos(2*M_PI*k/(N-1)));
+      windowed[0][k] = signal[0][k] * (0.54 - 0.46 * std::cos(2*M_PI*k/(N-1)));
     return windowed;
   }
 
   Matrix&& hamming(Matrix&& signal)
   {
-    const size_t N = signal.size().numel;
+    const size_t N = signal.numel;
     for (size_t k = 0; k < N; ++k)
       signal[0][k] *= 0.54 - 0.46 * std::cos(2*M_PI*k/(N-1));
     return std::move(signal);
@@ -1454,24 +1349,24 @@ namespace Pinakas { namespace Backend
   {
     Matrix window(1, N);
     for (size_t k = 0; k < N; ++k)
-      window[0][k] = 0.5*(1-cos(2*M_PI*k/(N-1)));
+      window[0][k] = 0.5 - 0.5*cos(2*M_PI*k/(N-1));
     return window;
   }
 
   Matrix hann(const Matrix& signal)
   {
-    const size_t N = signal.size().numel;
+    const size_t N = signal.numel;
     Matrix windowed(1, N);
     for (size_t k = 0; k < N; ++k)
-      windowed[0][k] = signal[0][k]*(0.5*(1-cos(2*M_PI*k/(N-1))));
+      windowed[0][k] = signal[0][k] * (0.5 - 0.5*cos(2*M_PI*k/(N-1)));
     return windowed;
   }
 
   Matrix&& hann(Matrix&& signal)
   {
-    const size_t N = signal.size().numel;
+    const size_t N = signal.numel;
     for (size_t k = 0; k < N; ++k)
-      signal[0][k] *= 0.5*(1-cos(2*M_PI*k/(N-1)));
+      signal[0][k] *= 0.5 - 0.5*cos(2*M_PI*k/(N-1));
     return std::move(signal);
   }
 // -------------------------------------------------------------------------------
@@ -1489,14 +1384,14 @@ namespace Pinakas { namespace Backend
   }
 
   Matrix sin(Matrix& A) {
-    Matrix res(A.size());
-    for (size_t index = 0; index < res.size().numel; ++index)
-      res[0][index] = std::sin(A[0][index]);
-    return res;
+    Matrix result(A.size());
+    for (size_t index = 0; index < result.numel; ++index)
+      result[0][index] = std::sin(A[0][index]);
+    return result;
   }
 
   Matrix&& sin(Matrix&& A) {
-    for (size_t index = 0; index < A.size().numel; ++index)
+    for (size_t index = 0; index < A.numel; ++index)
       A[0][index] = std::sin(A[0][index]);
     return std::move(A);
   }
@@ -1506,29 +1401,51 @@ namespace Pinakas { namespace Backend
   }
 
   Matrix sinc(Matrix& A) {
-    Matrix res(A.size());
-    for (size_t index = 0; index < res.size().numel; ++index)
-      res[0][index] = sinc(A[0][index]);
-    return res;
+    Matrix result(A.size());
+    for (size_t index = 0; index < result.numel; ++index)
+      result[0][index] = sinc(A[0][index]);
+    return result;
   }
 
   Matrix&& sinc(Matrix&& A) {
-    for (size_t index = 0; index < A.size().numel; ++index)
+    for (size_t index = 0; index < A.numel; ++index)
       A[0][index] = sinc(A[0][index]);
     return std::move(A);
   }
 
   Matrix upsample(const Matrix& data, const size_t L)
   {
-    Matrix upsampled(1, L * data.size().numel, 0);
-    for (size_t index = 0; index < data.size().numel; ++index)
+    Matrix upsampled(1, L * data.numel, 0);
+    for (size_t index = 0; index < data.numel; ++index)
       upsampled[0][index*L] = data[0][index];
     return upsampled;
   }
 
+  Matrix sinc_impulse(const size_t length, const double frequency)
+  {
+    // validate impulse length
+    if (!(length%2))
+      throw std::invalid_argument("impulse length must be odd");
+
+    // offset to the impulse center
+    const signed offset = (length-1) * 0.5;
+
+    // compute impulse
+    Matrix impulse(1, length);
+    for (signed k = 0; k < signed(length) ; ++k)
+      impulse[0][k] = sinc((k-offset) * frequency);
+
+    return impulse;
+  }
+
   Matrix resample(const Matrix& data, const size_t L)
   {
-    const size_t N      = data.size().numel;
+    if (data.size().M != 1)
+      throw std::invalid_argument("error: resample: data must be a horizontal 1-dimensional matrix");
+    if (data.numel == 0)
+      throw std::invalid_argument("error: resample: data must contain atleast 1 element");
+
+    const size_t N      = data.numel;
     // offset to impulse center
 	  const size_t offset = L*3.5;
     // length of impulse
@@ -1557,8 +1474,8 @@ namespace Pinakas { namespace Backend
 
     // interpolate upsampled data using a cropped convolution
     Matrix resampled(1, last - first + 1, 0);
-    for (i = 0; i < extended.size().numel; ++i) {
-      for (j = 0; j < filter.size().numel; ++j) {
+    for (i = 0; i < extended.numel; ++i) {
+      for (j = 0; j < filter.numel; ++j) {
         k = i + j - offset;
         // skips if the index is not within the upsampled data range
         if ((first <= k) && (k <= last))
@@ -1569,26 +1486,19 @@ namespace Pinakas { namespace Backend
     return resampled;
   }
 
-  Matrix sinc_impulse(const size_t length, const double frequency)
-  {
-    // validate impulse length
-    if (!(length%2))
-      throw std::invalid_argument("impulse length must be odd");
-
-    // offset to the impulse center
-    const signed offset = (length-1) * 0.5;
-
-    // compute impulse
-    Matrix impulse(1, length);
-    for (signed k = 0; k < signed(length) ; ++k)
-      impulse[0][k] = sinc((k-offset) * frequency);
-
-    return impulse;
-  }
-
   Matrix resample(const Matrix& data, const size_t L, const size_t keep, const double alpha)
   {
-    const size_t N      = data.size().numel;
+    if (data.size().M != 1)
+      std::clog << "warning: resample: data must be a horizontal 1-dimensional matrix\n";
+    if (data.numel == 0)
+      throw std::invalid_argument("error: resample: data must contain atleast 1 element");
+    if (L <= 1)
+      throw std::invalid_argument("error: resample: L must be 2 or more");
+    if (keep >= data.numel)
+      throw std::invalid_argument("error: resample: keep must be less than the number of elements of data");
+    if (alpha < 1)
+      throw std::invalid_argument("error: resample: alpha must be bigger or equal to 1");
+    const size_t N      = data.numel;
     // offset to impulse center
 	  const size_t offset = L*alpha;
     // length of impulse
@@ -1624,8 +1534,8 @@ namespace Pinakas { namespace Backend
     
     // interpolate upsampled data using a cropped convolution
     Matrix resampled(1, last - first + 1, 0);
-    for (i = 0; i < extended.size().numel; ++i) {
-      for (j = 0; j < filter.size().numel; ++j) {
+    for (i = 0; i < extended.numel; ++i) {
+      for (j = 0; j < filter.numel; ++j) {
         k = i + j - offset;
         // skips if the index is not within the upsampled data range
         if ((first <= k) && (k <= last))
@@ -1638,7 +1548,7 @@ namespace Pinakas { namespace Backend
 
   std::ostream& operator<<(std::ostream& ostream, const Matrix& A)
   {
-    if (A.size().numel) {
+    if (A.numel) {
       std::size_t max_len = 0;
 
       for (size_t y = 0; y < A.size().M; ++y) {
@@ -1661,9 +1571,9 @@ namespace Pinakas { namespace Backend
 
   std::ostream& operator<<(std::ostream& ostream, const Slice& A)
   {
-    if (A.size().numel) {
+    if (A.numel) {
       std::size_t max_len = 0;
-      for (size_t y = 0; y < A.size().numel; ++y) {
+      for (size_t y = 0; y < A.numel; ++y) {
         std::stringstream ss;
         ss.copyfmt(ostream);
         ss << A[y];
@@ -1671,12 +1581,12 @@ namespace Pinakas { namespace Backend
       }
       if (A.size().M == 1) {
         ostream << std::setw(max_len) << A[0];
-        for (size_t x = 1; x < A.size().numel; ++x)
+        for (size_t x = 1; x < A.numel; ++x)
             ostream << ' ' << std::setw(max_len) << A[x];
         ostream << '\n';
       }
       else {
-        for (size_t y = 0; y < A.size().numel; ++y)
+        for (size_t y = 0; y < A.numel; ++y)
           ostream << std::setw(max_len) << A[y] << '\n';
       }
     }
@@ -1700,10 +1610,10 @@ namespace Pinakas { namespace Backend
     for (auto& data_set : data_sets) {
       const Matrix& xdata = data_set.first;
       const Matrix& ydata = data_set.second;
-      if (xdata.size().numel != ydata.size().numel) {
+      if (xdata.numel != ydata.numel) {
         std::stringstream error_message;
-        error_message << "number of element mismatch (x has " << xdata.size().numel;
-        error_message << " elements,  y has " << ydata.size().numel << " elements)\n";
+        error_message << "number of element mismatch (x has " << xdata.numel;
+        error_message << " elements,  y has " << ydata.numel << " elements)\n";
         throw std::invalid_argument(error_message.str());
       }
     }
@@ -1722,7 +1632,7 @@ namespace Pinakas { namespace Backend
     for (auto& data_set : data_sets) {
       const Matrix& x = data_set.first;
       const Matrix& y = data_set.second;
-      for (size_t index = 0; index < x.size().numel; ++index)
+      for (size_t index = 0; index < x.numel; ++index)
         file << x[0][index] << ' ' << y[0][index] << '\n';
       // separate data sets
       file << "\n\n";
@@ -1767,7 +1677,7 @@ namespace Pinakas { namespace Backend
   {
     plot(title, {data_set}, persistent, remove, pause, lines);
   }
-
+  /*
   void plot(std::string title, List<Matrix> data, bool persistent, bool remove, bool pause, bool lines)
   {
     // validate that gnuplot is in system path
@@ -1788,7 +1698,7 @@ namespace Pinakas { namespace Backend
 
     // write x and y data to file for each data set
     for (auto& set : data) {
-      for (size_t k = 0; k < set.size().numel; ++k)
+      for (size_t k = 0; k < set.numel; ++k)
         file << k << ' ' << set[0][k] << '\n';
       // separate data sets
       file << "\n\n";
@@ -1833,12 +1743,13 @@ namespace Pinakas { namespace Backend
   {
     plot(title, {data}, persistent, remove, pause, lines);
   }
-
-  double rms(const Matrix& data)
+  //*/
+  double rms(const Matrix& A)
   {
+    const size_t n = A.numel;
     double result = 0;
-    for (size_t k = 0; k < data.size().numel; ++k)
-      result += data[0][k] * data[0][k];
+    for (size_t k = 0; k < n; ++k)
+      result += A[0][k] * A[0][k];
     return result;
   }
 }}
@@ -1849,15 +1760,13 @@ int main()
   using namespace Keyword;
 
   //*
-  auto f = [](const Matrix& x){return (x^2) + sin(x*5)/5 - 2;};// + Range(0, 0.2);
+  auto f = [](const Matrix& x){return (x^2) + sin(x*5)/5 - 2;};// + Random(0, 0.2);
   size_t N = 100;
   size_t L = 100;
   
-  Matrix y = f(linspace(0, 1, N));
-  Matrix y_new  = resample(y, L);
-  Matrix y_true = f(linspace(0, 1, y_new.size().numel));
-  std::cout << "rms : " << rms(y_true-y_new) << '\n';
-  plot("blackman", {y_new, y_true});
+  Matrix y     = f(linspace(0, 1, N));
+  Matrix y_new = resample(y, L);
+  plot("blackman", {{linspace(0, 1, y.numel), y}, {linspace(0, 1, y_new.numel), y_new}});
   
   //*/
   
