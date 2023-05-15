@@ -181,8 +181,8 @@ namespace Pinakas { namespace Backend
   Matrix&& reverse(Matrix&& A);
   Matrix diff(const Matrix& A, size_t n = 1);
   Matrix conv(const Matrix& A, const Matrix& B);
-  Matrix xcorr(const Matrix &A, const Matrix &B);
-  Matrix acorr(const Matrix &A);
+  Matrix corr(const Matrix &A, const Matrix &B);
+  Matrix corr(const Matrix &A);
   Matrix Rxx(const Matrix &A);
   Matrix Rxx(const Matrix &A, const size_t K);
   Matrix lpc(const Matrix &A, const size_t p);
@@ -242,8 +242,7 @@ namespace Pinakas { inline namespace Frontend
   using Backend::iota;
   using Backend::diff;
   using Backend::conv;
-  using Backend::xcorr;
-  using Backend::acorr;
+  using Backend::corr;
   using Backend::Rxx;
   using Backend::lpc;
   using Backend::toeplitz;
@@ -293,6 +292,9 @@ namespace Pinakas { namespace Backend
       Slice operator()(const size_t m, Keyword::Entire) &;
       // return matrix dimensions
       inline Size size(void) const &;
+      inline size_t numel(void) const &;
+      inline size_t M(void) const &;
+      inline size_t N(void) const &;
     private:
       // information regarding matrix size
       Size size_;
@@ -301,7 +303,6 @@ namespace Pinakas { namespace Backend
       // allocate data_
       friend void allocate(Matrix* matrix, const size_t M, const size_t N);
     public:
-      const size_t& numel;
       // create a matrix with the same dimensions as 'matrix'
       inline Matrix(const Size size);
       // create a matrix MxN with a specific value
@@ -328,10 +329,10 @@ namespace Pinakas { namespace Backend
   class Slice {
     friend struct Matrix;
     public:
-      inline double& operator[](size_t index) const;
-      double& operator()(size_t index) const;
-      inline Size size(void) const;
-      const size_t& numel;
+      inline double& operator[](size_t index) const &;
+      double& operator()(size_t index) const &;
+      inline Size size(void) const &;
+      inline size_t numel(void) const &;
     private:
       Slice(Matrix& matrix, const size_t n, Keyword::Column);
       Slice(Matrix& matrix, const size_t n, Keyword::Row);

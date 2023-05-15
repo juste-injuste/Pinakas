@@ -29,3 +29,6 @@
 
 # Custom data
 *.data
+
+
+*.json
