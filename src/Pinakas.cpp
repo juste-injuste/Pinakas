@@ -1614,7 +1614,7 @@ namespace Pinakas { namespace Backend
     return resampled;
   }
 
-  Matrix resample(const Matrix &data, const size_t L, const size_t keep, const double alpha)
+  Matrix resample(const Matrix &data, const size_t L, const size_t keep, const double alpha, const bool tail)
   {
     if (data.size().M != 1)
       std::clog << "warning: resample: data is interpreted as a horizontal 1-dimensional matrix\n";
@@ -1631,9 +1631,6 @@ namespace Pinakas { namespace Backend
     const size_t offset = L * alpha;
     // length of impulse
     const size_t length = 2 * offset + 1;
-    // indices to the first and last upsampled data elements in the symetrically extended data
-    const size_t first = L * keep;
-    const size_t last = L * (keep + N - 1);
 
     // temporary variables
     size_t i, j, k;
@@ -1646,11 +1643,15 @@ namespace Pinakas { namespace Backend
       extended[0][k] = 2 * data[0][0] - data[0][keep - i];
       k += L;
     }
+    // index to the first upsampled element in the symetrically extended data
+    const size_t first = k;
     // store and upsample data
     for (i = 0; i < N; ++i) {
       extended[0][k] = data[0][i];
       k += L;
     }
+    // index to the last upsampled element in the symetrically extended data
+    const size_t last = k - (tail ? 1 : L);
     // store and upsample right symetrical data
     for (i = 0; i < keep; ++i) {
       extended[0][k] = 2 * data[0][N - 1] - data[0][N - 2 - i];
@@ -1766,10 +1767,8 @@ namespace Pinakas { namespace Backend
     // close file
     file.close();
 
-    // command pipeline
+    // gnuplot command pipeline
     std::stringstream gnuplot_pipeline;
-
-    // launch gnuplot
     gnuplot_pipeline << "gnuplot";
 
     // conditionally set plot to persistent
@@ -1844,10 +1843,8 @@ namespace Pinakas { namespace Backend
     // close file
     file.close();
 
-    // command pipeline
+    // gnuplot command pipeline
     std::stringstream gnuplot_pipeline;
-
-    // launch gnuplot
     gnuplot_pipeline << "gnuplot";
 
     // conditionally set plot to persistent
@@ -1891,25 +1888,39 @@ int main()
   using namespace Pinakas;
   using namespace Keyword;
 
-  /*
-  auto f = [](const Matrix &x)
-  { return (x ^ 2) + sin(x * 5) / 5 - 2; };
+  //*
+  auto   f = [](const Matrix &x) {return ((1-x)^ 2) + sin(x * 5) / 5 - 2;};
   size_t N = 10;
   size_t L = 100;
-  Matrix x_nlin = linspace(0, 1, N) + Random(0, 1/(N-1.0));
-  Matrix y_nlin = f(x_nlin);
-  Matrix y_newnlin = resample(y_nlin, L);
-  Matrix x_newnlin = linspace(x_nlin(0), x_nlin(end), y_newnlin.numel());
-  auto xy = linearize(x_nlin, y_nlin);
-  Matrix y_new  = resample(xy[1], L);
-  Matrix x_new  = linspace(xy[0](0), xy[0](end), y_new.numel());
-  Matrix xtrue = linspace(0, 1, N*L);
-  Matrix ytrue = f(xtrue);
-  plot({"true values", "linarized", "non-linear"}, {{xtrue, ytrue}, {x_new, y_new}, {x_newnlin, y_newnlin}}, true, false);
+
+  Matrix x_nonlinear = linspace(0, 1, N) + Random(0, 1.0/(N-1));
+  Matrix y_nonlinear = f(x_nonlinear);
+
+  Matrix y_nonlinear_resampled = resample(y_nonlinear, L);
+  Matrix x_nonlinear_resampled = resample(x_nonlinear, L);
+
+  auto xy_linearized = linearize(x_nonlinear, y_nonlinear);
+  Matrix y_linearized_resampled  = resample(xy_linearized[1], L);
+  Matrix x_linearized_resampled  = linspace(x_nonlinear(0), x_nonlinear(end), y_linearized_resampled.numel());
+
+  Matrix x_linear = linspace(x_nonlinear(0), x_nonlinear(end), N);
+  Matrix y_linear = f(x_linear);
+
+  Matrix y_linear_resampled = resample(y_linear, L);
+  Matrix x_linear_resampled = linspace(x_nonlinear(0), x_nonlinear(end), y_linear_resampled.numel());
+
+  Matrix x_true = linspace(x_nonlinear(0), x_nonlinear(end), N*L);
+  Matrix y_true = f(x_true);
+
+  plot({"truth", "linear resampled", "non-linear resampled", "linearized resampled"},
+                                        {{x_true, y_true},
+                                        {x_linear_resampled, y_linear_resampled},
+                                        {x_nonlinear_resampled, y_nonlinear_resampled},
+                                        {x_linearized_resampled, y_linearized_resampled}});
   //*/
 
 
-  //*
+  /*
   Matrix time   = linspace(0, 1, 100);
   Matrix signal = (time^2);
   signal(30) = 1.5;

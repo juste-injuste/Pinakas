@@ -1,0 +1,7 @@
+- implement Levison/Durbin for solving LPC coefficients
+- block indexing
+- specialized Vector class ?
+- QR decomposition via Householder
+- Template expressions
+- more Random support
+- vertical matrix concatenation

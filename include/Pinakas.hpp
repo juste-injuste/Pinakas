@@ -204,7 +204,7 @@ namespace Pinakas { namespace Backend
   Matrix&& sinc(Matrix&& A);
   Matrix sinc_impulse(const size_t length, const double frequency);
   Matrix resample(const Matrix& data, const size_t L);
-  Matrix resample(const Matrix& data, const size_t L, const size_t keep, const double alpha);
+  Matrix resample(const Matrix& data, const size_t L, const size_t keep, const double alpha, const bool tail = false);
   void plot(std::string title, List<DataSet> data_sets, bool persistent = true, bool remove = true, bool pause = false, bool lines = true);
   void plot(List<std::string> titles, List<DataSet> data_sets, bool persistent = true, bool remove = true, bool pause = false, bool lines = true);
   void plot(std::string title, DataSet data_set, bool persistent = true, bool remove = true, bool pause = false, bool lines = true);
