@@ -1602,7 +1602,7 @@ namespace Pinakas { namespace Backend
 
     // interpolate upsampled data using a cropped convolution
     Matrix resampled(1, last - first + 1, 0);
-    for (i = 0; i < extended.numel(); ++i) {
+    for (i = 0; i < extended.numel(); i += L) {
       for (j = 0; j < filter.numel(); ++j) {
         k = i + j - offset;
         // skips if the index is not within the upsampled data range
@@ -1625,7 +1625,7 @@ namespace Pinakas { namespace Backend
     if (keep >= data.numel())
       throw std::invalid_argument("error: resample: keep must be less than the number of elements of data");
     if (alpha < 1)
-      throw std::invalid_argument("error: resample: alpha must be bigger or equal to 1");
+      throw std::invalid_argument("error: resample: alpha must be at least 1/L");
     const size_t N = data.numel();
     // offset to impulse center
     const size_t offset = L * alpha;
@@ -1888,7 +1888,7 @@ int main()
   using namespace Pinakas;
   using namespace Keyword;
 
-  //*
+  /*
   auto   f = [](const Matrix &x) {return ((1-x)^ 2) + sin(x * 5) / 5 - 2;};
   size_t N = 10;
   size_t L = 100;
@@ -1918,7 +1918,21 @@ int main()
                                         {x_nonlinear_resampled, y_nonlinear_resampled},
                                         {x_linearized_resampled, y_linearized_resampled}});
   //*/
+  
+  
+  size_t N = 1000;
+  size_t L = 1000;
 
+  Matrix signal = linspace(0, 1, N) + Random(0, 1.0/(N-1));
+
+  for (int i = 0; i < 0; ++i) {
+    {
+      Chronometro::Stopwatch sw;
+      resample(signal, L);
+    }
+    puts("-----------------");
+  }
+  plot({"resampling"}, {{iota(N*L-L+1), resample(signal, L)}});
 
   /*
   Matrix time   = linspace(0, 1, 100);

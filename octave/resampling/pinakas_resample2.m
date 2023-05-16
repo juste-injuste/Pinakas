@@ -1,4 +1,4 @@
-function resampled = pinakas_resample(data, L, keep, alpha, tail)
+function resampled = pinakas_resample2(data, L, keep, alpha, tail)
     if nargin < 3
         keep = 2;
     endif
@@ -36,7 +36,7 @@ function resampled = pinakas_resample(data, L, keep, alpha, tail)
 
     filter = sinc(((0:length-1)-offset)/L) .* blackman(length);
     resampled = zeros(1, last - first + 1);
-    for x_A = 0:L:numel(extended)-1
+    for x_A = 0:numel(extended)-1
         for x_B = 0:length-1
             idx = x_A + x_B - offset;
             if (first <= idx && idx <= last)

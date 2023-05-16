@@ -1,7 +1,7 @@
 clc, clear, close all, pkg load signal
     f = @(x) x.^2 + sin(x*5)/3 - 1;% + rand(size(x))/5;
-    N = 10;
-    L = 10;
+    N = 100;
+    L = 100;
     x = linspace(0, 1, N);
     y = f(x);
 
@@ -12,15 +12,18 @@ clc, clear, close all, pkg load signal
 
     xOpt = linspace(0, 1, N*L-L+1);
     yOpt = f(xOpt);
-
+    tic
     y2 = pinakas_resample(y, L);
-    %y3 = resample(y, L, 1);
+    toc
+    tic
+    y3 = pinakas_resample2(y, L);
+    toc
     
 
     % {
     figure, hold on
     plot(x, y, "xk") %, "linestyle", '-'
     plot(linspace(x(1), x(end), numel(y2)), y2, 'b')
-    %plot(linspace(x(1), x(end), numel(y3)), y3, 'r')
-    plot(xOpt, yOpt, 'm')
+    plot(linspace(x(1), x(end), numel(y3)), y3, 'r')
+    %plot(xOpt, yOpt, 'm')
     %}
