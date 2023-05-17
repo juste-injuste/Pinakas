@@ -1,4 +1,5 @@
 // --inclusion guard--------------------------------------------------------------
+#define LOGGING
 #include "../include/Pinakas.hpp"
 #define M_PI 3.14159265358979323846
 // --Pinakas library: backend forward declaration---------------------------------
@@ -18,7 +19,7 @@ namespace Pinakas { namespace Backend
   Matrix<T>::~Matrix()
   {
     #ifdef LOGGING
-    std::clog << "Matrix<double> deleted !\n";
+    std::clog << "Matrix deleted !\n";
     #endif
   }
 
@@ -29,7 +30,7 @@ namespace Pinakas { namespace Backend
     data_(nullptr)
   {
 #ifdef LOGGING
-    std::clog << "Matrix<double> created ! (empty)\n";
+    std::clog << "Matrix created ! (empty)\n";
 #endif
   }
 
@@ -37,7 +38,7 @@ namespace Pinakas { namespace Backend
   Matrix<T>::Matrix(const Matrix<T> &other)
   {
 #ifdef LOGGING
-    std::clog << "Matrix<double> copied !\n";
+    std::clog << "Matrix copied !\n";
 #endif
 
     if (this != &other) {
@@ -57,7 +58,7 @@ namespace Pinakas { namespace Backend
     data_(other.data_.release())
   {
 #ifdef LOGGING
-    std::clog << "Matrix<double> moved !\n";
+    std::clog << "Matrix moved !\n";
 #endif
   }
 
@@ -65,7 +66,7 @@ namespace Pinakas { namespace Backend
   Matrix<T>::Matrix(const size_t M, const size_t N)
   {
 #ifdef LOGGING
-    std::clog << "Matrix<double> created !\n";
+    std::clog << "Matrix created !\n";
 #endif
 
     // allocate memory
@@ -82,7 +83,7 @@ namespace Pinakas { namespace Backend
   Matrix<T>::Matrix(const size_t M, const size_t N, const T value)
   {
 #ifdef LOGGING
-    std::clog << "Matrix<double> created !\n";
+    std::clog << "Matrix created !\n";
 #endif
 
     // allocate memory
@@ -102,7 +103,7 @@ namespace Pinakas { namespace Backend
   Matrix<T>::Matrix(const size_t M, const size_t N, const Random range)
   {
 #ifdef LOGGING
-    std::clog << "Matrix<double> created !\n";
+    std::clog << "Matrix created !\n";
 #endif
 
     // allocate memory
@@ -128,7 +129,7 @@ namespace Pinakas { namespace Backend
   Matrix<T>::Matrix(const List<T> list)
   {
 #ifdef LOGGING
-    std::clog << "Matrix<double> created !\n";
+    std::clog << "Matrix created !\n";
 #endif
 
     // allocate memory
@@ -178,7 +179,7 @@ namespace Pinakas { namespace Backend
   Matrix<T>::Matrix(const List<const Matrix<T>> list)
   {
 #ifdef LOGGING
-    std::clog << "Matrix<double> created !\n";
+    std::clog << "Matrix created !\n";
 #endif
 
     // dimension validation
@@ -1883,31 +1884,60 @@ namespace Pinakas { namespace Backend
     plot(title, {data_set}, persistent, remove, pause, lines);
   }
   
-  Matrix<complex> fft(const Matrix<complex>& signal)
+  template<typename T>
+  Matrix<complex> fft(const Matrix<T>& signal)
   {
+    std::cout << "entered &\n";
     const int N = signal.numel();
 
     if (N <= 1)
       return signal;
 
-    Matrix<complex> even(1, N / 2);
-    Matrix<complex> odd(1, N / 2);
+    Matrix<complex> even(1, N*0.5);
+    Matrix<complex> odd(1, N*0.5);
     for (int i = 0; i < N / 2; i++) {
       even[0][i] = signal[0][i * 2];
       odd[0][i]  = signal[0][i * 2 + 1];
     }
 
-    Matrix<complex> transformed_even = fft(even);
-    Matrix<complex> transformed_odd  = fft(odd);
+    fft(std::move(even));
+    fft(std::move(odd));
 
     Matrix<complex> transformed_values(1, N);
-    for (int k = 0; k < N / 2; k++) {
-        complex t = std::polar(1.0, -2 * M_PI * k / N) * transformed_odd[0][k];
-        transformed_values[0][k] = transformed_even[0][k] + t;
-        transformed_values[0][k + N / 2] = transformed_even[0][k] - t;
+    for (int k = 0; k < N*0.5; k++) {
+      complex t = std::polar(1.0, -2 * M_PI * k / N) * odd[0][k];
+      transformed_values[0][k]         = even[0][k] + t;
+      transformed_values[0][k + N / 2] = even[0][k] - t;
+    }
+    std::cout<< "done\n";
+    return transformed_values;
+  }
+  
+  Matrix<complex>&& fft(Matrix<complex>&& signal)
+  {
+    std::cout << "entered &&\n";
+    const int N = signal.numel();
+
+    if (N <= 1)
+      return std::move(signal);
+
+    Matrix<complex> even(1, N*0.5);
+    Matrix<complex> odd(1, N*0.5);
+    for (int i = 0; i < N*0.5; i++) {
+      even[0][i] = signal[0][i * 2];
+      odd[0][i]  = signal[0][i * 2 + 1];
     }
 
-    return transformed_values;
+    fft(std::move(even));
+    fft(std::move(odd));
+
+    for (int k = 0; k < N*0.5; k++) {
+      complex t = std::polar(1.0, -2 * M_PI * k / N) * odd[0][k];
+      signal[0][k]         = even[0][k] + t;
+      signal[0][k + N / 2] = even[0][k] - t;
+    }
+
+    return std::move(signal);
   }
 }}
 //
@@ -1919,9 +1949,10 @@ int main()
   /*
   //*/
   
-  Matrix<double> signal = {1, 2, 3, 4};
-  
-  auto spectrum = fft(signal);
+  const Matrix<double> signal = {1, 2, 3, 4};
+
+  Matrix<complex> spectrum = fft(signal);
+  std::cout << signal;
   std::cout << spectrum;
   /*
   //*/

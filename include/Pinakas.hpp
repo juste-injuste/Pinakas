@@ -213,7 +213,9 @@ namespace Pinakas { namespace Backend
   void plot(List<std::string> titles, List<DataSet> data_sets, bool persistent = true, bool remove = true, bool pause = false, bool lines = true);
   void plot(std::string title, DataSet data_set, bool persistent = true, bool remove = true, bool pause = false, bool lines = true);
   double rms(const Matrix<double>& A);
-  Matrix<complex> fft(const Matrix<complex>& signal);
+  template<typename T>
+  Matrix<complex> fft(const Matrix<T>& signal);
+  Matrix<complex>&& fft(Matrix<complex>&& signal);
 }}
 // --Pinakas library: frontend forward declarations-------------------------------
 namespace Pinakas { inline namespace Frontend
@@ -221,6 +223,7 @@ namespace Pinakas { inline namespace Frontend
   using Backend::Matrix;
   using Backend::Random;
   namespace Keyword = Backend::Keyword;
+  using Backend::complex;
 // -------------------------------------------------------------------------------
   using Backend::floor;
   using Backend::round;
@@ -259,6 +262,7 @@ namespace Pinakas { inline namespace Frontend
   using Backend::resample;
   using Backend::sinc_impulse;
   using Backend::reverse;
+  using Backend::fft;
 }}
 // --Pinakas library: backend struct and class definitions------------------------
 namespace Pinakas { namespace Backend

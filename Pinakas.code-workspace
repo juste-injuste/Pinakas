@@ -54,7 +54,24 @@
 			"typeinfo": "cpp",
 			"map": "cpp",
 			"csetjmp": "cpp",
-			"complex": "cpp"
+			"complex": "cpp",
+			"cstring": "cpp",
+			"ios": "cpp",
+			"list": "cpp",
+			"xfacet": "cpp",
+			"xhash": "cpp",
+			"xiosbase": "cpp",
+			"xlocale": "cpp",
+			"xlocinfo": "cpp",
+			"xlocmon": "cpp",
+			"xlocnum": "cpp",
+			"xloctime": "cpp",
+			"xmemory": "cpp",
+			"xmemory0": "cpp",
+			"xstddef": "cpp",
+			"xstring": "cpp",
+			"xtr1common": "cpp",
+			"xutility": "cpp"
 		}
 	}
 }
