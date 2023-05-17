@@ -61,8 +61,10 @@ namespace Pinakas { namespace Backend
   //
   struct Size;
   //
+  template<typename T>
   struct Matrix;
   //
+  template<typename T>
   class Slice;
   // keywords
   namespace Keyword
@@ -81,134 +83,133 @@ namespace Pinakas { namespace Backend
   template<typename T>
   class ConstIterator;
   //
-  typedef std::pair<const Matrix&, const Matrix&> DataSet;
+  typedef std::pair<const Matrix<double>&, const Matrix<double>&> DataSet;
 // -------------------------------------------------------------------------------
   void validate_size(const Size size_A, const Size size_B, const std::string& op);
 // -------------------------------------------------------------------------------
-  Matrix& operator+=(Matrix& A, const Matrix& B);
-  Matrix operator+(const Matrix& A, const Matrix& B);
-  Matrix operator+(const Matrix& A, const Random range);
-  Matrix&& operator+(Matrix&& A, const Random range);
-  Matrix operator+(const Random range, const Matrix& A);
-  Matrix&& operator+(const Random range, Matrix&& A);
-  Matrix&& operator+(const Matrix& A, Matrix&& B);
-  Matrix&& operator+(Matrix&& A, const Matrix& B);
-  Matrix&& operator+(Matrix&& A, Matrix&& B);
-  Matrix& operator+=(Matrix& A, const double B);
-  Matrix operator+(const Matrix& A, const double B);
-  Matrix&& operator+(Matrix&& A, const double B);
-  Matrix operator+(const double A, const Matrix& B);
-  Matrix&& operator+(const double A, Matrix&& B);
-  inline Matrix operator+(const Matrix& A);
-  inline Matrix&& operator+(Matrix&& A);
+  Matrix<double>& operator+=(Matrix<double>& A, const Matrix<double>& B);
+  Matrix<double> operator+(const Matrix<double>& A, const Matrix<double>& B);
+  Matrix<double> operator+(const Matrix<double>& A, const Random range);
+  Matrix<double>&& operator+(Matrix<double>&& A, const Random range);
+  Matrix<double> operator+(const Random range, const Matrix<double>& A);
+  Matrix<double>&& operator+(const Random range, Matrix<double>&& A);
+  Matrix<double>&& operator+(const Matrix<double>& A, Matrix<double>&& B);
+  Matrix<double>&& operator+(Matrix<double>&& A, const Matrix<double>& B);
+  Matrix<double>&& operator+(Matrix<double>&& A, Matrix<double>&& B);
+  Matrix<double>& operator+=(Matrix<double>& A, const double B);
+  Matrix<double> operator+(const Matrix<double>& A, const double B);
+  Matrix<double>&& operator+(Matrix<double>&& A, const double B);
+  Matrix<double> operator+(const double A, const Matrix<double>& B);
+  Matrix<double>&& operator+(const double A, Matrix<double>&& B);
+  inline Matrix<double> operator+(const Matrix<double>& A);
+  inline Matrix<double>&& operator+(Matrix<double>&& A);
 // -------------------------------------------------------------------------------
-  Matrix& operator*=(Matrix& A, const Matrix& B);
-  Matrix operator*(const Matrix& A, const Matrix& B);
-  Matrix&& operator*(const Matrix& A, Matrix&& B);
-  Matrix&& operator*(Matrix&& A, const Matrix& B);
-  Matrix&& operator*(Matrix&& A, Matrix&& B);
-  Matrix& operator*=(Matrix& A, const double B);
-  Matrix operator*(const Matrix& A, const double B);
-  Matrix&& operator*(Matrix&& A, const double B);
-  Matrix operator*(const double A, const Matrix& B);
-  Matrix&& operator*(const double A, Matrix&& B);
+  Matrix<double>& operator*=(Matrix<double>& A, const Matrix<double>& B);
+  Matrix<double> operator*(const Matrix<double>& A, const Matrix<double>& B);
+  Matrix<double>&& operator*(const Matrix<double>& A, Matrix<double>&& B);
+  Matrix<double>&& operator*(Matrix<double>&& A, const Matrix<double>& B);
+  Matrix<double>&& operator*(Matrix<double>&& A, Matrix<double>&& B);
+  Matrix<double>& operator*=(Matrix<double>& A, const double B);
+  Matrix<double> operator*(const Matrix<double>& A, const double B);
+  Matrix<double>&& operator*(Matrix<double>&& A, const double B);
+  Matrix<double> operator*(const double A, const Matrix<double>& B);
+  Matrix<double>&& operator*(const double A, Matrix<double>&& B);
 // -------------------------------------------------------------------------------
-  Matrix& operator-=(Matrix& A, const Matrix& B);
-  Matrix operator-(const Matrix& A, const Matrix& B);
-  Matrix&& operator-(const Matrix& A, Matrix&& B);
-  Matrix&& operator-(Matrix&& A, const Matrix& B);
-  Matrix&& operator-(Matrix&& A, Matrix&& B);
-  Matrix& operator-=(Matrix& A, const double B);
-  Matrix operator-(const Matrix& A, const double B);
-  Matrix&& operator-(Matrix&& A, const double B);
-  Matrix operator-(const double A, const Matrix& B);
-  Matrix&& operator-(const double A, Matrix&& B);
-  Matrix operator-(const Matrix& A);
-  Matrix&& operator-(Matrix&& A);
+  Matrix<double>& operator-=(Matrix<double>& A, const Matrix<double>& B);
+  Matrix<double> operator-(const Matrix<double>& A, const Matrix<double>& B);
+  Matrix<double>&& operator-(const Matrix<double>& A, Matrix<double>&& B);
+  Matrix<double>&& operator-(Matrix<double>&& A, const Matrix<double>& B);
+  Matrix<double>&& operator-(Matrix<double>&& A, Matrix<double>&& B);
+  Matrix<double>& operator-=(Matrix<double>& A, const double B);
+  Matrix<double> operator-(const Matrix<double>& A, const double B);
+  Matrix<double>&& operator-(Matrix<double>&& A, const double B);
+  Matrix<double> operator-(const double A, const Matrix<double>& B);
+  Matrix<double>&& operator-(const double A, Matrix<double>&& B);
+  Matrix<double> operator-(const Matrix<double>& A);
+  Matrix<double>&& operator-(Matrix<double>&& A);
 // -------------------------------------------------------------------------------
-  Matrix& operator/=(Matrix& A, const Matrix& B);
-  Matrix operator/(const Matrix& A, const Matrix& B);
-  Matrix&& operator/(const Matrix& A, Matrix&& B);
-  Matrix&& operator/(Matrix&& A, const Matrix& B);
-  Matrix&& operator/(Matrix&& A, Matrix&& B);
-  Matrix& operator/=(Matrix& A, const double B);
-  Matrix operator/(const Matrix& A, const double B);
-  Matrix&& operator/(Matrix&& A, const double B);
-  Matrix operator/(const double A, const Matrix& B);
-  Matrix&& operator/(const double A, Matrix&& B);
+  Matrix<double>& operator/=(Matrix<double>& A, const Matrix<double>& B);
+  Matrix<double> operator/(const Matrix<double>& A, const Matrix<double>& B);
+  Matrix<double>&& operator/(const Matrix<double>& A, Matrix<double>&& B);
+  Matrix<double>&& operator/(Matrix<double>&& A, const Matrix<double>& B);
+  Matrix<double>&& operator/(Matrix<double>&& A, Matrix<double>&& B);
+  Matrix<double>& operator/=(Matrix<double>& A, const double B);
+  Matrix<double> operator/(const Matrix<double>& A, const double B);
+  Matrix<double>&& operator/(Matrix<double>&& A, const double B);
+  Matrix<double> operator/(const double A, const Matrix<double>& B);
+  Matrix<double>&& operator/(const double A, Matrix<double>&& B);
 // -------------------------------------------------------------------------------
-  Matrix& operator^=(Matrix& A, const Matrix& B);
-  Matrix operator^(const Matrix& A, const Matrix& B);
-  Matrix&& operator^(const Matrix& A, Matrix&& B);
-  Matrix&& operator^(Matrix&& A, const Matrix& B);
-  Matrix&& operator^(Matrix&& A, Matrix&& B);
-  Matrix& operator^=(Matrix& A, const double B);
-  Matrix operator^(const Matrix& A, const double B);
-  Matrix&& operator^(Matrix&& A, const double B);
-  Matrix operator^(const double A, const Matrix& B);
-  Matrix&& operator^(const double A, Matrix&& B);
+  Matrix<double>& operator^=(Matrix<double>& A, const Matrix<double>& B);
+  Matrix<double> operator^(const Matrix<double>& A, const Matrix<double>& B);
+  Matrix<double>&& operator^(const Matrix<double>& A, Matrix<double>&& B);
+  Matrix<double>&& operator^(Matrix<double>&& A, const Matrix<double>& B);
+  Matrix<double>&& operator^(Matrix<double>&& A, Matrix<double>&& B);
+  Matrix<double>& operator^=(Matrix<double>& A, const double B);
+  Matrix<double> operator^(const Matrix<double>& A, const double B);
+  Matrix<double>&& operator^(Matrix<double>&& A, const double B);
+  Matrix<double> operator^(const double A, const Matrix<double>& B);
+  Matrix<double>&& operator^(const double A, Matrix<double>&& B);
 // -------------------------------------------------------------------------------
-  Matrix floor(const Matrix& A);
-  Matrix&& floor(Matrix&& A);
-  Matrix round(const Matrix& A);
-  Matrix&& round(Matrix&& A);
-  Matrix ceil(Matrix& A);
-  Matrix&& ceil(Matrix&& A);
+  Matrix<double> floor(const Matrix<double>& A);
+  Matrix<double>&& floor(Matrix<double>&& A);
+  Matrix<double> round(const Matrix<double>& A);
+  Matrix<double>&& round(Matrix<double>&& A);
+  Matrix<double> ceil(Matrix<double>& A);
+  Matrix<double>&& ceil(Matrix<double>&& A);
 // -------------------------------------------------------------------------------
-  Matrix mul(const Matrix& A, const Matrix& B);
+  Matrix<double> mul(const Matrix<double>& A, const Matrix<double>& B);
 // -------------------------------------------------------------------------------
-  Matrix transpose(const Matrix& A);
-  Matrix reshape(const Matrix& A, const size_t M, const size_t N);
+  Matrix<double> transpose(const Matrix<double>& A);
+  Matrix<double> reshape(const Matrix<double>& A, const size_t M, const size_t N);
 // -------------------------------------------------------------------------------
-  double min(const Matrix& matrix);
-  double min(const Slice& column);
-  double max(const Matrix& matrix);
-  double min(const Slice& column);
+  double min(const Matrix<double>& matrix);
+  double min(const Slice<double>& column);
+  double max(const Matrix<double>& matrix);
+  double min(const Slice<double>& column);
 // -------------------------------------------------------------------------------
-  double sum(const Matrix& matrix);
-  double prod(const Matrix& matrix);
-  double avg(const Matrix& A);
-  double rms(const Matrix &A);
-  double geo(const Matrix& A);
-  Matrix orthogonalize(Matrix A);
-  std::unique_ptr<Matrix[]> QR(Matrix A);
-  Matrix div(const Matrix& A, Matrix B);
-  std::unique_ptr<Matrix[]> linearize(const Matrix& data_x, const Matrix& data_y);
-  Matrix linspace(const double x1, const double x2, const size_t N);
-  Matrix linspace(const double x1, const double x2, const size_t N, Keyword::Column);
-  Matrix iota(const size_t N);
-  Matrix reverse(const Matrix& A);
-  Matrix&& reverse(Matrix&& A);
-  Matrix diff(const Matrix& A, size_t n = 1);
-  Matrix conv(const Matrix& A, const Matrix& B);
-  Matrix corr(const Matrix &A, const Matrix &B);
-  Matrix corr(const Matrix &A);
-  Matrix Rxx(const Matrix &A);
-  Matrix Rxx(const Matrix &A, const size_t K);
-  Matrix lpc(const Matrix &A, const size_t p);
-  Matrix toeplitz(const Matrix& A, size_t K);
-  Matrix blackman(const size_t N);
-  Matrix blackman(const Matrix& signal);
-  Matrix&& blackman(Matrix&& signal);
-  Matrix hamming(const size_t N);
-  Matrix hamming(const Matrix& signal);
-  Matrix&& hamming(Matrix&& signal);
-  Matrix hann(const size_t N);
-  Matrix hann(const Matrix& signal);
-  Matrix&& hann(Matrix&& signal);
+  double sum(const Matrix<double>& matrix);
+  double prod(const Matrix<double>& matrix);
+  double avg(const Matrix<double>& A);
+  double rms(const Matrix<double> &A);
+  double geo(const Matrix<double>& A);
+  Matrix<double> orthogonalize(Matrix<double> A);
+  std::unique_ptr<Matrix<double>[]> QR(Matrix<double> A);
+  Matrix<double> div(const Matrix<double>& A, Matrix<double> B);
+  std::unique_ptr<Matrix<double>[]> linearize(const Matrix<double>& data_x, const Matrix<double>& data_y);
+  Matrix<double> linspace(const double x1, const double x2, const size_t N);
+  Matrix<double> linspace(const double x1, const double x2, const size_t N, Keyword::Column);
+  Matrix<double> iota(const size_t N);
+  Matrix<double> reverse(const Matrix<double>& A);
+  Matrix<double>&& reverse(Matrix<double>&& A);
+  Matrix<double> diff(const Matrix<double>& A, size_t n = 1);
+  Matrix<double> conv(const Matrix<double>& A, const Matrix<double>& B);
+  Matrix<double> corr(const Matrix<double> &A, const Matrix<double> &B);
+  Matrix<double> corr(const Matrix<double> &A);
+  Matrix<double> Rxx(const Matrix<double> &A);
+  Matrix<double> Rxx(const Matrix<double> &A, const size_t K);
+  Matrix<double> lpc(const Matrix<double> &A, const size_t p);
+  Matrix<double> toeplitz(const Matrix<double>& A, size_t K);
+  Matrix<double> blackman(const size_t N);
+  Matrix<double> blackman(const Matrix<double>& signal);
+  Matrix<double>&& blackman(Matrix<double>&& signal);
+  Matrix<double> hamming(const size_t N);
+  Matrix<double> hamming(const Matrix<double>& signal);
+  Matrix<double>&& hamming(Matrix<double>&& signal);
+  Matrix<double> hann(const size_t N);
+  Matrix<double> hann(const Matrix<double>& signal);
+  Matrix<double>&& hann(Matrix<double>&& signal);
   double newton(const std::function<double(double)> function, const double tol, const size_t max_iteration, const double seed);
   double sinc(const double x);
-  Matrix sin(Matrix& A);
-  Matrix&& sin(Matrix&& A);
-  Matrix sinc(Matrix& A);
-  Matrix&& sinc(Matrix&& A);
-  Matrix sinc_impulse(const size_t length, const double frequency);
-  Matrix resample(const Matrix& data, const size_t L);
-  Matrix resample(const Matrix& data, const size_t L, const size_t keep, const double alpha, const bool tail = false);
+  Matrix<double> sin(Matrix<double>& A);
+  Matrix<double>&& sin(Matrix<double>&& A);
+  Matrix<double> sinc(Matrix<double>& A);
+  Matrix<double>&& sinc(Matrix<double>&& A);
+  Matrix<double> sinc_impulse(const size_t length, const double frequency);
+  Matrix<double> resample(const Matrix<double>& data, const size_t L, const size_t keep=2, const double alpha=3.5, const bool tail=false);
   void plot(std::string title, List<DataSet> data_sets, bool persistent = true, bool remove = true, bool pause = false, bool lines = true);
   void plot(List<std::string> titles, List<DataSet> data_sets, bool persistent = true, bool remove = true, bool pause = false, bool lines = true);
   void plot(std::string title, DataSet data_set, bool persistent = true, bool remove = true, bool pause = false, bool lines = true);
-  double rms(const Matrix& A);
+  double rms(const Matrix<double>& A);
 }}
 // --Pinakas library: frontend forward declarations-------------------------------
 namespace Pinakas { inline namespace Frontend
@@ -264,6 +265,7 @@ namespace Pinakas { namespace Backend
     inline bool operator!=(const Size B) const;
   };
 
+  template<typename T>
   struct Matrix {
     public:
       // destructor
@@ -271,25 +273,25 @@ namespace Pinakas { namespace Backend
       // empty matrix
       Matrix();
       // copy constructor
-      Matrix(const Matrix& matrix);
+      Matrix(const Matrix<T>& matrix);
       // move constructor
-      Matrix(Matrix&& matrix);
+      Matrix(Matrix<T>&& matrix);
       // create a matrix MxN
       Matrix(const size_t M, const size_t N);
       //
-      Matrix& operator=(const Matrix& other) &;
-      Matrix& operator=(Matrix&& other) &;
-      Matrix& operator=(const double value) &;
+      Matrix<T>& operator=(const Matrix<T>& other) &;
+      Matrix<T>& operator=(Matrix<T>&& other) &;
+      Matrix<T>& operator=(const T value) &;
       // indexing
-      inline double* operator[](const size_t y) const;
+      inline T* operator[](const size_t y) const;
       // bound-checked flat-indexing
-      double& operator()(const size_t index) const;
-      double& operator()(Keyword::End) const;
+      T& operator()(const size_t index) const;
+      T& operator()(Keyword::End) const;
       // bound-checked indexing
-      double& operator()(const size_t y, const size_t x) const;
+      T& operator()(const size_t y, const size_t x) const;
       //
-      Slice operator()(Keyword::Entire, const size_t n) &;
-      Slice operator()(const size_t m, Keyword::Entire) &;
+      Slice<T> operator()(Keyword::Entire, const size_t n) &;
+      Slice<T> operator()(const size_t m, Keyword::Entire) &;
       // return matrix dimensions
       inline Size size(void) const &;
       inline size_t numel(void) const &;
@@ -298,48 +300,50 @@ namespace Pinakas { namespace Backend
     private:
       // information regarding matrix size
       Size size_;
-      // data is a double[M][N] array
-      std::unique_ptr<double[]> data_;
+      // data is a T[M][N] array
+      std::unique_ptr<T[]> data_;
       // allocate data_
-      friend void allocate(Matrix* matrix, const size_t M, const size_t N);
+      template<typename T1>
+      friend void allocate(Matrix<T1>* matrix, const size_t M, const size_t N);
     public:
       // create a matrix with the same dimensions as 'matrix'
       inline Matrix(const Size size);
       // create a matrix MxN with a specific value
-      Matrix(const size_t M, const size_t N, const double value);
+      Matrix(const size_t M, const size_t N, const T value);
       // create a matrix with the same dimensions as 'matrix' with a specific value
-      inline Matrix(const Size size, double value);
+      inline Matrix(const Size size, T value);
       // create a matrix MxN random values from a range
       Matrix(const size_t M, const size_t N, Random range);
       // create a matrix with the same dimensions as 'matrix' with random values from a range
       inline Matrix(const Size size, const Random range);
       // create a matrix from specific values
-      Matrix(const List<double> values);
+      Matrix(const List<T> values);
       // create a matrix from specific values
-      Matrix(const List<const List<const double>> values);
+      Matrix(const List<const List<const T>> values);
       // join matrix (side-wise)
-      Matrix(const List<const Matrix> list);
+      Matrix(const List<const Matrix<T>> list);
     public:
-      Iterator<Matrix> begin(void);
-      Iterator<Matrix> end(void);
-      ConstIterator<Matrix> begin(void) const;
-      ConstIterator<Matrix> end(void) const;
+      Iterator<Matrix<T>> begin(void);
+      Iterator<Matrix<T>> end(void);
+      ConstIterator<Matrix<T>> begin(void) const;
+      ConstIterator<Matrix<T>> end(void) const;
   };
 
+  template<typename T>
   class Slice {
-    friend struct Matrix;
+    friend struct Matrix<T>;
     public:
-      inline double& operator[](size_t index) const &;
-      double& operator()(size_t index) const &;
+      inline T& operator[](size_t index) const &;
+      T& operator()(size_t index) const &;
       inline Size size(void) const &;
       inline size_t numel(void) const &;
     private:
-      Slice(Matrix& matrix, const size_t n, Keyword::Column);
-      Slice(Matrix& matrix, const size_t n, Keyword::Row);
+      Slice(Matrix<T>& matrix, const size_t n, Keyword::Column);
+      Slice(Matrix<T>& matrix, const size_t n, Keyword::Row);
       const Size size_;
       const size_t fixed_;
       const bool col_row_;
-      Matrix& matrix_;
+      Matrix<T>& matrix_;
   };
 
   struct Random {
@@ -350,13 +354,13 @@ namespace Pinakas { namespace Backend
   template<typename T>
   class Iterator {
     public:
-      Iterator(T& matrix, const size_t index);
+      Iterator(Matrix<T>& matrix, const size_t index);
       bool operator==(const Iterator& other) const;
       bool operator!=(const Iterator& other) const;
       Iterator& operator++(void);
-      double& operator*(void) const;
+      T& operator*(void) const;
     private:
-      T& matrix;
+      Matrix<T>& matrix;
       size_t index;
   };
 
@@ -376,8 +380,8 @@ namespace Pinakas { namespace Backend
 // --Pinakas library: operator overloads forward declarations----------------------
 namespace Pinakas { namespace Backend
 {
-  std::ostream& operator<<(std::ostream& ostream, const Matrix& A);
+  std::ostream& operator<<(std::ostream& ostream, const Matrix<double>& A);
   std::ostream& operator<<(std::ostream& ostream, const Size size);
-  std::ostream& operator<<(std::ostream& ostream, const Slice& A);
+  std::ostream& operator<<(std::ostream& ostream, const Slice<double>& A);
 }}
 #endif

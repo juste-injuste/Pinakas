@@ -1,7 +1,7 @@
 clc, clear, close all, pkg load signal
     f = @(x) x.^2 + sin(x*5)/3 - 1;% + rand(size(x))/5;
-    N = 100;
-    L = 100;
+    N = 10;
+    L = 10;
     x = linspace(0, 1, N);
     y = f(x);
 
