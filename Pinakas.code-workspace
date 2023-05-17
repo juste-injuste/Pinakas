@@ -53,7 +53,8 @@
 			"streambuf": "cpp",
 			"typeinfo": "cpp",
 			"map": "cpp",
-			"csetjmp": "cpp"
+			"csetjmp": "cpp",
+			"complex": "cpp"
 		}
 	}
 }

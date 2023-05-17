@@ -304,6 +304,16 @@ namespace Pinakas { namespace Backend
   {
     return size_.N;
   }
+
+  template<typename T>
+  template<typename T2>
+  Matrix<T>::operator T2 () const
+  {
+    T2 punned(size_);
+    for (size_t k = 0; k < size_.numel; ++k)
+      punned[0][k] = data_[k];
+    return punned;
+  }
   // -------------------------------------------------------------------------------
   template <typename T>
   Iterator<T>::Iterator(Matrix<T> &matrix, const size_t index)
@@ -1665,7 +1675,8 @@ namespace Pinakas { namespace Backend
     return resampled;
   }
 
-  std::ostream &operator<<(std::ostream &ostream, const Matrix<double> &A)
+  template<typename T>
+  std::ostream &operator<<(std::ostream &ostream, const Matrix<T> &A)
   {
     if (A.numel()) {
       std::size_t max_len = 0;
@@ -1871,6 +1882,33 @@ namespace Pinakas { namespace Backend
   {
     plot(title, {data_set}, persistent, remove, pause, lines);
   }
+  
+  Matrix<complex> fft(const Matrix<complex>& signal)
+  {
+    const int N = signal.numel();
+
+    if (N <= 1)
+      return signal;
+
+    Matrix<complex> even(1, N / 2);
+    Matrix<complex> odd(1, N / 2);
+    for (int i = 0; i < N / 2; i++) {
+      even[0][i] = signal[0][i * 2];
+      odd[0][i]  = signal[0][i * 2 + 1];
+    }
+
+    Matrix<complex> transformed_even = fft(even);
+    Matrix<complex> transformed_odd  = fft(odd);
+
+    Matrix<complex> transformed_values(1, N);
+    for (int k = 0; k < N / 2; k++) {
+        complex t = std::polar(1.0, -2 * M_PI * k / N) * transformed_odd[0][k];
+        transformed_values[0][k] = transformed_even[0][k] + t;
+        transformed_values[0][k + N / 2] = transformed_even[0][k] - t;
+    }
+
+    return transformed_values;
+  }
 }}
 //
 int main()
@@ -1878,52 +1916,14 @@ int main()
   using namespace Pinakas;
   using namespace Keyword;
 
-  //*
-  auto   f = [](const Matrix<double> &x) {return ((1-x)^ 2) + sin(x * 5) / 5 - 2;};
-  size_t N = 10;
-  size_t L = 100;
-
-  Matrix<double> x_nonlinear = linspace(0, 1, N) + Random(0, 1.0/(N-1));
-  Matrix<double> y_nonlinear = f(x_nonlinear);
-
-  Matrix<double> y_nonlinear_resampled = resample(y_nonlinear, L);
-  Matrix<double> x_nonlinear_resampled = resample(x_nonlinear, L);
-
-  auto xy_linearized = linearize(x_nonlinear, y_nonlinear);
-  Matrix<double> y_linearized_resampled  = resample(xy_linearized[1], L);
-  Matrix<double> x_linearized_resampled  = linspace(x_nonlinear(0), x_nonlinear(end), y_linearized_resampled.numel());
-
-  Matrix<double> x_linear = linspace(x_nonlinear(0), x_nonlinear(end), N);
-  Matrix<double> y_linear = f(x_linear);
-
-  Matrix<double> y_linear_resampled = resample(y_linear, L);
-  Matrix<double> x_linear_resampled = linspace(x_nonlinear(0), x_nonlinear(end), y_linear_resampled.numel());
-
-  Matrix<double> x_true = linspace(x_nonlinear(0), x_nonlinear(end), N*L);
-  Matrix<double> y_true = f(x_true);
-
-  plot({"truth", "linear resampled", "non-linear resampled", "linearized resampled"},
-                                        {{x_true, y_true},
-                                        {x_linear_resampled, y_linear_resampled},
-                                        {x_nonlinear_resampled, y_nonlinear_resampled},
-                                        {x_linearized_resampled, y_linearized_resampled}});
-  //*/
-  
-  
-
   /*
-  Matrix<double> time   = linspace(0, 1, 100);
-  Matrix<double> signal = (time^2);
-  signal(30) = 1.5;
-  signal(31) = 1.7;
-  signal(32) = 1.9;
-  signal(33) = 1.9;
-  signal(34) = 1.7;
-  signal(35) = 1.5;
-  Matrix<double> y = Rxx(signal, 20);
-  Matrix<double> x = linspace(0, 1, y.numel());
-  Matrix<double> lpc_coeffs = lpc(signal, 5);
-  std::cout << lpc_coeffs;
-  plot({"signal"}, {{time, signal}});
   //*/
+  
+  Matrix<double> signal = {1, 2, 3, 4};
+  
+  auto spectrum = fft(signal);
+  std::cout << spectrum;
+  /*
+  //*/
+
 }

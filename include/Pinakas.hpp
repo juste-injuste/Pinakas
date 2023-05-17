@@ -51,6 +51,8 @@
 #include <fstream>          // for ofstream
 #include <cstdlib>          // for std::system
 #include <cstdio>           // for std::remove
+#include <complex>          // for std::complex
+// --non-essential depencies------------------------------------------------------
 #include "Chronometro.hpp"
 // --Pinakas library: backend forward declaration---------------------------------
 namespace Pinakas { namespace Backend
@@ -84,6 +86,7 @@ namespace Pinakas { namespace Backend
   class ConstIterator;
   //
   typedef std::pair<const Matrix<double>&, const Matrix<double>&> DataSet;
+  typedef std::complex<double> complex;
 // -------------------------------------------------------------------------------
   void validate_size(const Size size_A, const Size size_B, const std::string& op);
 // -------------------------------------------------------------------------------
@@ -210,6 +213,7 @@ namespace Pinakas { namespace Backend
   void plot(List<std::string> titles, List<DataSet> data_sets, bool persistent = true, bool remove = true, bool pause = false, bool lines = true);
   void plot(std::string title, DataSet data_set, bool persistent = true, bool remove = true, bool pause = false, bool lines = true);
   double rms(const Matrix<double>& A);
+  Matrix<complex> fft(const Matrix<complex>& signal);
 }}
 // --Pinakas library: frontend forward declarations-------------------------------
 namespace Pinakas { inline namespace Frontend
@@ -297,6 +301,9 @@ namespace Pinakas { namespace Backend
       inline size_t numel(void) const &;
       inline size_t M(void) const &;
       inline size_t N(void) const &;
+
+      template<typename T2>
+      operator T2 () const;
     private:
       // information regarding matrix size
       Size size_;
@@ -380,7 +387,8 @@ namespace Pinakas { namespace Backend
 // --Pinakas library: operator overloads forward declarations----------------------
 namespace Pinakas { namespace Backend
 {
-  std::ostream& operator<<(std::ostream& ostream, const Matrix<double>& A);
+  template<typename T>
+  std::ostream& operator<<(std::ostream& ostream, const Matrix<T>& A);
   std::ostream& operator<<(std::ostream& ostream, const Size size);
   std::ostream& operator<<(std::ostream& ostream, const Slice<double>& A);
 }}
