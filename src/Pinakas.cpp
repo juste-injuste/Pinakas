@@ -308,9 +308,9 @@ namespace Pinakas { namespace Backend
 
   template<typename T>
   template<typename T2>
-  Matrix<T>::operator T2 () const
+  Matrix<T>::operator Matrix<T2> () const
   {
-    T2 punned(size_);
+    Matrix<T2> punned(size_);
     for (size_t k = 0; k < size_.numel; ++k)
       punned[0][k] = data_[k];
     return punned;
@@ -1645,18 +1645,18 @@ namespace Pinakas { namespace Backend
     // store and upsample left symetrical data
     k = 0;
     for (i = 0; i < keep; ++i) {
-      extended[0][k] = 2 * data[0][0] - data[0][keep - i];
-      ++k;
+      extended[0][k++] = 2 * data[0][0] - data[0][keep - i];
+      //++k;
     }
     // store and upsample data
     for (i = 0; i < N; ++i) {
-      extended[0][k] = data[0][i];
-      ++k;
+      extended[0][k++] = data[0][i];
+      //++k;
     }
     // store and upsample right symetrical data
     for (i = 0; i < keep; ++i) {
-      extended[0][k] = 2 * data[0][N - 1] - data[0][N - 2 - i];
-      ++k;
+      extended[0][k++] = 2 * data[0][N - 1] - data[0][N - 2 - i];
+      //++k;
     }
 
     // design low-pass interpolation filter
@@ -1884,30 +1884,41 @@ namespace Pinakas { namespace Backend
     plot(title, {data_set}, persistent, remove, pause, lines);
   }
   
+  Matrix<double> abs(const Matrix<complex>& A)
+  {
+    const size_t n = A.numel();
+    Matrix<double> result(A.size());
+    for (size_t k = 0; k < n; ++k)
+      result[0][k] = std::abs(A[0][k]);
+    return result;
+  }
+
   template<typename T>
   Matrix<complex> fft(const Matrix<T>& signal)
   {
     std::cout << "entered &\n";
-    const int N = signal.numel();
+    const size_t N = signal.numel();
 
     if (N <= 1)
       return signal;
 
-    Matrix<complex> even(1, N*0.5);
-    Matrix<complex> odd(1, N*0.5);
-    for (int i = 0; i < N / 2; i++) {
+    const size_t N_2 = N * 0.5;
+
+    Matrix<complex> even(1, N_2);
+    Matrix<complex> odd(1, N_2);
+    for (size_t i = 0; i < N_2; i++) {
       even[0][i] = signal[0][i * 2];
       odd[0][i]  = signal[0][i * 2 + 1];
     }
 
-    fft(std::move(even));
-    fft(std::move(odd));
+    even = fft(std::move(even));
+    odd = fft(std::move(odd));
 
     Matrix<complex> transformed_values(1, N);
-    for (int k = 0; k < N*0.5; k++) {
-      complex t = std::polar(1.0, -2 * M_PI * k / N) * odd[0][k];
-      transformed_values[0][k]         = even[0][k] + t;
-      transformed_values[0][k + N / 2] = even[0][k] - t;
+    for (size_t k = 0; k < N_2; k++) {
+      complex twiddle_factor = std::polar(1.0, -2 * M_PI * k / N) * odd[0][k];
+      transformed_values[0][k]       = even[0][k] + twiddle_factor;
+      transformed_values[0][k + N_2] = even[0][k] - twiddle_factor;
     }
     std::cout<< "done\n";
     return transformed_values;
@@ -1916,25 +1927,26 @@ namespace Pinakas { namespace Backend
   Matrix<complex>&& fft(Matrix<complex>&& signal)
   {
     std::cout << "entered &&\n";
-    const int N = signal.numel();
+    const size_t N = signal.numel();
 
     if (N <= 1)
       return std::move(signal);
-
-    Matrix<complex> even(1, N*0.5);
-    Matrix<complex> odd(1, N*0.5);
-    for (int i = 0; i < N*0.5; i++) {
+    
+    const size_t N_2 = N * 0.5;
+    Matrix<complex> even(1, N_2);
+    Matrix<complex> odd(1, N_2);
+    for (size_t i = 0; i < N_2; i++) {
       even[0][i] = signal[0][i * 2];
       odd[0][i]  = signal[0][i * 2 + 1];
     }
 
-    fft(std::move(even));
-    fft(std::move(odd));
+    even = fft(std::move(even));
+    odd = fft(std::move(odd));
 
-    for (int k = 0; k < N*0.5; k++) {
-      complex t = std::polar(1.0, -2 * M_PI * k / N) * odd[0][k];
-      signal[0][k]         = even[0][k] + t;
-      signal[0][k + N / 2] = even[0][k] - t;
+    for (size_t k = 0; k < N_2; k++) {
+      complex twiddle_factor = std::polar(1.0, -2 * M_PI * k / N) * odd[0][k];
+      signal[0][k]       = even[0][k] + twiddle_factor;
+      signal[0][k + N_2] = even[0][k] - twiddle_factor;
     }
 
     return std::move(signal);
@@ -1946,15 +1958,26 @@ int main()
   using namespace Pinakas;
   using namespace Keyword;
 
-  /*
+  //*
+  size_t N = 1 << 10;
+  size_t L = 100;
+  auto   f = [](const Matrix<double> &x) {return ((1-x)^ 2) + sin((x-0.5) * 5) / 5 - 2;};
+  //auto   f = [](const Matrix<double> &x) {return sin(6.28*x*100) + sin(6.28*x*50);};
+
+  Matrix<double> x_linear = linspace(0, 1, N);
+  Matrix<double> y_linear = f(x_linear);
+
+  auto X = abs(fft(y_linear));
+  std::cout << X.numel();
+  plot({"spectrum", "signal"}, {{iota(X.numel()), X}, {iota(N), y_linear*10}});
   //*/
+
+  /*
   
   const Matrix<double> signal = {1, 2, 3, 4};
 
   Matrix<complex> spectrum = fft(signal);
   std::cout << signal;
   std::cout << spectrum;
-  /*
   //*/
-
 }
