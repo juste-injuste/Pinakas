@@ -1,84 +1,93 @@
 #include <complex>
-#include <cmath>
-#include <vector>
 #include <iostream>
-#define M_PI 3.14159265358979323846
+#include <valarray>
 
+const double PI = 3.141592653589793238460;
 
-typedef std::complex<double> Complex;
+typedef std::complex<double> complex;
+typedef std::valarray<complex> CArray;
 
-std::vector<Complex> fft(const std::vector<Complex>& values) {
-    const int N = values.size();
-
-    if (N <= 1)
-        return values;
-
-    std::vector<Complex> even(N / 2);
-    std::vector<Complex> odd(N / 2);
-    for (int i = 0; i < N / 2; i++) {
-        even[i] = values[i * 2];
-        odd[i] = values[i * 2 + 1];
-    }
-
-    std::vector<Complex> transformed_even = fft(even);
-    std::vector<Complex> transformed_odd = fft(odd);
-
-    std::vector<Complex> transformed_values(N);
-    for (int k = 0; k < N / 2; k++) {
-        Complex t = std::polar(1.0, -2 * M_PI * k / N) * transformed_odd[k];
-        transformed_values[k] = transformed_even[k] + t;
-        transformed_values[k + N / 2] = transformed_even[k] - t;
-    }
-
-    return transformed_values;
+void fft(CArray &x)
+{
+	// DFT
+	const size_t N = x.size();
+    size_t k = N;
+    size_t n;
+	double thetaT = 3.14159265358979323846264338328L / N;
+	complex phiT = complex(cos(thetaT), -sin(thetaT)), T;
+	while (k > 1) {
+		n = k;
+		k >>= 1;
+		phiT = phiT * phiT;
+		T = 1.0L;
+		for (unsigned int l = 0; l < k; l++)
+		{
+			for (unsigned int a = l; a < N; a += n)
+			{
+				unsigned int b = a + k;
+				complex t = x[a] - x[b];
+				x[a] += x[b];
+				x[b] = t * T;
+			}
+			T *= phiT;
+		}
+	}
+	// Decimate
+	const size_t m = std::log2(N);
+	for (unsigned int a = 0; a < N; a++)
+	{
+		unsigned int b = a;
+		// Reverse bits
+		b = (((b & 0xaaaaaaaa) >> 1) | ((b & 0x55555555) << 1));
+		b = (((b & 0xcccccccc) >> 2) | ((b & 0x33333333) << 2));
+		b = (((b & 0xf0f0f0f0) >> 4) | ((b & 0x0f0f0f0f) << 4));
+		b = (((b & 0xff00ff00) >> 8) | ((b & 0x00ff00ff) << 8));
+		b = ((b >> 16) | (b << 16)) >> (32 - m);
+		if (b > a)
+		{
+			complex t = x[a];
+			x[a] = x[b];
+			x[b] = t;
+		}
+	}
 }
 
-std::vector<Complex> ifft(const std::vector<Complex>& values) {
-    const int N = values.size();
+void ifft(CArray& x)
+{
+    // conjugate the complex numbers
+    x = x.apply(std::conj);
 
-    if (N <= 1)
-        return values;
+    // forward fft
+    fft( x );
 
-    std::vector<Complex> even(N / 2);
-    std::vector<Complex> odd(N / 2);
-    for (int i = 0; i < N / 2; i++) {
-        even[i] = values[i * 2];
-        odd[i] = values[i * 2 + 1];
-    }
+    // conjugate the complex numbers again
+    x = x.apply(std::conj);
 
-    std::vector<Complex> transformed_even = ifft(even);
-    std::vector<Complex> transformed_odd = ifft(odd);
-
-    std::vector<Complex> transformed_values(N);
-    for (int k = 0; k < N / 2; k++) {
-        Complex t = std::polar(1.0, 2 * M_PI * k / N) * transformed_odd[k];
-        transformed_values[k] = transformed_even[k] + t;
-        transformed_values[k + N / 2] = transformed_even[k] - t;
-    }
-
-    // Scale the values by dividing by N
-    for (int i = 0; i < N; i++) {
-        transformed_values[i] /= N;
-    }
-
-    return transformed_values;
+    // scale the numbers
+    x /= x.size();
 }
 
-// Example usage
-int main() {
-    std::vector<Complex> values = {Complex(1, 0), Complex(2, 0), Complex(3, 0), Complex(4, 0)};
+int main()
+{
+    const complex test[] = { 1.0, 1.0, 1.0, 1.0, 0.0, 0.0, 0.0, 0.0 };
+    CArray data(test, 8);
 
-    std::vector<Complex> transformed_values = fft(values);
+    // forward fft
+    fft(data);
 
-    for (const Complex& value : transformed_values) {
-        std::cout << value << " ";
-    }
-    
-    transformed_values = ifft(transformed_values);
-
-    for (const Complex& value : transformed_values) {
-        std::cout << value << " ";
+    std::cout << "fft" << std::endl;
+    for (int i = 0; i < 8; ++i)
+    {
+        std::cout << data[i] << std::endl;
     }
 
+    // inverse fft
+    ifft(data);
+
+    std::cout << std::endl << "ifft" << std::endl;
+    for (int i = 0; i < 8; ++i)
+    {
+        std::cout << data[i] << std::endl;
+    }
     return 0;
 }
