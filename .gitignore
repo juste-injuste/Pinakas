@@ -32,3 +32,4 @@
 
 
 *.json
+include/Chronometro.hpp

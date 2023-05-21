@@ -306,8 +306,7 @@ namespace Pinakas { namespace Backend
     return size_.N;
   }
 
-  template<typename T>
-  template<typename T2>
+  template<typename T> template<typename T2>
   Matrix<T>::operator Matrix<T2> () const
   {
     Matrix<T2> punned(size_);
@@ -404,8 +403,8 @@ namespace Pinakas { namespace Backend
     return ConstIterator<Matrix<T>>(*this, size_.numel);
   }
   // -------------------------------------------------------------------------------
-  template<typename T>
-  Matrix<T>& Matrix<T>::operator=(const Matrix<T>& other) &
+  template<typename T> template<typename T2>
+  Matrix<T>& Matrix<T>::operator=(const Matrix<T2>& other) &
   {
 #ifdef LOGGING
     std::clog << "assigned\n";
@@ -424,8 +423,8 @@ namespace Pinakas { namespace Backend
     return *this;
   }
 
-  template<typename T>
-  Matrix<T>& Matrix<T>::operator=(Matrix<T>&& other) & noexcept
+  template<typename T> template<typename T2>
+  Matrix<T>& Matrix<T>::operator=(Matrix<T2>&& other) & noexcept
   {
 #ifdef LOGGING
     std::clog << "move assigned\n";
@@ -1889,11 +1888,29 @@ namespace Pinakas { namespace Backend
       A[0][k] = std::abs(A[0][k]);
     return std::move(A);
   }
+  
+  Matrix<double> real(const Matrix<complex>& A)
+  {
+    const size_t n = A.numel();
+    Matrix<double> real_part(A.size());
+    for (size_t k = 0; k < n; ++k)
+      real_part[0][k] = std::real(A[0][k]);
+    return real_part;
+  }
+  
+  Matrix<double> imag(const Matrix<complex>& A)
+  {
+    const size_t n = A.numel();
+    Matrix<double> imaginary_part(A.size());
+    for (size_t k = 0; k < n; ++k)
+      imaginary_part[0][k] = std::imag(A[0][k]);
+    return imaginary_part;
+  }
 
   Matrix<complex> conj(const Matrix<complex>& A)
   {
     const size_t n = A.numel();
-    Matrix<complex> result;
+    Matrix<complex> result(A.size());
     for (size_t k = 0; k < n; ++k)
       result[0][k] = std::conj(A[0][k]);
     return result;
@@ -1913,9 +1930,9 @@ namespace Pinakas { namespace Backend
     return fft(Matrix<complex>(signal));
   }
 
-  Matrix<complex>&& fft(Matrix<complex>&& x) noexcept
+  Matrix<complex>&& fft(Matrix<complex>&& signal) noexcept
   {
-    const size_t N = x.numel(); // Size of the input array
+    const size_t N = signal.numel(); // Size of the input array
     size_t k = N; // Current stage size
     size_t n; // Size of butterfly operations
     double thetaT = 3.14159265358979323846264338328L / N; // Angle for twiddle factor
@@ -1932,9 +1949,9 @@ namespace Pinakas { namespace Backend
       for (size_t l = 0; l < k; ++l) {
         for (size_t a = l; a < N; a += n) {
           size_t b = a + k; // Index of the element to combine with 'a'
-          complex temporary = x[0][a] - x[0][b]; // Difference between 'a' and 'b'
-          x[0][a] += x[0][b]; // Sum of 'a' and 'b'
-          x[0][b]  = temporary * twiddle_factor; // Multiply 't' by the twiddle factor
+          complex temporary = signal[0][a] - signal[0][b]; // Difference between 'a' and 'b'
+          signal[0][a] += signal[0][b]; // Sum of 'a' and 'b'
+          signal[0][b]  = temporary * twiddle_factor; // Multiply 't' by the twiddle factor
         }
         twiddle_factor *= phiT; // Update the twiddle factor for the next butterfly operation
       }
@@ -1953,25 +1970,20 @@ namespace Pinakas { namespace Backend
       
       // swap elements
       if (b > a)
-        std::swap(x[0][a], x[0][b]);
+        std::swap(signal[0][a], signal[0][b]);
     }
 
-    return std::move(x);
+    return std::move(signal);
   }
 
-  void ifft(Matrix<complex>& x)
+  Matrix<complex> ifft(const Matrix<complex>& spectrum)
   {
-      // conjugate the complex numbers
-      x = conj(x);
+    return conj(fft(conj(spectrum))) / spectrum.numel();
+  }
 
-      // forward fft
-      fft(x);
-
-      // conjugate the complex numbers again
-      x = conj(x);
-
-      // scale the numbers
-      x /= x.numel();
+  Matrix<complex>&& ifft(Matrix<complex>&& spectrum) noexcept
+  {
+    return conj(fft(conj(std::move(spectrum)))) / spectrum.numel();
   }
 }}
 //
@@ -1979,9 +1991,10 @@ int main()
 {
   using namespace Pinakas;
   using namespace Keyword;
-
+  using namespace Chronometro;
+  Stopwatch sw;
   //*
-  size_t N = 1 << 8;
+  size_t N = 1 << 24;
   //size_t L = 100;
   //auto   f = [](const Matrix<double>& x) {return ((1-x)^ 2) + sin((x-0.5) * 5) / 5 - 2;};
   //auto   f = [](const Matrix<double>& x) {return sin(6.28*x*100) + sin(6.28*x*50);};
@@ -1991,13 +2004,14 @@ int main()
 
   auto y2 = (Matrix<complex>)y_linear;
   puts("------------");
+  sw.start();
   y2 = fft(y2);
+  sw.stop();
   puts("------------");
 
   auto X2 = abs(y2);
-  plot({"spectrum2", "signal"}, {{iota(X2.numel()), X2}, {iota(N), y_linear*10}});
+  //plot({"spectrum2", "signal"}, {{iota(X2.numel()), X2}, {iota(N), y_linear}}, true, false);
   //*/
-
    
   /* 
   Matrix<double> A(1000, 1000, {0, 1});

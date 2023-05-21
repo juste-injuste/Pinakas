@@ -216,11 +216,15 @@ namespace Pinakas { namespace Backend
   template<typename T>
   Matrix<double> abs(const Matrix<T>& A);
   Matrix<double>&& abs(Matrix<double>&& A) noexcept;
+  Matrix<double> real(const Matrix<complex>& A);
+  Matrix<double> imag(const Matrix<complex>& A);
   Matrix<complex> conj(const Matrix<complex>& A);
   Matrix<complex>&& conj(Matrix<complex>&& A) noexcept;
   template<typename T>
   Matrix<complex> fft(const Matrix<T>& signal);
-  Matrix<complex>&& fft(Matrix<complex>&& x) noexcept;
+  Matrix<complex>&& fft(Matrix<complex>&& signal) noexcept;
+  Matrix<complex> ifft(const Matrix<complex>& spectrum);
+  Matrix<complex>&& ifft(Matrix<complex>&& spectrum) noexcept;
 }}
 // --Pinakas library: frontend forward declarations-------------------------------
 namespace Pinakas { inline namespace Frontend
@@ -293,8 +297,10 @@ namespace Pinakas { namespace Backend
       // create a matrix MxN
       Matrix(const size_t M, const size_t N);
       //
-      Matrix<T>& operator=(const Matrix<T>& other) &;
-      Matrix<T>& operator=(Matrix<T>&& other) & noexcept;
+      template<typename T2>
+      Matrix<T>& operator=(const Matrix<T2>& other) &;
+      template<typename T2>
+      Matrix<T>& operator=(Matrix<T2>&& other) & noexcept;
       Matrix<T>& operator=(const T value) & noexcept;
       // indexing
       inline T* operator[](const size_t y) const noexcept;
