@@ -173,25 +173,24 @@ namespace Pinakas { namespace Backend
   double sum(const Matrix<double>& matrix);
   double prod(const Matrix<double>& matrix);
   double avg(const Matrix<double>& A);
-  double rms(const Matrix<double> &A);
+  double rms(const Matrix<double>& A);
   double geo(const Matrix<double>& A);
   Matrix<double> orthogonalize(Matrix<double> A);
   std::unique_ptr<Matrix<double>[]> QR(Matrix<double> A);
   Matrix<double> div(const Matrix<double>& A, Matrix<double> B);
   std::unique_ptr<Matrix<double>[]> linearize(const Matrix<double>& data_x, const Matrix<double>& data_y);
   Matrix<double> linspace(const double x1, const double x2, const size_t N);
-  Matrix<double> linspace(const double x1, const double x2, const size_t N, Keyword::Column);
   Matrix<double> iota(const size_t N);
   Matrix<double> reverse(const Matrix<double>& A);
   Matrix<double>&& reverse(Matrix<double>&& A);
   Matrix<double> diff(const Matrix<double>& A, size_t n = 1);
   Matrix<double> conv(const Matrix<double>& A, const Matrix<double>& B);
-  Matrix<double> corr(const Matrix<double> &A, const Matrix<double> &B);
-  Matrix<double> corr(const Matrix<double> &A);
-  Matrix<double> Rxx(const Matrix<double> &A);
-  Matrix<double> Rxx(const Matrix<double> &A, const size_t K);
-  Matrix<double> lpc(const Matrix<double> &A, const size_t p);
-  Matrix<double> toeplitz(const Matrix<double>& A, size_t K);
+  Matrix<double> corr(const Matrix<double>& A, const Matrix<double>& B);
+  Matrix<double> corr(const Matrix<double>& A);
+  Matrix<double> Rxx(const Matrix<double>& A);
+  Matrix<double> Rxx(const Matrix<double>& A, const size_t K);
+  Matrix<double> lpc(const Matrix<double>& A, const size_t p);
+  Matrix<double> toeplitz(const Matrix<double>& A);
   Matrix<double> blackman(const size_t N);
   Matrix<double> blackman(const Matrix<double>& signal);
   Matrix<double>&& blackman(Matrix<double>&& signal);
@@ -271,21 +270,21 @@ namespace Pinakas { namespace Backend
 {
   struct Size {
     size_t M, N, numel;
-    inline bool operator==(const Size B) const;
-    inline bool operator!=(const Size B) const;
+    inline bool operator==(const Size B) const noexcept;
+    inline bool operator!=(const Size B) const noexcept;
   };
 
   template<typename T>
   struct Matrix {
     public:
       // destructor
-      ~Matrix();
+      ~Matrix() noexcept;
       // empty matrix
-      Matrix();
+      Matrix() noexcept;
       // copy constructor
       Matrix(const Matrix<T>& matrix);
       // move constructor
-      Matrix(Matrix<T>&& matrix);
+      Matrix(Matrix<T>&& matrix) noexcept;
       // create a matrix MxN
       Matrix(const size_t M, const size_t N);
       //
@@ -293,10 +292,10 @@ namespace Pinakas { namespace Backend
       Matrix<T>& operator=(Matrix<T>&& other) &;
       Matrix<T>& operator=(const T value) &;
       // indexing
-      inline T* operator[](const size_t y) const;
+      inline T* operator[](const size_t y) const noexcept;
       // bound-checked flat-indexing
       T& operator()(const size_t index) const;
-      T& operator()(Keyword::End) const;
+      T& operator()(Keyword::End) const noexcept;
       // bound-checked indexing
       T& operator()(const size_t y, const size_t x) const;
       //
