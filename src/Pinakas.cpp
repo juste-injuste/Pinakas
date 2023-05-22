@@ -313,7 +313,48 @@ namespace Pinakas { namespace Backend
       punned[0][k] = data_[k];
     return punned;
   }
-  // -------------------------------------------------------------------------------
+  template<typename T> template<typename T2>
+  Matrix<T>& Matrix<T>::operator=(const Matrix<T2>& other) &
+  {
+#ifdef LOGGING
+    std::clog << "assigned\n";
+#endif
+
+    // validate both matrices are not the same
+    if (this != &other) {
+      // allocate memory if necessary
+      if ((size_ != other.size_) or !data_.get())
+        allocate(this, other.size_.M, other.size_.N);
+
+      // store values
+      for (size_t index = 0; index < size_.numel; ++index)
+        data_[index] = other[0][index];
+    }
+    return *this;
+  }
+// -------------------------------------------------------------------------------
+  template<typename T> template<typename T2>
+  Matrix<T>& Matrix<T>::operator=(Matrix<T2>&& other) & noexcept
+  {
+#ifdef LOGGING
+    std::clog << "move assigned\n";
+#endif
+
+    // take over ressources from other matrix
+    size_ = other.size_;
+    data_.reset(other.data_.release());
+    return *this;
+  }
+
+  template<typename T>
+  Matrix<T>& Matrix<T>::operator=(const T value) & noexcept
+  {
+    // store values
+    for (size_t index = 0; index < size_.numel; ++index)
+      data_[index] = value;
+    return *this;
+  }
+// -------------------------------------------------------------------------------
   template <typename T>
   Iterator<T>::Iterator(Matrix<T>& matrix, const size_t index) noexcept
     : // member initialization list
@@ -345,7 +386,7 @@ namespace Pinakas { namespace Backend
   {
     return matrix[0][index];
   }
-  // -------------------------------------------------------------------------------
+// -------------------------------------------------------------------------------
   template <typename T>
   ConstIterator<T>::ConstIterator(const T& matrix, const size_t index) noexcept
     : // member initialization list
@@ -377,7 +418,7 @@ namespace Pinakas { namespace Backend
   {
     return matrix[0][index];
   }
-  // -------------------------------------------------------------------------------
+// -------------------------------------------------------------------------------
   template<typename T>
   Iterator<Matrix<T>> Matrix<T>::begin(void) noexcept
   {
@@ -400,49 +441,6 @@ namespace Pinakas { namespace Backend
   ConstIterator<Matrix<T>> Matrix<T>::end(void) const noexcept
   {
     return ConstIterator<Matrix<T>>(*this, size_.numel);
-  }
-  // -------------------------------------------------------------------------------
-  template<typename T> template<typename T2>
-  Matrix<T>& Matrix<T>::operator=(const Matrix<T2>& other) &
-  {
-#ifdef LOGGING
-    std::clog << "assigned\n";
-#endif
-
-    // validate both matrices are not the same
-    if (this != &other) {
-      // allocate memory if necessary
-      if ((size_ != other.size_) or !data_.get())
-        allocate(this, other.size_.M, other.size_.N);
-
-      // store values
-      for (size_t index = 0; index < size_.numel; ++index)
-        data_[index] = other[0][index];
-    }
-    return *this;
-  }
-
-  template<typename T> template<typename T2>
-  Matrix<T>& Matrix<T>::operator=(Matrix<T2>&& other) & noexcept
-  {
-#ifdef LOGGING
-    std::clog << "move assigned\n";
-#endif
-
-    // take over ressources from other matrix
-    size_ = other.size_;
-    data_.reset(other.data_.release());
-    return *this;
-  }
-// -------------------------------------------------------------------------------
-
-  template<typename T>
-  Matrix<T>& Matrix<T>::operator=(const T value) & noexcept
-  {
-    // store values
-    for (size_t index = 0; index < size_.numel; ++index)
-      data_[index] = value;
-    return *this;
   }
 // -------------------------------------------------------------------------------
   template<typename T>
@@ -493,13 +491,13 @@ namespace Pinakas { namespace Backend
   {
     return size_.numel;
   }
-  // -------------------------------------------------------------------------------
+// -------------------------------------------------------------------------------
   Random::Random(double min, double max) noexcept
     : // member initialization list
     min_(min),
     max_(max)
   {}
-  // -------------------------------------------------------------------------------
+// -------------------------------------------------------------------------------
   void validate_size(const Size size_A, const Size size_B, const std::string& op)
   {
     if (size_A != size_B) {
@@ -510,9 +508,9 @@ namespace Pinakas { namespace Backend
       throw std::invalid_argument(error_message.str());
     }
   }
-  // -------------------------------------------------------------------------------
+// -------------------------------------------------------------------------------
   template<typename T1, typename T2>
-  Matrix<T1>& add_mat_inplace(Matrix<T1>& A, const Matrix<T2>& B)
+  Matrix<T1>& add_inplace(Matrix<T1>& A, const Matrix<T2>& B) noexcept
   {
     for (size_t k = 0; k < A.numel(); ++k)
       A[0][k] += B[0][k];
@@ -520,7 +518,7 @@ namespace Pinakas { namespace Backend
   }
 
   template<typename T1, typename T2>
-  Matrix<T1>& add_val_inplace(Matrix<T1>& A, const T2 B)
+  Matrix<T1>& add_inplace(Matrix<T1>& A, const T2 B) noexcept
   {
     for (size_t k = 0; k < A.numel(); ++k)
       A[0][k] += B;
@@ -528,7 +526,7 @@ namespace Pinakas { namespace Backend
   }
 
   template<typename T>
-  Matrix<T>& add_rng_inplace(Matrix<T>& A, const Random range)
+  Matrix<T>& add_inplace(Matrix<T>& A, const Random range) noexcept
   {
     std::random_device device;
     std::mt19937 generator(device());
@@ -539,7 +537,7 @@ namespace Pinakas { namespace Backend
   }
 
   template<typename T1, typename T2, typename T3 = typename std::common_type<T1, T2>::type>
-  Matrix<T3> add_mat(const Matrix<T1>& A, const Matrix<T2>& B)
+  Matrix<T3> add(const Matrix<T1>& A, const Matrix<T2>& B)
   {
     Matrix<T3> R(A.size());
     for (size_t k = 0; k < A.numel(); ++k)
@@ -548,7 +546,7 @@ namespace Pinakas { namespace Backend
   }
 
   template<typename T1, typename T2, typename T3 = typename std::common_type<T1, T2>::type>
-  Matrix<T3> add_val(const Matrix<T1>& A, const T2 B)
+  Matrix<T3> add(const Matrix<T1>& A, const T2 B)
   {
     Matrix<T3> R(A.size());
     for (size_t k = 0; k < A.numel(); ++k)
@@ -557,7 +555,7 @@ namespace Pinakas { namespace Backend
   }
 
   template<typename T1, typename T3 = typename std::common_type<T1, double>::type>
-  Matrix<T3> add_rng(const Matrix<T1>& A, const Random range)
+  Matrix<T3> add(const Matrix<T1>& A, const Random range)
   {
     std::random_device device;
     std::mt19937 generator(device());
@@ -567,175 +565,113 @@ namespace Pinakas { namespace Backend
       R[0][k] = A[0][k] + uniform_distribution(generator);
     return R;
   }
+// -------------------------------------------------------------------------------
+  template<typename T1, typename T2>
+  auto operator+=(Matrix<T1>& A, const Matrix<T2>& B) -> Matrix<T1>&
+  {
+    return add_inplace(A, B);
+  }
 
+  template<typename T>
+  auto operator+=(Matrix<T>& A, const Random B) -> Matrix<T>&
+  {
+    return add_inplace(A, B);
+  }
 
   template<typename T1, typename T2>
-  Matrix<T1>& operator+=(Matrix<T1>& A, const Matrix<T2>& B)
+  auto operator+=(Matrix<T1>& A, const T2 B) -> Matrix<T1>&
   {
-    validate_size(A.size(), B.size(), "+=");
-    for (size_t index = 0; index < A.numel(); ++index)
-      A[0][index] += B[0][index];
+    return add_inplace(A, B);
+  }
+  
+  template<typename T1, typename T2>
+  auto operator+(const Matrix<T1>& A, const Matrix<T2>& B) -> Matrix<typename std::common_type<T1, T2>::type>
+  {
+    return add(A, B);
+  }
+
+  template<typename T>
+  auto operator+(const Matrix<T>& A, const Random B) -> Matrix<typename std::common_type<T, double>::type>
+  {
+    return add(A, B);
+  }
+
+  template<typename T>
+  auto operator+(const Random A, const Matrix<T>& B) -> Matrix<typename std::common_type<T, double>::type>
+  {
+    return add(B, A);
+  }
+  
+  template<typename T1, typename T2>
+  auto operator+(const Matrix<T1>& A, const T2 B) -> Matrix<typename std::common_type<T1, T2>::type>
+  {
+    return add(A, B);
+  }
+  
+  template<typename T1, typename T2>
+  auto operator+(const T1 A, const Matrix<T2>& B) -> Matrix<typename std::common_type<T1, T2>::type>
+  {
+    return add(B, A);
+  }
+
+  template<typename T>
+  Matrix<T>& operator+(const Matrix<T>& A) noexcept
+  {
     return A;
   }
 
-  template<typename T1, typename T2, typename T3 = typename std::common_type<T1, T2>::type>
-  Matrix<T3>&& operator+(const Matrix<T1>& A, const Matrix<T2>& B)
-  {
-    validate_size(A.size(), B.size(), "+");
-    Matrix<T3> result(A.size());
-    for (size_t index = 0; index < result.numel(); ++index)
-      result[0][index] = A[0][index] + B[0][index];
-    return std::move(result);
-  }
-
   template<typename T1, typename T2>
-  Matrix<enable_if_no_loss<T1, T2>>&& operator+(Matrix<T1>&& A, const Matrix<T2>& B)
+  auto operator+(const Matrix<T1>& A, Matrix<T2>&& B) -> Matrix<if_no_loss<T2, T1>>&&
   {
-    validate_size(A.size(), B.size(), "+");
-    for (size_t index = 0; index < A.numel(); ++index)
-      A[0][index] += B[0][index];
-    return std::move(A);
+    return std::move(add_inplace(B, A));
   }
-
+  
   template<typename T1, typename T2>
-  Matrix<enable_if_loss<T1, T2>>&& operator+(Matrix<T1>&& A,const  Matrix<T2>& B)
+  auto operator+(Matrix<T1>&& A, const Matrix<T2>& B) -> Matrix<if_no_loss<T1, T2>>&&
   {
-    validate_size(A.size(), B.size(), "+");
-    Matrix<enable_if_loss<T1, T2>> result(A.size());
-    for (size_t index = 0; index < B.numel(); ++index)
-      result[0][index] = A[0][index] + B[0][index];
-    return std::move(result);
+    return std::move(add_inplace(A, B));
   }
-
+  
   template<typename T1, typename T2>
-  Matrix<enable_if_no_loss<T2, T1>>&& operator+(const Matrix<T1>& A, Matrix<T2>&& B)
+  auto operator+(Matrix<T1>&& A, Matrix<T2>&& B) -> Matrix<if_no_loss<T2, T1>>&&
   {
-    validate_size(A.size(), B.size(), "+");
-    for (size_t index = 0; index < A.numel(); ++index)
-      B[0][index] += A[0][index];
-    return std::move(B);
+    return std::move(add_inplace(B, A));
   }
-
+  
   template<typename T1, typename T2>
-  Matrix<enable_if_loss<T2, T1>>&& operator+(const Matrix<T1>& A, Matrix<T2>&& B)
+  auto operator+(Matrix<T1>&& A, Matrix<T2>&& B) -> Matrix<if_no_loss<T1, T2>>&&
   {
-    validate_size(A.size(), B.size(), "+");
-    Matrix<enable_if_loss<T2, T1>> result(A.size());
-    for (size_t index = 0; index < A.numel(); ++index)
-      result[0][index] = A[0][index] + B[0][index];
-    return std::move(result);
+    return std::move(add_inplace(A, B));
   }
-
-  template<typename T1, typename T2, typename T3 = typename std::common_type<T1, T2>::type>
-  Matrix<T3>&& operator+(Matrix<T1>&& A, Matrix<T2>&& B)
+  
+  template<typename T>
+  auto operator+(Matrix<T>&& A, Matrix<T>&& B) -> Matrix<T>&&
   {
-    validate_size(A.size(), B.size(), "+");
-    for (size_t index = 0; index < A.numel(); ++index)
-      A[0][index] += B[0][index];
-    return std::move(A);
+    return std::move(add_inplace(A, B));
   }
 
   template<typename T>
-  Matrix<T>&& operator+(const Matrix<T>& A, const Random range)
+  auto operator+(Matrix<T>&& A, const Random B) -> Matrix<if_no_loss<T, double>>&&
   {
-    Matrix<T> result(A.size());
-    std::random_device device;
-    std::mt19937 generator(device());
-    std::uniform_real_distribution<> uniform_distribution(range.min_, range.max_);
-    for (size_t index = 0; index < result.numel(); ++index)
-      result[0][index] = A[0][index] + uniform_distribution(generator);
-    return std::move(result);
+    return std::move(add_inplace(A, B));
   }
 
   template<typename T>
-  Matrix<T>&& operator+(Matrix<T>&& A, const Random range) noexcept
+  auto operator+(const Random A, Matrix<T>&& B) -> Matrix<if_no_loss<T, double>>&&
   {
-    std::random_device device;
-    std::mt19937 generator(device());
-    std::uniform_real_distribution<> uniform_distribution(range.min_, range.max_);
-    for (size_t index = 0; index < A.numel(); ++index)
-      A[0][index] += uniform_distribution(generator);
-    return std::move(A);
+    return std::move(add_inplace(B, A));
   }
-
-  template<typename T>
-  Matrix<T>&& operator+(const Random range, const Matrix<T>& A)
+  
+  template<typename T1, typename T2>
+  auto operator+(const T1 A, Matrix<T2>&& B) -> Matrix<if_no_loss<T2, T1>>&&
   {
-    Matrix<T> result(A.size());
-    std::random_device device;
-    std::mt19937 generator(device());
-    std::uniform_real_distribution<> uniform_distribution(range.min_, range.max_);
-    for (size_t index = 0; index < result.numel(); ++index)
-      result[0][index] = A[0][index] + uniform_distribution(generator);
-    return std::move(result);
-  }
-
-  template<typename T>
-  Matrix<T>&& operator+(const Random range, Matrix<T>&& A) noexcept
-  {
-    std::random_device device;
-    std::mt19937 generator(device());
-    std::uniform_real_distribution<> uniform_distribution(range.min_, range.max_);
-    for (size_t index = 0; index < A.numel(); ++index)
-      A[0][index] += uniform_distribution(generator);
-    return std::move(A);
+    return std::move(add_inplace(B, A));
   }
 
   template<typename T1, typename T2>
-  Matrix<T1>& operator+=(Matrix<T1>& A, const T2 B) noexcept
+  auto operator+(Matrix<T1>&& A, const T2 B) -> Matrix<if_no_loss<T1, T2>>&&
   {
-    for (size_t index = 0; index < A.numel(); ++index)
-      A[0][index] += B;
-    return A;
-  }
-
-  template<typename T1, typename T2, typename T3 = typename std::common_type<T1, T2>::type>
-  Matrix<T3>&& operator+(const Matrix<T1>& A, const T2 B)
-  {
-    Matrix<T3> result(A.size());
-    for (size_t index = 0; index < result.numel(); ++index)
-      result[0][index] = A[0][index] + B;
-    return std::move(result);
-  }
-
-  template<typename T1, typename T2>
-  Matrix<enable_if_no_loss<T1, T2>>&& operator+(Matrix<T1>&& A, const T2 B) noexcept
-  {
-    for (size_t index = 0; index < A.numel(); ++index)
-      A[0][index] += B;
-    return std::move(A);
-  }
-
-  template<typename T1, typename T2>
-  Matrix<enable_if_loss<T1, T2>>&& operator+(Matrix<T1>&& A, const T2 B) noexcept
-  {
-    Matrix<enable_if_loss<T2, T1>> result(A.size());
-    for (size_t index = 0; index < A.numel(); ++index)
-      result[0][index] += A[0][index] + B;
-    return std::move(result);
-  }
-
-  template<typename T1, typename T2>
-  Matrix<enable_if_no_loss<T2, T1>>&& operator+(const T1 A, Matrix<T2>&& B) noexcept
-  {
-    for (size_t index = 0; index < B.numel(); ++index)
-      B[0][index] += A;
-    return std::move(B);
-  }
-
-  template<typename T1, typename T2>
-  Matrix<enable_if_loss<T2, T1>>&& operator+(const T1 B, Matrix<T2>&& A) noexcept
-  {
-    Matrix<enable_if_loss<T2, T1>> result(A.size());
-    for (size_t index = 0; index < A.numel(); ++index)
-      result[0][index] += A[0][index] + B;
-    return std::move(result);
-  }
-
-  template<typename T>
-  Matrix<T>&& operator+(const Matrix<T>& A) noexcept
-  {
-    return std::move(A);
+    return std::move(add_inplace(A, B));
   }
 
   template<typename T>
@@ -743,7 +679,7 @@ namespace Pinakas { namespace Backend
   {
     return std::move(A);
   }
-  // -------------------------------------------------------------------------------
+// -------------------------------------------------------------------------------
   template<typename T>
   Matrix<T>& operator*=(Matrix<T>& A, const Matrix<T>& B)
   {
@@ -877,7 +813,7 @@ namespace Pinakas { namespace Backend
       B[0][index] *= A;
     return B;
   }
-  // -------------------------------------------------------------------------------
+// -------------------------------------------------------------------------------
   template<typename T>
   Matrix<T>& operator-=(Matrix<T>& A, const Matrix<T>& B)
   {
@@ -1028,7 +964,7 @@ namespace Pinakas { namespace Backend
       A[0][index] = -A[0][index];
     return A;
   }
-  // -------------------------------------------------------------------------------
+// -------------------------------------------------------------------------------
   template<typename T>
   Matrix<T>& operator/=(Matrix<T>& A, const Matrix<T>& B)
   {
@@ -1165,7 +1101,7 @@ namespace Pinakas { namespace Backend
       B[0][index] = A / B[0][index];
     return B;
   }
-  // -------------------------------------------------------------------------------
+// -------------------------------------------------------------------------------
   template<typename T>
   Matrix<T>& operator^=(Matrix<T>& A, const Matrix<T>& B)
   {
@@ -1253,7 +1189,7 @@ namespace Pinakas { namespace Backend
       B[0][index] = std::pow(A, B[0][index]);
     return B;
   }
-  // -------------------------------------------------------------------------------
+// -------------------------------------------------------------------------------
   Matrix<double> floor(const Matrix<double>& A)
   {
     Matrix<double> result(A.size(), 0);
@@ -1268,7 +1204,7 @@ namespace Pinakas { namespace Backend
       A[0][index] = std::floor(A[0][index]);
     return A;
   }
-  // -------------------------------------------------------------------------------
+// -------------------------------------------------------------------------------
   Matrix<double> round(const Matrix<double>& A)
   {
     Matrix<double> result(A.size(), 0);
@@ -1283,7 +1219,7 @@ namespace Pinakas { namespace Backend
       A[0][index] = std::round(A[0][index]);
     return A;
   }
-  // -------------------------------------------------------------------------------
+// -------------------------------------------------------------------------------
   Matrix<double> ceil(Matrix<double>& A)
   {
     Matrix<double> result(A.size(), 0);
@@ -1298,7 +1234,7 @@ namespace Pinakas { namespace Backend
       A[0][index] = std::round(A[0][index]);
     return A;
   }
-  // -------------------------------------------------------------------------------
+// -------------------------------------------------------------------------------
   Matrix<double> mul(const Matrix<double>& A, const Matrix<double>& B)
   {
     if (A.size().N != B.size().M) {
@@ -1316,7 +1252,7 @@ namespace Pinakas { namespace Backend
           result[j][i] += A[j][k] * B[k][i];
     return result;
   }
-  // -------------------------------------------------------------------------------
+// -------------------------------------------------------------------------------
   Matrix<double> transpose(const Matrix<double>& A)
   {
     Matrix<double> result(A.size().N, A.size().M);
@@ -1339,7 +1275,7 @@ namespace Pinakas { namespace Backend
       result[0][k] = A[0][k];
     return result;
   }
-  // -------------------------------------------------------------------------------
+// -------------------------------------------------------------------------------
   double min(const Matrix<double>& matrix) noexcept
   {
     double minimum = std::numeric_limits<double>::max();
@@ -1357,7 +1293,7 @@ namespace Pinakas { namespace Backend
         minimum = column[k];
     return minimum;
   }
-  // -------------------------------------------------------------------------------
+// -------------------------------------------------------------------------------
   double max(const Matrix<double>& matrix) noexcept
   {
     double maximum = std::numeric_limits<double>::min();
@@ -1375,7 +1311,7 @@ namespace Pinakas { namespace Backend
         maximum = column[k];
     return maximum;
   }
-  // -------------------------------------------------------------------------------
+// -------------------------------------------------------------------------------
   double sum(const Matrix<double>& A) noexcept
   {
     double summation = 0;
@@ -1417,7 +1353,7 @@ namespace Pinakas { namespace Backend
       temporary += std::log(A[0][k]);
     return std::exp(temporary / A.numel());
   }
-  // -------------------------------------------------------------------------------
+// -------------------------------------------------------------------------------
   Matrix<double> orthogonalize(Matrix<double> A)
   {
     const size_t M = A.size().M;
@@ -1716,15 +1652,15 @@ namespace Pinakas { namespace Backend
 
     Matrix<double> rxx = Rxx(A, p+1);
 
-    Matrix<double> autocorr_mat(p, p);
+    Matrix<double> autocorr(p, p);
     Matrix<double> autocorr_vec(p, 1);
     for (size_t i = 0; i < p; ++i) {
       for (size_t j = 0; j < p; ++j)
-        autocorr_mat[j][i] = rxx[0][(j > i) ? (j - i) : (i - j)];
+        autocorr[j][i] = rxx[0][(j > i) ? (j - i) : (i - j)];
       autocorr_vec[0][i] = rxx[0][i+1];
     }
 
-    return div(autocorr_vec, autocorr_mat);
+    return div(autocorr_vec, autocorr);
   }
 
   Matrix<double> toeplitz(const Matrix<double>& A)
@@ -1762,7 +1698,7 @@ namespace Pinakas { namespace Backend
       signal[0][k] *= 0.42 - 0.5 * std::cos(2 * M_PI * k / (N - 1)) + 0.08 * std::cos(4 * M_PI * k / (N - 1));
     return signal;
   }
-  // -------------------------------------------------------------------------------
+// -------------------------------------------------------------------------------
   Matrix<double> hamming(const size_t N)
   {
     Matrix<double> window(1, N);
@@ -1787,7 +1723,7 @@ namespace Pinakas { namespace Backend
       signal[0][k] *= 0.54 - 0.46 * std::cos(2 * M_PI * k / (N - 1));
     return signal;
   }
-  // -------------------------------------------------------------------------------
+// -------------------------------------------------------------------------------
   Matrix<double> hann(const size_t N)
   {
     Matrix<double> window(1, N);
@@ -1812,7 +1748,7 @@ namespace Pinakas { namespace Backend
       signal[0][k] *= 0.5 - 0.5 * std::cos(2 * M_PI * k / (N - 1));
     return signal;
   }
-  // -------------------------------------------------------------------------------
+// -------------------------------------------------------------------------------
   double newton(const std::function<double(double)> function, const double tol, const size_t max_iteration, const double seed) noexcept
   {
     const double half_tol = tol * 0.5;
@@ -1825,7 +1761,7 @@ namespace Pinakas { namespace Backend
 
     return root;
   }
-  // -------------------------------------------------------------------------------
+// -------------------------------------------------------------------------------
   Matrix<double> cos(Matrix<double>& A)
   {
     Matrix<double> result(A.size());
@@ -1873,7 +1809,7 @@ namespace Pinakas { namespace Backend
     }
     return A;
   }
-  // -------------------------------------------------------------------------------
+// -------------------------------------------------------------------------------
   Matrix<double> upsample(const Matrix<double>& data, const size_t L)
   {
     Matrix<double> upsampled(1, L * data.numel(), 0);
@@ -2309,7 +2245,13 @@ int main()
   Matrix<int> x = iota(10) + Random(0, 1);
   Matrix<double> y = iota(10) + Random(0, 1);
   puts("----------------");
-  Matrix<double> t1 =  x + (y + 1.0);
+  auto t1 =  x + y;
+  puts("----------------");
+  auto t2 =  x + (y + 1.0);
+  puts("----------------");
+  auto t3 =  (x + 1) + y;
+  puts("----------------");
+  auto t4 =  (x + 1) + (y + 1.0);
   puts("----------------");
   
   /* 

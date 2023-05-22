@@ -91,27 +91,48 @@ namespace Pinakas { namespace Backend
 
   // enables an overload if there is no loss of precision when casting T2 into T1
   template<typename T1, typename T2>
-  using enable_if_no_loss = typename std::enable_if<std::is_same<typename std::common_type<T1, T2>::type, T1>::value, T1>::type;
-
-  // enables an overload if there is loss of precision when casting T2 into T1
-  template<typename T1, typename T2>
-  using enable_if_loss = typename std::enable_if<!std::is_same<typename std::common_type<T1, T2>::type, T1>::value, T2>::type;
-
+  using if_no_loss = typename std::enable_if<std::is_same<typename std::common_type<T1, T2>::type, T1>::value, T1>::type;
 // -------------------------------------------------------------------------------
   void validate_size(const Size size_A, const Size size_B, const std::string& op);
 // -------------------------------------------------------------------------------
   template<typename T1, typename T2>
-  Matrix<T1>& add_mat_inplace(Matrix<T1>& A, const Matrix<T2>& B);
-  template<typename T1, typename T2>
-  Matrix<T1>& add_val_inplace(Matrix<T1>& A, const T2 B);
+  auto operator+=(Matrix<T1>& A, const Matrix<T2>& B) -> Matrix<T1>&;
   template<typename T>
-  Matrix<T>& add_rng_inplace(Matrix<T>& A, const Random range);
-  template<typename T1, typename T2, typename T3 = typename std::common_type<T1, T2>::type>
-  Matrix<T3> add_mat(const Matrix<T1>& A, const Matrix<T2>& B);
-  template<typename T1, typename T2, typename T3 = typename std::common_type<T1, T2>::type>
-  Matrix<T3> add_val(const Matrix<T1>& A, const T2 B);
-  template<typename T1, typename T3 = typename std::common_type<T1, double>::type>
-  Matrix<T3> add_rng(const Matrix<T1>& A, const Random range);
+  auto operator+=(Matrix<T>& A, const Random B) -> Matrix<T>&;
+  template<typename T1, typename T2>
+  auto operator+=(Matrix<T1>& A, const T2 B) -> Matrix<T1>&;
+  template<typename T1, typename T2>
+  auto operator+(const Matrix<T1>& A, const Matrix<T2>& B) -> Matrix<typename std::common_type<T1, T2>::type>;
+  template<typename T>
+  auto operator+(const Matrix<T>& A, const Random B) -> Matrix<typename std::common_type<T, double>::type>;
+  template<typename T>
+  auto operator+(const Random A, const Matrix<T>& B) -> Matrix<typename std::common_type<T, double>::type>;
+  template<typename T1, typename T2>
+  auto operator+(const Matrix<T1>& A, const T2 B) -> Matrix<typename std::common_type<T1, T2>::type>;
+  template<typename T1, typename T2>
+  auto operator+(const T1 A, const Matrix<T2>& B) -> Matrix<typename std::common_type<T1, T2>::type>;
+  template<typename T>
+  auto operator+(const Matrix<T>& A) noexcept -> Matrix<T>&;
+  template<typename T1, typename T2>
+  auto operator+(const Matrix<T1>& A, Matrix<T2>&& B) -> Matrix<if_no_loss<T2, T1>>&&;
+  template<typename T1, typename T2>
+  auto operator+(Matrix<T1>&& A, const Matrix<T2>& B) -> Matrix<if_no_loss<T1, T2>>&&;
+  template<typename T1, typename T2>
+  auto operator+(Matrix<T1>&& A, Matrix<T2>&& B) -> Matrix<if_no_loss<T2, T1>>&&;
+  template<typename T1, typename T2>
+  auto operator+(Matrix<T1>&& A, Matrix<T2>&& B) -> Matrix<if_no_loss<T1, T2>>&&;
+  template<typename T>
+  auto operator+(Matrix<T>&& A, Matrix<T>&& B) -> Matrix<T>&&;
+  template<typename T>
+  auto operator+(Matrix<T>&& A, const Random B) -> Matrix<if_no_loss<T, double>>&&;
+  template<typename T>
+  auto operator+(const Random A, Matrix<T>&& B) -> Matrix<if_no_loss<T, double>>&&;
+  template<typename T1, typename T2>
+  auto operator+(const T1 A, Matrix<T2>&& B) -> Matrix<if_no_loss<T2, T1>>&&;
+  template<typename T1, typename T2>
+  auto operator+(Matrix<T1>&& A, const T2 B) -> Matrix<if_no_loss<T1, T2>>&&;
+  template<typename T>
+  auto operator+(Matrix<T>&& A) noexcept -> Matrix<T>&&;
 // -------------------------------------------------------------------------------
   template<typename T>
   Matrix<T>& operator*=(Matrix<T>& A, const Matrix<T>& B);
