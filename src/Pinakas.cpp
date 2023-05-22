@@ -1,5 +1,5 @@
 // --inclusion guard--------------------------------------------------------------
-//#define LOGGING
+#define LOGGING
 #include "../include/Pinakas.hpp"
 #define M_PI 3.14159265358979323846
 // --Pinakas library: backend forward declaration---------------------------------
@@ -512,6 +512,64 @@ namespace Pinakas { namespace Backend
   }
   // -------------------------------------------------------------------------------
   template<typename T1, typename T2>
+  Matrix<T1>& add_mat_inplace(Matrix<T1>& A, const Matrix<T2>& B)
+  {
+    for (size_t k = 0; k < A.numel(); ++k)
+      A[0][k] += B[0][k];
+    return A;
+  }
+
+  template<typename T1, typename T2>
+  Matrix<T1>& add_val_inplace(Matrix<T1>& A, const T2 B)
+  {
+    for (size_t k = 0; k < A.numel(); ++k)
+      A[0][k] += B;
+    return A;
+  }
+
+  template<typename T>
+  Matrix<T>& add_rng_inplace(Matrix<T>& A, const Random range)
+  {
+    std::random_device device;
+    std::mt19937 generator(device());
+    std::uniform_real_distribution<> uniform_distribution(range.min_, range.max_);
+    for (size_t k = 0; k < A.numel(); ++k)
+      A[0][k] += uniform_distribution(generator);
+    return A;
+  }
+
+  template<typename T1, typename T2, typename T3 = typename std::common_type<T1, T2>::type>
+  Matrix<T3> add_mat(const Matrix<T1>& A, const Matrix<T2>& B)
+  {
+    Matrix<T3> R(A.size());
+    for (size_t k = 0; k < A.numel(); ++k)
+      R[0][k] = A[0][k] + B[0][k];
+    return R;
+  }
+
+  template<typename T1, typename T2, typename T3 = typename std::common_type<T1, T2>::type>
+  Matrix<T3> add_val(const Matrix<T1>& A, const T2 B)
+  {
+    Matrix<T3> R(A.size());
+    for (size_t k = 0; k < A.numel(); ++k)
+      R[0][k] += A[0][k] + B;
+    return R;
+  }
+
+  template<typename T1, typename T3 = typename std::common_type<T1, double>::type>
+  Matrix<T3> add_rng(const Matrix<T1>& A, const Random range)
+  {
+    std::random_device device;
+    std::mt19937 generator(device());
+    std::uniform_real_distribution<> uniform_distribution(range.min_, range.max_);
+    Matrix<T3> R(A.size());
+    for (size_t k = 0; k < A.numel(); ++k)
+      R[0][k] = A[0][k] + uniform_distribution(generator);
+    return R;
+  }
+
+
+  template<typename T1, typename T2>
   Matrix<T1>& operator+=(Matrix<T1>& A, const Matrix<T2>& B)
   {
     validate_size(A.size(), B.size(), "+=");
@@ -521,64 +579,64 @@ namespace Pinakas { namespace Backend
   }
 
   template<typename T1, typename T2, typename T3 = typename std::common_type<T1, T2>::type>
-  Matrix<T3> operator+(const Matrix<T1>& A, const Matrix<T2>& B)
+  Matrix<T3>&& operator+(const Matrix<T1>& A, const Matrix<T2>& B)
   {
     validate_size(A.size(), B.size(), "+");
     Matrix<T3> result(A.size());
     for (size_t index = 0; index < result.numel(); ++index)
       result[0][index] = A[0][index] + B[0][index];
-    return result;
+    return std::move(result);
   }
 
   template<typename T1, typename T2>
-  Matrix<enable_if_no_loss<T1, T2>> operator+(Matrix<T1>&& A, const Matrix<T2>& B)
-  {
-    validate_size(A.size(), B.size(), "+");
-    for (size_t index = 0; index < B.numel(); ++index)
-      B[0][index] += A[0][index];
-    return B;
-  }
-
-  template<typename T1, typename T2>
-  Matrix<enable_if_loss<T1, T2>> operator+(Matrix<T1>&& A,const  Matrix<T2>& B)
-  {
-    validate_size(A.size(), B.size(), "+");
-    Matrix<enable_if_loss<T2, T1>> result(A.size());
-    for (size_t index = 0; index < B.numel(); ++index)
-      result[0][index] = A[0][index] + B[0][index];
-    return result;
-  }
-
-  template<typename T1, typename T2>
-  Matrix<enable_if_no_loss<T2, T1>> operator+(const Matrix<T1>& A, Matrix<T2>&& B)
+  Matrix<enable_if_no_loss<T1, T2>>&& operator+(Matrix<T1>&& A, const Matrix<T2>& B)
   {
     validate_size(A.size(), B.size(), "+");
     for (size_t index = 0; index < A.numel(); ++index)
       A[0][index] += B[0][index];
-    return A;
+    return std::move(A);
   }
 
   template<typename T1, typename T2>
-  Matrix<enable_if_loss<T2, T1>> operator+(const Matrix<T1>& A, Matrix<T2>&& B)
+  Matrix<enable_if_loss<T1, T2>>&& operator+(Matrix<T1>&& A,const  Matrix<T2>& B)
+  {
+    validate_size(A.size(), B.size(), "+");
+    Matrix<enable_if_loss<T1, T2>> result(A.size());
+    for (size_t index = 0; index < B.numel(); ++index)
+      result[0][index] = A[0][index] + B[0][index];
+    return std::move(result);
+  }
+
+  template<typename T1, typename T2>
+  Matrix<enable_if_no_loss<T2, T1>>&& operator+(const Matrix<T1>& A, Matrix<T2>&& B)
+  {
+    validate_size(A.size(), B.size(), "+");
+    for (size_t index = 0; index < A.numel(); ++index)
+      B[0][index] += A[0][index];
+    return std::move(B);
+  }
+
+  template<typename T1, typename T2>
+  Matrix<enable_if_loss<T2, T1>>&& operator+(const Matrix<T1>& A, Matrix<T2>&& B)
   {
     validate_size(A.size(), B.size(), "+");
     Matrix<enable_if_loss<T2, T1>> result(A.size());
     for (size_t index = 0; index < A.numel(); ++index)
       result[0][index] = A[0][index] + B[0][index];
-    return result;
+    return std::move(result);
   }
 
   template<typename T1, typename T2, typename T3 = typename std::common_type<T1, T2>::type>
-  Matrix<T3> operator+(Matrix<T1>&& A, Matrix<T2>&& B)
+  Matrix<T3>&& operator+(Matrix<T1>&& A, Matrix<T2>&& B)
   {
     validate_size(A.size(), B.size(), "+");
     for (size_t index = 0; index < A.numel(); ++index)
       A[0][index] += B[0][index];
-    return A;
+    return std::move(A);
   }
 
   template<typename T>
-  Matrix<T> operator+(const Matrix<T>& A, const Random range)
+  Matrix<T>&& operator+(const Matrix<T>& A, const Random range)
   {
     Matrix<T> result(A.size());
     std::random_device device;
@@ -586,22 +644,22 @@ namespace Pinakas { namespace Backend
     std::uniform_real_distribution<> uniform_distribution(range.min_, range.max_);
     for (size_t index = 0; index < result.numel(); ++index)
       result[0][index] = A[0][index] + uniform_distribution(generator);
-    return result;
+    return std::move(result);
   }
 
   template<typename T>
-  Matrix<T> operator+(Matrix<T>&& A, const Random range) noexcept
+  Matrix<T>&& operator+(Matrix<T>&& A, const Random range) noexcept
   {
     std::random_device device;
     std::mt19937 generator(device());
     std::uniform_real_distribution<> uniform_distribution(range.min_, range.max_);
     for (size_t index = 0; index < A.numel(); ++index)
       A[0][index] += uniform_distribution(generator);
-    return A;
+    return std::move(A);
   }
 
   template<typename T>
-  Matrix<T> operator+(const Random range, const Matrix<T>& A)
+  Matrix<T>&& operator+(const Random range, const Matrix<T>& A)
   {
     Matrix<T> result(A.size());
     std::random_device device;
@@ -609,18 +667,18 @@ namespace Pinakas { namespace Backend
     std::uniform_real_distribution<> uniform_distribution(range.min_, range.max_);
     for (size_t index = 0; index < result.numel(); ++index)
       result[0][index] = A[0][index] + uniform_distribution(generator);
-    return result;
+    return std::move(result);
   }
 
   template<typename T>
-  Matrix<T> operator+(const Random range, Matrix<T>&& A) noexcept
+  Matrix<T>&& operator+(const Random range, Matrix<T>&& A) noexcept
   {
     std::random_device device;
     std::mt19937 generator(device());
     std::uniform_real_distribution<> uniform_distribution(range.min_, range.max_);
     for (size_t index = 0; index < A.numel(); ++index)
       A[0][index] += uniform_distribution(generator);
-    return A;
+    return std::move(A);
   }
 
   template<typename T1, typename T2>
@@ -632,58 +690,58 @@ namespace Pinakas { namespace Backend
   }
 
   template<typename T1, typename T2, typename T3 = typename std::common_type<T1, T2>::type>
-  Matrix<T3> operator+(const Matrix<T1>& A, const T2 B)
+  Matrix<T3>&& operator+(const Matrix<T1>& A, const T2 B)
   {
     Matrix<T3> result(A.size());
     for (size_t index = 0; index < result.numel(); ++index)
       result[0][index] = A[0][index] + B;
-    return result;
+    return std::move(result);
   }
 
   template<typename T1, typename T2>
-  Matrix<enable_if_no_loss<T1, T2>> operator+(Matrix<T1>&& A, const T2 B) noexcept
+  Matrix<enable_if_no_loss<T1, T2>>&& operator+(Matrix<T1>&& A, const T2 B) noexcept
   {
     for (size_t index = 0; index < A.numel(); ++index)
       A[0][index] += B;
-    return A += B;
+    return std::move(A);
   }
 
   template<typename T1, typename T2>
-  Matrix<enable_if_loss<T1, T2>> operator+(Matrix<T1>&& A, const T2 B) noexcept
+  Matrix<enable_if_loss<T1, T2>>&& operator+(Matrix<T1>&& A, const T2 B) noexcept
   {
     Matrix<enable_if_loss<T2, T1>> result(A.size());
     for (size_t index = 0; index < A.numel(); ++index)
       result[0][index] += A[0][index] + B;
-    return result;
+    return std::move(result);
   }
 
   template<typename T1, typename T2>
-  Matrix<enable_if_no_loss<T2, T1>> operator+(const T1 B, Matrix<T2>&& A) noexcept
+  Matrix<enable_if_no_loss<T2, T1>>&& operator+(const T1 A, Matrix<T2>&& B) noexcept
   {
-    for (size_t index = 0; index < A.numel(); ++index)
-      A[0][index] += B;
-    return A += B;
+    for (size_t index = 0; index < B.numel(); ++index)
+      B[0][index] += A;
+    return std::move(B);
   }
 
   template<typename T1, typename T2>
-  Matrix<enable_if_loss<T2, T1>> operator+(const T1 B, Matrix<T2>&& A) noexcept
+  Matrix<enable_if_loss<T2, T1>>&& operator+(const T1 B, Matrix<T2>&& A) noexcept
   {
     Matrix<enable_if_loss<T2, T1>> result(A.size());
     for (size_t index = 0; index < A.numel(); ++index)
       result[0][index] += A[0][index] + B;
-    return result;
+    return std::move(result);
   }
 
   template<typename T>
-  Matrix<T> operator+(const Matrix<T>& A) noexcept
+  Matrix<T>&& operator+(const Matrix<T>& A) noexcept
   {
-    return A;
+    return std::move(A);
   }
 
   template<typename T>
-  Matrix<T> operator+(Matrix<T>&& A) noexcept
+  Matrix<T>&& operator+(Matrix<T>&& A) noexcept
   {
-    return A;
+    return std::move(A);
   }
   // -------------------------------------------------------------------------------
   template<typename T>
@@ -2251,9 +2309,8 @@ int main()
   Matrix<int> x = iota(10) + Random(0, 1);
   Matrix<double> y = iota(10) + Random(0, 1);
   puts("----------------");
-  auto t1 =  x + (y + 1.0);
+  Matrix<double> t1 =  x + (y + 1.0);
   puts("----------------");
-  auto t2 =  y + (x + 1.0);
   
   /* 
   Matrix<double> A(1000, 1000, {0, 1});

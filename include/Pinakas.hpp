@@ -65,7 +65,7 @@ namespace Pinakas { namespace Backend
   struct Size;
   //
   template<typename T>
-  struct Matrix;
+  class Matrix;
   //
   template<typename T>
   class Slice;
@@ -95,58 +95,23 @@ namespace Pinakas { namespace Backend
 
   // enables an overload if there is loss of precision when casting T2 into T1
   template<typename T1, typename T2>
-  using enable_if_loss = typename std::enable_if<!std::is_same<typename std::common_type<T1, T2>::type, T1>::value, typename std::common_type<T1, T2>::type>::type;
+  using enable_if_loss = typename std::enable_if<!std::is_same<typename std::common_type<T1, T2>::type, T1>::value, T2>::type;
 
 // -------------------------------------------------------------------------------
   void validate_size(const Size size_A, const Size size_B, const std::string& op);
 // -------------------------------------------------------------------------------
   template<typename T1, typename T2>
-  Matrix<T1>& operator+=(Matrix<T1>& A, const Matrix<T2>& B);
-
+  Matrix<T1>& add_mat_inplace(Matrix<T1>& A, const Matrix<T2>& B);
+  template<typename T1, typename T2>
+  Matrix<T1>& add_val_inplace(Matrix<T1>& A, const T2 B);
+  template<typename T>
+  Matrix<T>& add_rng_inplace(Matrix<T>& A, const Random range);
   template<typename T1, typename T2, typename T3 = typename std::common_type<T1, T2>::type>
-  Matrix<T3> operator+(const Matrix<T1>& A, const Matrix<T2>& B);
+  Matrix<T3> add_mat(const Matrix<T1>& A, const Matrix<T2>& B);
   template<typename T1, typename T2, typename T3 = typename std::common_type<T1, T2>::type>
-  Matrix<T3> operator+(Matrix<T1>&& A, Matrix<T2>&& B);
-
-  template<typename T1, typename T2>
-  Matrix<enable_if_no_loss<T1, T2>> operator+(Matrix<T1>&& A, const Matrix<T2>& B);
-  template<typename T1, typename T2>
-  Matrix<enable_if_loss<T1, T2>> operator+(Matrix<T1>&& A, const Matrix<T2>& B);
-
-  template<typename T1, typename T2>
-  Matrix<enable_if_no_loss<T2, T1>> operator+(const Matrix<T1>& A, Matrix<T2>&& B);
-  template<typename T1, typename T2>
-  Matrix<enable_if_loss<T2, T1>> operator+(const Matrix<T1>& A, Matrix<T2>&& B);
-  
-  template<typename T1, typename T2>
-  Matrix<T1>& operator+=(Matrix<T1>& A, const T2 B) noexcept;
-
-  template<typename T1, typename T2, typename T3 = typename std::common_type<T1, T2>::type>
-  Matrix<T3> operator+(const Matrix<T1>& A, const T2 B);
-
-  template<typename T1, typename T2>
-  Matrix<enable_if_no_loss<T1, T2>> operator+(Matrix<T1>&& A, const T2 B) noexcept;
-  template<typename T1, typename T2>
-  Matrix<enable_if_loss<T1, T2>> operator+(Matrix<T1>&& A, const T2 B) noexcept;
-
-  template<typename T1, typename T2>
-  Matrix<enable_if_no_loss<T2, T1>> operator+(const T1 B, Matrix<T2>&& A) noexcept;
-  template<typename T1, typename T2>
-  Matrix<enable_if_loss<T2, T1>> operator+(const T1 B, Matrix<T2>&& A) noexcept;
-
-  template<typename T>
-  Matrix<T> operator+(const Matrix<T>& A, const Random range);
-  template<typename T>
-  Matrix<T> operator+(Matrix<T>&& A, const Random range) noexcept;
-  template<typename T>
-  Matrix<T> operator+(const Random range, const Matrix<T>& A);
-  template<typename T>
-  Matrix<T> operator+(const Random range, Matrix<T>&& A) noexcept;
-
-  template<typename T>
-  inline Matrix<T> operator+(const Matrix<T>& A) noexcept;
-  template<typename T>
-  inline Matrix<T> operator+(Matrix<T>&& A) noexcept;
+  Matrix<T3> add_val(const Matrix<T1>& A, const T2 B);
+  template<typename T1, typename T3 = typename std::common_type<T1, double>::type>
+  Matrix<T3> add_rng(const Matrix<T1>& A, const Random range);
 // -------------------------------------------------------------------------------
   template<typename T>
   Matrix<T>& operator*=(Matrix<T>& A, const Matrix<T>& B);
@@ -396,7 +361,7 @@ namespace Pinakas { namespace Backend
   };
 
   template<typename T>
-  struct Matrix {
+  class Matrix {
     public:
       // destructor
       ~Matrix() noexcept;
@@ -466,7 +431,7 @@ namespace Pinakas { namespace Backend
 
   template<typename T>
   class Slice {
-    friend struct Matrix<T>;
+    friend class Matrix<T>;
     public:
       inline T& operator[](size_t index) const & noexcept;
       T& operator()(size_t index) const &;
