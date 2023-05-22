@@ -446,7 +446,7 @@ namespace Pinakas { namespace Backend
   template<typename T>
   Slice<T>::Slice(Matrix<T>& matrix, const size_t n, Keyword::Column) noexcept
     : // member initialization list
-    size_{matrix.size().M, 1, matrix.size().M},
+    size_{matrix.M(), 1, matrix.M()},
     fixed_(n),
     col_row_(false),
     matrix_(matrix)
@@ -455,7 +455,7 @@ namespace Pinakas { namespace Backend
   template<typename T>
   Slice<T>::Slice(Matrix<T>& matrix, const size_t m, Keyword::Row) noexcept
     : // member initialization list
-    size_{1, matrix.size().N, matrix.size().N},
+    size_{1, matrix.N(), matrix.N()},
     fixed_(m),
     col_row_(true),
     matrix_(matrix)
@@ -471,10 +471,10 @@ namespace Pinakas { namespace Backend
   T& Slice<T>::operator()(const size_t index) const &
   {
     // validate index
-    if (index >= size().numel) {
+    if (index >= numel()) {
       std::stringstream error_message;
-      error_message << '(' << index << ") out of bound " << size().numel - 1 << " (dimensions are ";
-      error_message << (col_row_ ? 1 : size().numel) << 'x' << (col_row_ ? size().numel : 1) << " )";
+      error_message << '(' << index << ") out of bound " << numel() - 1 << " (dimensions are ";
+      error_message << (col_row_ ? 1 : numel()) << 'x' << (col_row_ ? numel() : 1) << " )";
       throw std::out_of_range(error_message.str());
     }
     return col_row_ ? matrix_[fixed_][index] : matrix_[index][fixed_];
@@ -498,87 +498,93 @@ namespace Pinakas { namespace Backend
     max_(max)
   {}
 // -------------------------------------------------------------------------------
-  void validate_size(const Size size_A, const Size size_B, const std::string& op)
-  {
-    if (size_A != size_B) {
-      std::stringstream error_message;
-      error_message << "error: operator " << op << ": nonconformant arguments (";
-      error_message << "A is " << size_A.M << 'x' << size_A.N;
-      error_message << ", B is " << size_B.M << 'x' << size_B.N << ")\n";
-      throw std::invalid_argument(error_message.str());
-    }
-  }
-// -------------------------------------------------------------------------------
   template<typename T1, typename T2>
   Matrix<T1>& add_mat_inplace(Matrix<T1>& A, const Matrix<T2>& B)
   {
-    if (size_A != size_B) {
+    if (A.size() != B.size()) {
       std::stringstream error_message;
       error_message << "error: add_mat_inplace: nonconformant arguments (" << "A is ";
-      error_message << size_A.M << 'x' << size_A.N << ", B is ";
-      error_message << size_B.M << 'x' << size_B.N << ")\n";
+      error_message << A.M() << 'x' << A.N() << ", B is ";
+      error_message << B.M() << 'x' << B.N() << ")\n";
       throw std::invalid_argument(error_message.str());
     }
 
-    for (size_t k = 0; k < A.numel(); ++k)
+    const size_t n = A.numel();
+    for (size_t k = 0; k < n; ++k)
       A[0][k] += B[0][k];
+
     return A;
   }
 
   template<typename T1, typename T2>
-  Matrix<T1>& add_rng_inplace(Matrix<T1>& A, const T2 B) noexcept
+  Matrix<T1>& add_val_inplace(Matrix<T1>& A, const T2 B) noexcept
   {
-    for (size_t k = 0; k < A.numel(); ++k)
+    const size_t n = A.numel();
+    for (size_t k = 0; k < n; ++k)
       A[0][k] += B;
+
     return A;
   }
 
   template<typename T>
-  Matrix<T>& add_val_inplace(Matrix<T>& A, const Random B) noexcept
+  Matrix<T>& add_rng_inplace(Matrix<T>& A, const Random B) noexcept
   {
     std::random_device device;
     std::mt19937 generator(device());
     std::uniform_real_distribution<> uniform_distribution(B.min_, B.max_);
-    for (size_t k = 0; k < A.numel(); ++k)
+
+    const size_t n = A.numel();
+    for (size_t k = 0; k < n; ++k)
       A[0][k] += uniform_distribution(generator);
+
     return A;
   }
 
   template<typename T1, typename T2, typename T3 = appropriate_type<T1, T2>>
   Matrix<T3> add_mat(const Matrix<T1>& A, const Matrix<T2>& B)
   {
-    if (size_A != size_B) {
+    if (A.size() != B.size()) {
       std::stringstream error_message;
       error_message << "error: add_mat: nonconformant arguments (" << "A is ";
-      error_message << size_A.M << 'x' << size_A.N << ", B is ";
-      error_message << size_B.M << 'x' << size_B.N << ")\n";
+      error_message << A.M() << 'x' << A.N() << ", B is ";
+      error_message << B.M() << 'x' << B.N() << ")\n";
       throw std::invalid_argument(error_message.str());
     }
 
     Matrix<T3> R(A.size());
-    for (size_t k = 0; k < A.numel(); ++k)
+
+    const size_t n = A.numel();
+    for (size_t k = 0; k < n; ++k)
       R[0][k] = A[0][k] + B[0][k];
+      
     return R;
   }
 
   template<typename T1, typename T2, typename T3 = appropriate_type<T1, T2>>
-  Matrix<T3> add_rng(const Matrix<T1>& A, const T2 B) noexcept
+  Matrix<T3> add_val(const Matrix<T1>& A, const T2 B) noexcept
   {
     Matrix<T3> R(A.size());
-    for (size_t k = 0; k < A.numel(); ++k)
+
+    const size_t n = A.numel();
+    for (size_t k = 0; k < n; ++k)
       R[0][k] = A[0][k] + B;
+
     return R;
   }
 
   template<typename T1, typename T3 = appropriate_type<T1, double>>
-  Matrix<T3> add_val(const Matrix<T1>& A, const Random B) noexcept
+  Matrix<T3> add_rng(const Matrix<T1>& A, const Random B) noexcept
   {
     std::random_device device;
     std::mt19937 generator(device());
     std::uniform_real_distribution<> uniform_distribution(B.min_, B.max_);
+    
     Matrix<T3> R(A.size());
-    for (size_t k = 0; k < A.numel(); ++k)
+
+    const size_t n = A.numel();
+    for (size_t k = 0; k < n; ++k)
       R[0][k] = A[0][k] + uniform_distribution(generator);
+
     return R;
   }
 // -------------------------------------------------------------------------------
@@ -631,31 +637,31 @@ namespace Pinakas { namespace Backend
   }
 
   template<typename T>
-  Matrix<T>& operator+(const Matrix<T>& A) noexcept
+  auto operator+(const Matrix<T>& A) noexcept -> Matrix<T>&
   {
     return A;
   }
 
   template<typename T1, typename T2>
-  auto operator+(const Matrix<T1>& A, Matrix<T2>&& B) -> Matrix<enable_if_no_loss<T2, T1>>&&
+  auto operator+(const Matrix<T1>& A, Matrix<T2>&& B) -> Matrix<if_no_loss<T2, T1>>&&
   {
     return std::move(add_mat_inplace(B, A));
   }
   
   template<typename T1, typename T2>
-  auto operator+(Matrix<T1>&& A, const Matrix<T2>& B) -> Matrix<enable_if_no_loss<T1, T2>>&&
+  auto operator+(Matrix<T1>&& A, const Matrix<T2>& B) -> Matrix<if_no_loss<T1, T2>>&&
   {
     return std::move(add_mat_inplace(A, B));
   }
   
   template<typename T1, typename T2>
-  auto operator+(Matrix<T1>&& A, Matrix<T2>&& B) -> Matrix<enable_if_no_loss<T2, T1>>&&
+  auto operator+(Matrix<T1>&& A, Matrix<T2>&& B) -> Matrix<if_no_loss<T2, T1>>&&
   {
     return std::move(add_mat_inplace(B, A));
   }
   
   template<typename T1, typename T2>
-  auto operator+(Matrix<T1>&& A, Matrix<T2>&& B) -> Matrix<enable_if_no_loss<T1, T2>>&&
+  auto operator+(Matrix<T1>&& A, Matrix<T2>&& B) -> Matrix<if_no_loss<T1, T2>>&&
   {
     return std::move(add_mat_inplace(A, B));
   }
@@ -667,31 +673,31 @@ namespace Pinakas { namespace Backend
   }
 
   template<typename T>
-  auto operator+(Matrix<T>&& A, const Random B) noexcept -> Matrix<enable_if_no_loss<T, double>>&&
+  auto operator+(Matrix<T>&& A, const Random B) noexcept -> Matrix<if_no_loss<T, double>>&&
   {
     return std::move(add_rng_inplace(A, B));
   }
 
   template<typename T>
-  auto operator+(const Random A, Matrix<T>&& B) noexcept -> Matrix<enable_if_no_loss<T, double>>&&
+  auto operator+(const Random A, Matrix<T>&& B) noexcept -> Matrix<if_no_loss<T, double>>&&
   {
     return std::move(add_rng_inplace(B, A));
   }
   
   template<typename T1, typename T2>
-  auto operator+(const T1 A, Matrix<T2>&& B) noexcept -> Matrix<enable_if_no_loss<T2, T1>>&&
+  auto operator+(const T1 A, Matrix<T2>&& B) noexcept -> Matrix<if_no_loss<T2, T1>>&&
   {
     return std::move(add_val_inplace(B, A));
   }
 
   template<typename T1, typename T2>
-  auto operator+(Matrix<T1>&& A, const T2 B) noexcept -> Matrix<enable_if_no_loss<T1, T2>>&&
+  auto operator+(Matrix<T1>&& A, const T2 B) noexcept -> Matrix<if_no_loss<T1, T2>>&&
   {
     return std::move(add_val_inplace(A, B));
   }
 
   template<typename T>
-  Matrix<T>&& operator+(Matrix<T>&& A) noexcept
+  auto operator+(Matrix<T>&& A) noexcept -> Matrix<T>&&
   {
     return std::move(A);
   }
@@ -699,73 +705,90 @@ namespace Pinakas { namespace Backend
   template<typename T1, typename T2>
   Matrix<T1>& mul_mat_inplace(Matrix<T1>& A, const Matrix<T2>& B)
   {
-    if (size_A != size_B) {
+    if (A.size() != B.size()) {
       std::stringstream error_message;
       error_message << "error: mul_mat_inplace: nonconformant arguments (" << "A is ";
-      error_message << size_A.M << 'x' << size_A.N << ", B is ";
-      error_message << size_B.M << 'x' << size_B.N << ")\n";
+      error_message << A.M() << 'x' << A.N() << ", B is ";
+      error_message << B.M() << 'x' << B.N() << ")\n";
       throw std::invalid_argument(error_message.str());
     }
 
-    for (size_t k = 0; k < A.numel(); ++k)
+    const size_t n = A.numel();
+    for (size_t k = 0; k < n; ++k)
       A[0][k] *= B[0][k];
+
     return A;
   }
 
   template<typename T1, typename T2>
-  Matrix<T1>& mul_rng_inplace(Matrix<T1>& A, const T2 B) noexcept
+  Matrix<T1>& mul_val_inplace(Matrix<T1>& A, const T2 B) noexcept
   {
-    for (size_t k = 0; k < A.numel(); ++k)
+    const size_t n = A.numel();
+    for (size_t k = 0; k < n; ++k)
       A[0][k] *= B;
+
     return A;
   }
 
   template<typename T>
-  Matrix<T>& mul_val_inplace(Matrix<T>& A, const Random B) noexcept
+  Matrix<T>& mul_rng_inplace(Matrix<T>& A, const Random B) noexcept
   {
     std::random_device device;
     std::mt19937 generator(device());
     std::uniform_real_distribution<> uniform_distribution(B.min_, B.max_);
-    for (size_t k = 0; k < A.numel(); ++k)
+    
+    const size_t n = A.numel();
+    for (size_t k = 0; k < n; ++k)
       A[0][k] *= uniform_distribution(generator);
+
     return A;
   }
 
   template<typename T1, typename T2, typename T3 = appropriate_type<T1, T2>>
   Matrix<T3> mul_mat(const Matrix<T1>& A, const Matrix<T2>& B)
   {
-    if (size_A != size_B) {
+    if (A.size() != B.size()) {
       std::stringstream error_message;
       error_message << "error: mul_mat: nonconformant arguments (" << "A is ";
-      error_message << size_A.M << 'x' << size_A.N << ", B is ";
-      error_message << size_B.M << 'x' << size_B.N << ")\n";
+      error_message << A.M() << 'x' << A.N() << ", B is ";
+      error_message << B.M() << 'x' << B.N() << ")\n";
       throw std::invalid_argument(error_message.str());
     }
 
     Matrix<T3> R(A.size());
-    for (size_t k = 0; k < A.numel(); ++k)
+
+    const size_t n = A.numel();
+    for (size_t k = 0; k < n; ++k)
       R[0][k] = A[0][k] * B[0][k];
+
     return R;
   }
 
   template<typename T1, typename T2, typename T3 = appropriate_type<T1, T2>>
-  Matrix<T3> mul_rng(const Matrix<T1>& A, const T2 B) noexcept
+  Matrix<T3> mul_val(const Matrix<T1>& A, const T2 B) noexcept
   {
     Matrix<T3> R(A.size());
-    for (size_t k = 0; k < A.numel(); ++k)
+
+    const size_t n = A.numel();
+    for (size_t k = 0; k < n; ++k)
       R[0][k] = A[0][k] * B;
+
     return R;
   }
 
   template<typename T1, typename T3 = appropriate_type<T1, double>>
-  Matrix<T3> mul_val(const Matrix<T1>& A, const Random B) noexcept
+  Matrix<T3> mul_rng(const Matrix<T1>& A, const Random B) noexcept
   {
     std::random_device device;
     std::mt19937 generator(device());
     std::uniform_real_distribution<> uniform_distribution(B.min_, B.max_);
+
     Matrix<T3> R(A.size());
-    for (size_t k = 0; k < A.numel(); ++k)
+
+    const size_t n = A.numel();
+    for (size_t k = 0; k < n; ++k)
       R[0][k] = A[0][k] * uniform_distribution(generator);
+
     return R;
   }
 // -------------------------------------------------------------------------------
@@ -818,25 +841,25 @@ namespace Pinakas { namespace Backend
   }
 
   template<typename T1, typename T2>
-  auto operator*(const Matrix<T1>& A, Matrix<T2>&& B) -> Matrix<enable_if_no_loss<T2, T1>>&&
+  auto operator*(const Matrix<T1>& A, Matrix<T2>&& B) -> Matrix<if_no_loss<T2, T1>>&&
   {
     return std::move(mul_mat_inplace(B, A));
   }
   
   template<typename T1, typename T2>
-  auto operator*(Matrix<T1>&& A, const Matrix<T2>& B) -> Matrix<enable_if_no_loss<T1, T2>>&&
+  auto operator*(Matrix<T1>&& A, const Matrix<T2>& B) -> Matrix<if_no_loss<T1, T2>>&&
   {
     return std::move(mul_mat_inplace(A, B));
   }
   
   template<typename T1, typename T2>
-  auto operator*(Matrix<T1>&& A, Matrix<T2>&& B) -> Matrix<enable_if_no_loss<T2, T1>>&&
+  auto operator*(Matrix<T1>&& A, Matrix<T2>&& B) -> Matrix<if_no_loss<T2, T1>>&&
   {
     return std::move(mul_mat_inplace(B, A));
   }
   
   template<typename T1, typename T2>
-  auto operator*(Matrix<T1>&& A, Matrix<T2>&& B) -> Matrix<enable_if_no_loss<T1, T2>>&&
+  auto operator*(Matrix<T1>&& A, Matrix<T2>&& B) -> Matrix<if_no_loss<T1, T2>>&&
   {
     return std::move(mul_mat_inplace(A, B));
   }
@@ -848,352 +871,867 @@ namespace Pinakas { namespace Backend
   }
 
   template<typename T>
-  auto operator*(Matrix<T>&& A, const Random B) noexcept -> Matrix<enable_if_no_loss<T, double>>&&
+  auto operator*(Matrix<T>&& A, const Random B) noexcept -> Matrix<if_no_loss<T, double>>&&
   {
     return std::move(mul_rng_inplace(A, B));
   }
 
   template<typename T>
-  auto operator*(const Random A, Matrix<T>&& B) noexcept -> Matrix<enable_if_no_loss<T, double>>&&
+  auto operator*(const Random A, Matrix<T>&& B) noexcept -> Matrix<if_no_loss<T, double>>&&
   {
     return std::move(mul_rng_inplace(B, A));
   }
   
   template<typename T1, typename T2>
-  auto operator*(const T1 A, Matrix<T2>&& B) noexcept -> Matrix<enable_if_no_loss<T2, T1>>&&
+  auto operator*(const T1 A, Matrix<T2>&& B) noexcept -> Matrix<if_no_loss<T2, T1>>&&
   {
     return std::move(mul_val_inplace(B, A));
   }
 
   template<typename T1, typename T2>
-  auto operator*(Matrix<T1>&& A, const T2 B) noexcept -> Matrix<enable_if_no_loss<T1, T2>>&&
+  auto operator*(Matrix<T1>&& A, const T2 B) noexcept -> Matrix<if_no_loss<T1, T2>>&&
   {
     return std::move(mul_val_inplace(A, B));
   }
 // -------------------------------------------------------------------------------
   template<typename T1, typename T2>
-  Matrix<T1>& sub_mat_inplace(Matrix<T1>& A, const Matrix<T2>& B)
+  Matrix<T1>& sub_ll_mat_inplace(Matrix<T1>& A, const Matrix<T2>& B)
   {
-    if (size_A != size_B) {
+    if (A.size() != B.size()) {
       std::stringstream error_message;
-      error_message << "error: sub_mat_inplace: nonconformant arguments (" << "A is ";
-      error_message << size_A.M << 'x' << size_A.N << ", B is ";
-      error_message << size_B.M << 'x' << size_B.N << ")\n";
+      error_message << "error: sub_ll_mat_inplace: nonconformant arguments (" << "A is ";
+      error_message << A.M() << 'x' << A.N() << ", B is " << B.M() << 'x' << B.N() << ")\n";
       throw std::invalid_argument(error_message.str());
     }
 
-    for (size_t k = 0; k < A.numel(); ++k)
+    const size_t n = A.numel();
+    for (size_t k = 0; k < n; ++k)
       A[0][k] -= B[0][k];
+
     return A;
   }
 
   template<typename T1, typename T2>
-  Matrix<T1>& sub_rng_inplace(Matrix<T1>& A, const T2 B) noexcept
+  Matrix<T1>& sub_rl_mat_inplace(Matrix<T1>& B, const Matrix<T2>& A)
   {
-    for (size_t k = 0; k < A.numel(); ++k)
+    if (A.size() != B.size()) {
+      std::stringstream error_message;
+      error_message << "error: sub_rl_mat_inplace: nonconformant arguments (" << "A is ";
+      error_message << A.M() << 'x' << A.N() << ", B is " << B.M() << 'x' << B.N() << ")\n";
+      throw std::invalid_argument(error_message.str());
+    }
+
+    const size_t n = B.numel();
+    for (size_t k = 0; k < n; ++k)
+      B[0][k] = A[0][k] - B[0][k];
+
+    return B;
+  }
+
+  template<typename T1, typename T2>
+  Matrix<T1>& sub_ll_val_inplace(Matrix<T1>& A, const T2 B) noexcept
+  {
+    const size_t n = A.numel();
+    for (size_t k = 0; k < n; ++k)
       A[0][k] -= B;
+
     return A;
   }
 
+  template<typename T1, typename T2>
+  Matrix<T1>& sub_rl_val_inplace(Matrix<T1>& B, const T2 A) noexcept
+  {
+    const size_t n = B.numel();
+    for (size_t k = 0; k < n; ++k)
+      B[0][k] = A - B[0][k];
+
+    return B;
+  }
+
   template<typename T>
-  Matrix<T>& sub_val_inplace(Matrix<T>& A, const Random B) noexcept
+  Matrix<T>& sub_ll_rng_inplace(Matrix<T>& A, const Random B) noexcept
   {
     std::random_device device;
     std::mt19937 generator(device());
     std::uniform_real_distribution<> uniform_distribution(B.min_, B.max_);
-    for (size_t k = 0; k < A.numel(); ++k)
+
+    const size_t n = A.numel();
+    for (size_t k = 0; k < n; ++k)
       A[0][k] -= uniform_distribution(generator);
+
     return A;
+  }
+
+  template<typename T>
+  Matrix<T>& sub_rl_rng_inplace(Matrix<T>& B, const Random A) noexcept
+  {
+    std::random_device device;
+    std::mt19937 generator(device());
+    std::uniform_real_distribution<> uniform_distribution(B.min_, B.max_);
+
+    const size_t n = B.numel();
+    for (size_t k = 0; k < n; ++k)
+      B[0][k] = uniform_distribution(generator) - B[0][k];
+
+    return B;
   }
 
   template<typename T1, typename T2, typename T3 = appropriate_type<T1, T2>>
   Matrix<T3> sub_mat(const Matrix<T1>& A, const Matrix<T2>& B)
   {
-    if (size_A != size_B) {
+    if (A.size() != B.size()) {
       std::stringstream error_message;
-      error_message << "error: sub_mat: nonconformant arguments (" << "A is ";
-      error_message << size_A.M << 'x' << size_A.N << ", B is ";
-      error_message << size_B.M << 'x' << size_B.N << ")\n";
+      error_message << "error: sub_ll_mat: nonconformant arguments (" << "A is ";
+      error_message << A.M() << 'x' << A.N() << ", B is ";
+      error_message << B.M() << 'x' << B.N() << ")\n";
       throw std::invalid_argument(error_message.str());
     }
 
     Matrix<T3> R(A.size());
-    for (size_t k = 0; k < A.numel(); ++k)
+
+    const size_t n = A.numel();
+    for (size_t k = 0; k < n; ++k)
       R[0][k] = A[0][k] - B[0][k];
+
     return R;
   }
 
   template<typename T1, typename T2, typename T3 = appropriate_type<T1, T2>>
-  Matrix<T3> sub_rng(const Matrix<T1>& A, const T2 B) noexcept
+  Matrix<T3> sub_ll_val(const Matrix<T1>& A, const T2 B) noexcept
   {
     Matrix<T3> R(A.size());
-    for (size_t k = 0; k < A.numel(); ++k)
+
+    const size_t n = A.numel();
+    for (size_t k = 0; k < n; ++k)
       R[0][k] = A[0][k] - B;
+
+    return R;
+  }
+
+  template<typename T1, typename T2, typename T3 = appropriate_type<T1, T2>>
+  Matrix<T3> sub_rl_val(const Matrix<T1>& B, const T2 A) noexcept
+  {
+    Matrix<T3> R(B.size());
+
+    const size_t n = B.numel();
+    for (size_t k = 0; k < n; ++k)
+      R[0][k] = A - B[0][k];
+
     return R;
   }
 
   template<typename T1, typename T3 = appropriate_type<T1, double>>
-  Matrix<T3> sub_val(const Matrix<T1>& A, const Random B) noexcept
+  Matrix<T3> sub_ll_rng(const Matrix<T1>& A, const Random B) noexcept
   {
     std::random_device device;
     std::mt19937 generator(device());
     std::uniform_real_distribution<> uniform_distribution(B.min_, B.max_);
+
     Matrix<T3> R(A.size());
-    for (size_t k = 0; k < A.numel(); ++k)
+
+    const size_t n = A.numel();
+    for (size_t k = 0; k < n; ++k)
       R[0][k] = A[0][k] - uniform_distribution(generator);
+
+    return R;
+  }
+
+  template<typename T1, typename T3 = appropriate_type<T1, double>>
+  Matrix<T3> sub_rl_rng(const Matrix<T1>& B, const Random A) noexcept
+  {
+    std::random_device device;
+    std::mt19937 generator(device());
+    std::uniform_real_distribution<> uniform_distribution(B.min_, B.max_);
+
+    Matrix<T3> R(B.size());
+
+    const size_t n = B.numel();
+    for (size_t k = 0; k < n; ++k)
+      R[0][k] = uniform_distribution(generator) - B[0][k];
+
+    return R;
+  }
+
+  template<typename T>
+  Matrix<T>& negate_inplace(Matrix<T>& A) noexcept
+  {
+    const size_t n = A.numel();
+    for (size_t k = 0; k < n; ++k)
+      A[0][k] = -A[0][k];
+
+    return A;
+  }
+
+  template<typename T>
+  Matrix<T> negate(const Matrix<T> A)
+  {
+    Matrix<T> R(A.size());
+
+    const size_t n = A.numel();
+    for (size_t k = 0; k < n; ++k)
+      R[0][k] = -A[0][k];
+
     return R;
   }
 // -------------------------------------------------------------------------------
-// -------------------------------------------------------------------------------
-// -------------------------------------------------------------------------------
-  Matrix<double> floor(const Matrix<double>& A)
+  template<typename T1, typename T2>
+  auto operator-=(Matrix<T1>& A, const Matrix<T2>& B) -> Matrix<T1>&
   {
-    Matrix<double> result(A.size(), 0);
-    for (size_t index = 0; index < result.numel(); ++index)
-      result[0][index] = std::floor(A[0][index]);
-    return result;
+    return sub_ll_mat_inplace(A, B);
+  }
+  
+  template<typename T>
+  auto operator-=(Matrix<T>& A, const Random B) noexcept -> Matrix<T>&
+  {
+    return sub_ll_rng_inplace(A, B);
   }
 
-  Matrix<double> floor(Matrix<double>&& A) noexcept
+  template<typename T1, typename T2>
+  auto operator-=(Matrix<T1>& A, const T2 B) noexcept -> Matrix<T1>&
   {
-    for (size_t index = 0; index < A.numel(); ++index)
-      A[0][index] = std::floor(A[0][index]);
-    return A;
+    return sub_ll_val_inplace(A, B);
   }
-// -------------------------------------------------------------------------------
-  Matrix<double> round(const Matrix<double>& A)
+  
+  template<typename T1, typename T2>
+  auto operator-(const Matrix<T1>& A, const Matrix<T2>& B) -> Matrix<appropriate_type<T1, T2>>
   {
-    Matrix<double> result(A.size(), 0);
-    for (size_t index = 0; index < result.numel(); ++index)
-      result[0][index] = std::round(A[0][index]);
-    return result;
+    return sub_ll_mat(A, B);
   }
 
-  Matrix<double> round(Matrix<double>&& A) noexcept
+  template<typename T>
+  auto operator-(const Matrix<T>& A, const Random B) noexcept -> Matrix<appropriate_type<T, double>>
   {
-    for (size_t index = 0; index < A.numel(); ++index)
-      A[0][index] = std::round(A[0][index]);
-    return A;
-  }
-// -------------------------------------------------------------------------------
-  Matrix<double> ceil(Matrix<double>& A)
-  {
-    Matrix<double> result(A.size(), 0);
-    for (size_t index = 0; index < result.numel(); ++index)
-      result[0][index] = std::ceil(A[0][index]);
-    return result;
+    return sub_ll_rng(A, B);
   }
 
-  Matrix<double> ceil(Matrix<double>&& A) noexcept
+  template<typename T>
+  auto operator-(const Random A, const Matrix<T>& B) noexcept -> Matrix<appropriate_type<T, double>>
   {
-    for (size_t index = 0; index < A.numel(); ++index)
-      A[0][index] = std::round(A[0][index]);
-    return A;
+    return sub_rl_rng(B, A);
+  }
+  
+  template<typename T1, typename T2>
+  auto operator-(const Matrix<T1>& A, const T2 B) noexcept -> Matrix<appropriate_type<T1, T2>>
+  {
+    return sub_ll_val(A, B);
+  }
+  
+  template<typename T1, typename T2>
+  auto operator-(const T1 A, const Matrix<T2>& B) noexcept -> Matrix<appropriate_type<T1, T2>>
+  {
+    return sub_rl_val(B, A);
+  }
+
+  template<typename T1, typename T2>
+  auto operator-(const Matrix<T1>& A, Matrix<T2>&& B) -> Matrix<if_no_loss<T2, T1>>&&
+  {
+    return std::move(sub_rl_mat_inplace(B, A));
+  }
+  
+  template<typename T1, typename T2>
+  auto operator-(Matrix<T1>&& A, const Matrix<T2>& B) -> Matrix<if_no_loss<T1, T2>>&&
+  {
+    return std::move(sub_ll_mat_inplace(A, B));
+  }
+  
+  template<typename T1, typename T2>
+  auto operator-(Matrix<T1>&& A, Matrix<T2>&& B) -> Matrix<if_no_loss<T2, T1>>&&
+  {
+    return std::move(sub_rl_mat_inplace(B, A));
+  }
+  
+  template<typename T1, typename T2>
+  auto operator-(Matrix<T1>&& A, Matrix<T2>&& B) -> Matrix<if_no_loss<T1, T2>>&&
+  {
+    return std::move(sub_ll_mat_inplace(A, B));
+  }
+  
+  template<typename T>
+  auto operator-(Matrix<T>&& A, Matrix<T>&& B) -> Matrix<T>&&
+  {
+    return std::move(sub_ll_mat_inplace(A, B));
+  }
+
+  template<typename T>
+  auto operator-(Matrix<T>&& A, const Random B) noexcept -> Matrix<if_no_loss<T, double>>&&
+  {
+    return std::move(sub_ll_rng_inplace(A, B));
+  }
+
+  template<typename T>
+  auto operator-(const Random A, Matrix<T>&& B) noexcept -> Matrix<if_no_loss<T, double>>&&
+  {
+    return std::move(sub_rl_rng_inplace(B, A));
+  }
+  
+  template<typename T1, typename T2>
+  auto operator-(const T1 A, Matrix<T2>&& B) noexcept -> Matrix<if_no_loss<T2, T1>>&&
+  {
+    return std::move(sub_rl_val_inplace(B, A));
+  }
+
+  template<typename T1, typename T2>
+  auto operator-(Matrix<T1>&& A, const T2 B) noexcept -> Matrix<if_no_loss<T1, T2>>&&
+  {
+    return std::move(sub_ll_val_inplace(A, B));
+  }
+  
+  template<typename T>
+  auto operator-(const Matrix<T>& A) -> Matrix<T>&
+  {
+    return negate(A);
+  }
+
+  template<typename T>
+  auto operator-(Matrix<T>&& A) noexcept -> Matrix<T>&&
+  {
+    return std::move(negate_inplace(A));
   }
 // -------------------------------------------------------------------------------
-  Matrix<double> mul(const Matrix<double>& A, const Matrix<double>& B)
+  template<typename T1, typename T2>
+  Matrix<T1>& div_ll_mat_inplace(Matrix<T1>& A, const Matrix<T2>& B)
   {
-    if (A.size().N != B.size().M) {
+    if (A.size() != B.size()) {
+      std::stringstream error_message;
+      error_message << "error: div_ll_mat_inplace: nonconformant arguments (" << "A is ";
+      error_message << A.M() << 'x' << A.N() << ", B is ";
+      error_message << B.M() << 'x' << B.N() << ")\n";
+      throw std::invalid_argument(error_message.str());
+    }
+
+    const size_t n = A.numel();
+    for (size_t k = 0; k < n; ++k)
+      A[0][k] /= B[0][k];
+
+    return A;
+  }
+
+  template<typename T1, typename T2>
+  Matrix<T1>& div_rl_mat_inplace(Matrix<T1>& B, const Matrix<T2>& A)
+  {
+    if (A.size() != B.size()) {
+      std::stringstream error_message;
+      error_message << "error: div_ll_mat_inplace: nonconformant arguments (" << "A is ";
+      error_message << A.M() << 'x' << A.N() << ", B is ";
+      error_message << B.M() << 'x' << B.N() << ")\n";
+      throw std::invalid_argument(error_message.str());
+    }
+
+    const size_t n = B.numel();
+    for (size_t k = 0; k < n; ++k)
+      B[0][k] = A[0][k] / B[0][k];
+
+    return B;
+  }
+
+  template<typename T1, typename T2>
+  Matrix<T1>& div_ll_val_inplace(Matrix<T1>& A, const T2 B) noexcept
+  {
+    const T2 iB = 1.0 / B;
+
+    const size_t n = A.numel();
+    for (size_t k = 0; k < n; ++k)
+      A[0][k] *= iB;
+
+    return A;
+  }
+
+  template<typename T1, typename T2>
+  Matrix<T1>& div_rl_val_inplace(Matrix<T1>& B, const T2 A) noexcept
+  {
+    const size_t n = B.numel();
+    for (size_t k = 0; k < n; ++k)
+      B[0][k] = A / B[0][k];
+
+    return B;
+  }
+
+  template<typename T>
+  Matrix<T>& div_ll_rng_inplace(Matrix<T>& A, const Random B) noexcept
+  {
+    std::random_device device;
+    std::mt19937 generator(device());
+    std::uniform_real_distribution<> uniform_distribution(B.min_, B.max_);
+    
+    const size_t n = A.numel();
+    for (size_t k = 0; k < n; ++k)
+      A[0][k] /= uniform_distribution(generator);
+
+    return A;
+  }
+
+  template<typename T>
+  Matrix<T>& div_rl_rng_inplace(Matrix<T>& B, const Random A) noexcept
+  {
+    std::random_device device;
+    std::mt19937 generator(device());
+    std::uniform_real_distribution<> uniform_distribution(A.min_, A.max_);
+
+    const size_t n = B.numel();
+    for (size_t k = 0; k < n; ++k)
+      B[0][k] = uniform_distribution(generator) / B[0][k];
+
+    return B;
+  }
+
+  template<typename T1, typename T2, typename T3 = appropriate_type<T1, T2>>
+  Matrix<T3> div_ll_mat(const Matrix<T1>& A, const Matrix<T2>& B)
+  {
+    if (A.size() != B.size()) {
+      std::stringstream error_message;
+      error_message << "error: div_ll_mat: nonconformant arguments (" << "A is ";
+      error_message << A.M() << 'x' << A.N() << ", B is ";
+      error_message << B.M() << 'x' << B.N() << ")\n";
+      throw std::invalid_argument(error_message.str());
+    }
+
+    Matrix<T3> R(A.size());
+
+    const size_t n = A.numel();
+    for (size_t k = 0; k < n; ++k)
+      R[0][k] = A[0][k] / B[0][k];
+
+    return R;
+  }
+
+  template<typename T1, typename T2, typename T3 = appropriate_type<T1, T2>>
+  Matrix<T3> div_ll_val(const Matrix<T1>& A, const T2 B) noexcept
+  {
+    Matrix<T3> R(A.size());
+    const T2 iB = 1.0 / B;
+
+    const size_t n = A.numel();
+    for (size_t k = 0; k < n; ++k)
+      R[0][k] = A[0][k] * iB;
+
+    return R;
+  }
+
+  template<typename T1, typename T2, typename T3 = appropriate_type<T1, T2>>
+  Matrix<T3> div_rl_val(const Matrix<T1>& B, const T2 A) noexcept
+  {
+    Matrix<T3> R(B.size());
+
+    const size_t n = B.numel();
+    for (size_t k = 0; k < n; ++k)
+      R[0][k] = A / B[0][k];
+
+    return R;
+  }
+
+  template<typename T1, typename T3 = appropriate_type<T1, double>>
+  Matrix<T3> div_ll_rng(const Matrix<T1>& A, const Random B) noexcept
+  {
+    std::random_device device;
+    std::mt19937 generator(device());
+    std::uniform_real_distribution<> uniform_distribution(B.min_, B.max_);
+
+    Matrix<T3> R(A.size());
+
+    const size_t n = A.numel();
+    for (size_t k = 0; k < n; ++k)
+      R[0][k] = A[0][k] / uniform_distribution(generator);
+
+    return R;
+  }
+
+  template<typename T1, typename T3 = appropriate_type<T1, double>>
+  Matrix<T3> div_rl_rng(const Matrix<T1>& B, const Random A) noexcept
+  {
+    std::random_device device;
+    std::mt19937 generator(device());
+    std::uniform_real_distribution<> uniform_distribution(A.min_, A.max_);
+
+    Matrix<T3> R(B.size());
+
+    const size_t n = B.numel();
+    for (size_t k = 0; k < n; ++k)
+      R[0][k] = uniform_distribution(generator) / B[0][k];
+
+    return R;
+  }
+// -------------------------------------------------------------------------------
+  template<typename T1, typename T2>
+  auto operator/=(Matrix<T1>& A, const Matrix<T2>& B) -> Matrix<T1>&
+  {
+    return div_ll_mat_inplace(A, B);
+  }
+  
+  template<typename T>
+  auto operator/=(Matrix<T>& A, const Random B) noexcept -> Matrix<T>&
+  {
+    return div_ll_rng_inplace(A, B);
+  }
+
+  template<typename T1, typename T2>
+  auto operator/=(Matrix<T1>& A, const T2 B) noexcept -> Matrix<T1>&
+  {
+    return div_ll_val_inplace(A, B);
+  }
+  
+  template<typename T1, typename T2>
+  auto operator/(const Matrix<T1>& A, const Matrix<T2>& B) -> Matrix<appropriate_type<T1, T2>>
+  {
+    return div_ll_mat(A, B);
+  }
+
+  template<typename T>
+  auto operator/(const Matrix<T>& A, const Random B) noexcept -> Matrix<appropriate_type<T, double>>
+  {
+    return div_ll_rng(A, B);
+  }
+
+  template<typename T>
+  auto operator/(const Random A, const Matrix<T>& B) noexcept -> Matrix<appropriate_type<T, double>>
+  {
+    return div_rl_rng(B, A);
+  }
+  
+  template<typename T1, typename T2>
+  auto operator/(const Matrix<T1>& A, const T2 B) noexcept -> Matrix<appropriate_type<T1, T2>>
+  {
+    return div_ll_val(A, B);
+  }
+  
+  template<typename T1, typename T2>
+  auto operator/(const T1 A, const Matrix<T2>& B) noexcept -> Matrix<appropriate_type<T1, T2>>
+  {
+    return div_rl_val(B, A);
+  }
+
+  template<typename T1, typename T2>
+  auto operator/(const Matrix<T1>& A, Matrix<T2>&& B) -> Matrix<if_no_loss<T2, T1>>&&
+  {
+    return std::move(div_rl_mat_inplace(B, A));
+  }
+  
+  template<typename T1, typename T2>
+  auto operator/(Matrix<T1>&& A, const Matrix<T2>& B) -> Matrix<if_no_loss<T1, T2>>&&
+  {
+    return std::move(div_ll_mat_inplace(A, B));
+  }
+  
+  template<typename T1, typename T2>
+  auto operator/(Matrix<T1>&& A, Matrix<T2>&& B) -> Matrix<if_no_loss<T2, T1>>&&
+  {
+    return std::move(div_rl_mat_inplace(B, A));
+  }
+  
+  template<typename T1, typename T2>
+  auto operator/(Matrix<T1>&& A, Matrix<T2>&& B) -> Matrix<if_no_loss<T1, T2>>&&
+  {
+    return std::move(div_ll_mat_inplace(A, B));
+  }
+  
+  template<typename T>
+  auto operator/(Matrix<T>&& A, Matrix<T>&& B) -> Matrix<T>&&
+  {
+    return std::move(div_ll_mat_inplace(A, B));
+  }
+
+  template<typename T>
+  auto operator/(Matrix<T>&& A, const Random B) noexcept -> Matrix<if_no_loss<T, double>>&&
+  {
+    return std::move(div_ll_rng_inplace(A, B));
+  }
+
+  template<typename T>
+  auto operator/(const Random A, Matrix<T>&& B) noexcept -> Matrix<if_no_loss<T, double>>&&
+  {
+    return std::move(div_rl_rng_inplace(B, A));
+  }
+  
+  template<typename T1, typename T2>
+  auto operator/(const T1 A, Matrix<T2>&& B) noexcept -> Matrix<if_no_loss<T2, T1>>&&
+  {
+    return std::move(div_rl_val_inplace(B, A));
+  }
+
+  template<typename T1, typename T2>
+  auto operator/(Matrix<T1>&& A, const T2 B) noexcept -> Matrix<if_no_loss<T1, T2>>&&
+  {
+    return std::move(div_ll_val_inplace(A, B));
+  }
+// -------------------------------------------------------------------------------
+  template<typename T1, typename T2>
+  Matrix<T1>& pow_ll_mat_inplace(Matrix<T1>& A, const Matrix<T2>& B)
+  {
+    if (A.size() != B.size()) {
+      std::stringstream error_message;
+      error_message << "error: pow_ll_mat_inplace: nonconformant arguments (" << "A is ";
+      error_message << A.M() << 'x' << A.N() << ", B is ";
+      error_message << B.M() << 'x' << B.N() << ")\n";
+      throw std::invalid_argument(error_message.str());
+    }
+
+    const size_t n = A.numel();
+    for (size_t k = 0; k < n; ++k)
+      A[0][k] = std::pow(A[0][k], B[0][k]);
+
+    return A;
+  }
+
+  template<typename T1, typename T2>
+  Matrix<T1>& pow_rl_mat_inplace(Matrix<T1>& B, const Matrix<T2>& A)
+  {
+    if (A.size() != B.size()) {
+      std::stringstream error_message;
+      error_message << "error: pow_ll_mat_inplace: nonconformant arguments (" << "A is ";
+      error_message << A.M() << 'x' << A.N() << ", B is ";
+      error_message << B.M() << 'x' << B.N() << ")\n";
+      throw std::invalid_argument(error_message.str());
+    }
+
+    const size_t n = B.numel();
+    for (size_t k = 0; k < n; ++k)
+      B[0][k] = std::pow(A[0][k], B[0][k]);
+
+    return B;
+  }
+
+  template<typename T1, typename T2>
+  Matrix<T1>& pow_ll_val_inplace(Matrix<T1>& A, const T2 B) noexcept
+  {
+    const size_t n = A.numel();
+    for (size_t k = 0; k < n; ++k)
+      A[0][k] = std::pow(A[0][k], B);
+
+    return A;
+  }
+
+  template<typename T1, typename T2>
+  Matrix<T1>& pow_rl_val_inplace(Matrix<T1>& B, const T2 A) noexcept
+  {
+    const size_t n = B.numel();
+    for (size_t k = 0; k < n; ++k)
+      B[0][k] = std::pow(A, B[0][k]);
+
+    return B;
+  }
+
+  template<typename T1, typename T2, typename T3 = appropriate_type<T1, T2>>
+  Matrix<T3> pow_mat(const Matrix<T1>& A, const Matrix<T2>& B)
+  {
+    if (A.size() != B.size()) {
+      std::stringstream error_message;
+      error_message << "error: pow_ll_mat: nonconformant arguments (" << "A is ";
+      error_message << A.M() << 'x' << A.N() << ", B is ";
+      error_message << B.M() << 'x' << B.N() << ")\n";
+      throw std::invalid_argument(error_message.str());
+    }
+
+    Matrix<T3> R(A.size());
+	
+    const size_t n = A.numel();
+    for (size_t k = 0; k < n; ++k)
+      R[0][k] = std::pow(A[0][k], B[0][k]);
+
+    return R;
+  }
+
+  template<typename T1, typename T2, typename T3 = appropriate_type<T1, T2>>
+  Matrix<T3> pow_ll_val(const Matrix<T1>& A, const T2 B) noexcept
+  {
+    Matrix<T3> R(A.size());
+
+    const size_t n = A.numel();
+    for (size_t k = 0; k < n; ++k)
+      R[0][k] = std::pow(A[0][k], B);
+
+    return R;
+  }
+
+  template<typename T1, typename T2, typename T3 = appropriate_type<T1, T2>>
+  Matrix<T3> pow_rl_val(const Matrix<T1>& B, const T2 A) noexcept
+  {
+    Matrix<T3> R(B.size());
+
+    const size_t n = B.numel();
+    for (size_t k = 0; k < n; ++k)
+      R[0][k] = std::pow(A, B[0][k]);
+
+    return R;
+  }
+// -------------------------------------------------------------------------------
+  template<typename T1, typename T2>
+  auto operator^=(Matrix<T1>& A, const Matrix<T2>& B) -> Matrix<T1>&
+  {
+    return pow_ll_mat_inplace(A, B);
+  }
+
+  template<typename T1, typename T2>
+  auto operator^=(Matrix<T1>& A, const T2 B) noexcept -> Matrix<T1>&
+  {
+    return pow_ll_val_inplace(A, B);
+  }
+  
+  template<typename T1, typename T2>
+  auto operator^(const Matrix<T1>& A, const Matrix<T2>& B) -> Matrix<appropriate_type<T1, T2>>
+  {
+    return pow_mat(A, B);
+  }
+  template<typename T1, typename T2>
+  auto operator^(const Matrix<T1>& A, const T2 B) noexcept -> Matrix<appropriate_type<T1, T2>>
+  {
+    return pow_ll_val(A, B);
+  }
+  
+  template<typename T1, typename T2>
+  auto operator^(const T1 A, const Matrix<T2>& B) noexcept -> Matrix<appropriate_type<T1, T2>>
+  {
+    return pow_rl_val(B, A);
+  }
+
+  template<typename T1, typename T2>
+  auto operator^(const Matrix<T1>& A, Matrix<T2>&& B) -> Matrix<if_no_loss<T2, T1>>&&
+  {
+    return std::move(pow_rl_mat_inplace(B, A));
+  }
+  
+  template<typename T1, typename T2>
+  auto operator^(Matrix<T1>&& A, const Matrix<T2>& B) -> Matrix<if_no_loss<T1, T2>>&&
+  {
+    return std::move(pow_ll_mat_inplace(A, B));
+  }
+  
+  template<typename T1, typename T2>
+  auto operator^(Matrix<T1>&& A, Matrix<T2>&& B) -> Matrix<if_no_loss<T2, T1>>&&
+  {
+    return std::move(pow_rl_mat_inplace(B, A));
+  }
+  
+  template<typename T1, typename T2>
+  auto operator^(Matrix<T1>&& A, Matrix<T2>&& B) -> Matrix<if_no_loss<T1, T2>>&&
+  {
+    return std::move(pow_ll_mat_inplace(A, B));
+  }
+  
+  template<typename T>
+  auto operator^(Matrix<T>&& A, Matrix<T>&& B) -> Matrix<T>&&
+  {
+    return std::move(pow_ll_mat_inplace(A, B));
+  }
+  
+  template<typename T1, typename T2>
+  auto operator^(const T1 A, Matrix<T2>&& B) noexcept -> Matrix<if_no_loss<T2, T1>>&&
+  {
+    return std::move(pow_rl_val_inplace(B, A));
+  }
+
+  template<typename T1, typename T2>
+  auto operator^(Matrix<T1>&& A, const T2 B) noexcept -> Matrix<if_no_loss<T1, T2>>&&
+  {
+    return std::move(pow_ll_val_inplace(A, B));
+  }
+// -------------------------------------------------------------------------------
+  template<typename T>
+  auto floor(const Matrix<T>& A) -> Matrix<if_floating<T>>
+  {
+    Matrix<T> R(A.size());
+
+    const size_t n = A.numel();
+    for (size_t k = 0; k < n; ++k)
+      R[0][k] = std::floor(A[0][k]);
+
+    return R;
+  }
+
+  template<typename T>
+  auto floor(Matrix<T>&& A) noexcept -> Matrix<if_floating<T>>&&
+  {
+    const size_t n = A.numel();
+    for (size_t k = 0; k < n; ++k)
+      A[0][k] = std::floor(A[0][k]);
+
+    return std::move(A);
+  }
+// -------------------------------------------------------------------------------
+  template<typename T>
+  auto round(const Matrix<T>& A) -> Matrix<if_floating<T>>
+  {
+    Matrix<T> R(A.size());
+
+    const size_t n = A.numel();
+    for (size_t k = 0; k < n; ++k)
+      R[0][k] = std::round(A[0][k]);
+
+    return R;
+  }
+
+  template<typename T>
+  auto round(Matrix<T>&& A) noexcept -> Matrix<if_floating<T>>&&
+  {
+    const size_t n = A.numel();
+    for (size_t k = 0; k < n; ++k)
+      A[0][k] = std::round(A[0][k]);
+
+    return std::move(A);
+  }
+// -------------------------------------------------------------------------------
+  template<typename T>
+  auto ceil(const Matrix<T>& A) -> Matrix<if_floating<T>>
+  {
+    Matrix<T> R(A.size());
+
+    const size_t n = A.numel();
+    for (size_t k = 0; k < n; ++k)
+      R[0][k] = std::ceil(A[0][k]);
+
+    return R;
+  }
+
+  template<typename T>
+  auto ceil(Matrix<T>&& A) noexcept -> Matrix<if_floating<T>>&&
+  {
+    const size_t n = A.numel();
+    for (size_t k = 0; k < n; ++k)
+      A[0][k] = std::round(A[0][k]);
+
+    return std::move(A);
+  }
+// -------------------------------------------------------------------------------
+  template<typename T1, typename T2>
+  Matrix<double> mul(const Matrix<T1>& A, const Matrix<T2>& B)
+  {
+    if (A.N() != B.M()) {
       std::stringstream error_message;
       error_message << "error: mul: nonconformant arguments (";
-      error_message << "A is " << A.size().M << 'x' << A.size().N;
-      error_message << ", B is " << B.size().M << 'x' << B.size().N << ")\n";
+      error_message << "A is " << A.M() << 'x' << A.N();
+      error_message << ", B is " << B.M() << 'x' << B.N() << ")\n";
       throw std::invalid_argument(error_message.str());
     }
 
-    Matrix<double> result(A.size().M, B.size().N, 0);
-    for (size_t i = 0; i < B.size().N; i++)
-      for (size_t j = 0; j < A.size().M; j++)
-        for (size_t k = 0; k < A.size().N; k++)
+    Matrix<double> result(A.M(), B.N(), 0);
+
+    for (size_t i = 0; i < B.N(); i++)
+      for (size_t j = 0; j < A.M(); j++)
+        for (size_t k = 0; k < A.N(); k++)
           result[j][i] += A[j][k] * B[k][i];
+
     return result;
-  }
-// -------------------------------------------------------------------------------
-  Matrix<double> transpose(const Matrix<double>& A)
-  {
-    Matrix<double> result(A.size().N, A.size().M);
-    for (size_t y = 0; y < A.size().M; ++y)
-      for (size_t x = 0; x < A.size().N; ++x)
-        result[x][y] = A[y][x];
-    return result;
-  }
-
-  Matrix<double> reshape(const Matrix<double>& A, const size_t M, const size_t N)
-  {
-    if (A.numel() != M * N) {
-      std::stringstream error_message;
-      error_message << "error: reshape: can't reshape " << A.size().M << 'x' << A.size().N;
-      error_message << " array to " << M << 'x' << N << " array";
-      throw std::invalid_argument(error_message.str());
-    }
-    Matrix<double> result(M, N);
-    for (size_t k = 0; k < result.numel(); ++k)
-      result[0][k] = A[0][k];
-    return result;
-  }
-// -------------------------------------------------------------------------------
-  double min(const Matrix<double>& matrix) noexcept
-  {
-    double minimum = std::numeric_limits<double>::max();
-    for (size_t k = 0; k < matrix.numel(); ++k)
-      if (matrix[0][k] < minimum)
-        minimum = matrix[0][k];
-    return minimum;
-  }
-
-  double min(const Slice<double>& column) noexcept
-  {
-    double minimum = std::numeric_limits<double>::max();
-    for (size_t k = 0; k < column.numel(); ++k)
-      if (column[k] < minimum)
-        minimum = column[k];
-    return minimum;
-  }
-// -------------------------------------------------------------------------------
-  double max(const Matrix<double>& matrix) noexcept
-  {
-    double maximum = std::numeric_limits<double>::min();
-    for (size_t k = 0; k < matrix.numel(); ++k)
-      if (matrix[0][k] > maximum)
-        maximum = matrix[0][k];
-    return maximum;
-  }
-
-  double max(const Slice<double>& column) noexcept
-  {
-    double maximum = std::numeric_limits<double>::min();
-    for (size_t k = 0; k < column.numel(); ++k)
-      if (column[k] > maximum)
-        maximum = column[k];
-    return maximum;
-  }
-// -------------------------------------------------------------------------------
-  double sum(const Matrix<double>& A) noexcept
-  {
-    double summation = 0;
-    for (size_t k = 0; k < A.numel(); ++k)
-      summation += A[0][k];
-    return summation;
-  }
-
-  double prod(const Matrix<double>& A) noexcept
-  {
-    double temporary = 0;
-    for (size_t k = 0; k < A.numel(); ++k)
-      temporary += std::log(A[0][k]);
-    return std::exp(temporary);
-  }
-
-  double avg(const Matrix<double>& A) noexcept
-  {
-    const double iN = 1/A.numel();
-    double average = 0;
-    for (size_t k = 0; k < A.numel(); ++k)
-      average += A[0][k] * iN;
-    return average;
-  }
-
-  double rms(const Matrix<double>& A) noexcept
-  {
-    const size_t N = A.numel();
-    double temporary = 0;
-    for (size_t k = 0; k < N; ++k)
-      temporary += A[0][k] * A[0][k];
-    return std::sqrt(temporary);
-  }
-
-  double geo(const Matrix<double>& A) noexcept
-  {
-    double temporary = 0;
-    for (size_t k = 0; k < A.numel(); ++k)
-      temporary += std::log(A[0][k]);
-    return std::exp(temporary / A.numel());
-  }
-// -------------------------------------------------------------------------------
-  Matrix<double> orthogonalize(Matrix<double> A)
-  {
-    const size_t M = A.size().M;
-    const size_t N = A.size().N;
-
-    Matrix<double> Q(M, N);
-
-    // orthogonalize A using the modified Gram-Schmidt process
-    size_t i, j, k;
-    double sum_of_squares, inorm, projection;
-    for (i = 0; i < N; ++i) {
-      sum_of_squares = 0;
-      for (size_t j = 0; j < M; ++j)
-        sum_of_squares += A[j][i] * A[j][i];
-      inorm = std::pow(sum_of_squares, -0.5);
-      if (std::isfinite(inorm))
-        for (j = 0; j < M; ++j)
-          Q[j][i] = A[j][i] * inorm;
-      for (k = i + 1; k < N; ++k)
-      {
-        projection = 0;
-        for (j = 0; j < M; ++j)
-          projection += Q[j][i] * A[j][k];
-        for (j = 0; j < M; ++j)
-          A[j][k] -= projection * Q[j][i];
-      }
-    }
-    return Q;
-  }
-
-  std::unique_ptr<Matrix<double>[]> QR(Matrix<double> A)
-  {
-    const size_t M = A.size().M;
-    const size_t N = A.size().N;
-
-    std::unique_ptr<Matrix<double>[]> QR(new Matrix<double>[2]{{Matrix<double>(M, N)}, Matrix<double>(N, N, 0)});
-    Matrix<double>& Q = QR[0];
-    Matrix<double>& R = QR[1];
-
-    size_t i, j, k;
-    double sum_of_squares, inorm, projection;
-    for (i = 0; i < N; ++i) {
-      sum_of_squares = 0;
-      for (size_t j = 0; j < M; ++j)
-        sum_of_squares += A[j][i] * A[j][i];
-      inorm = std::pow(sum_of_squares, -0.5);
-      if (std::isfinite(inorm))
-        for (j = 0; j < M; ++j)
-          Q[j][i] = A[j][i] * inorm;
-      for (k = i; k < N; ++k) {
-        projection = 0;
-        for (j = 0; j < M; ++j)
-          projection += Q[j][i] * A[j][k];
-        if (k != i)
-          for (j = 0; (k != i) and (j < M); ++j)
-            A[j][k] -= projection * Q[j][i];
-        if (k >= i)
-          R[i][k] = projection;
-      }
-    }
-    return QR;
   }
 
   Matrix<double> div(const Matrix<double>& b, Matrix<double> A)
   {
     // verify vertical dimensions
-    if (b.size().M != A.size().M) {
+    if (b.M() != A.M()) {
       std::stringstream error_message;
       error_message << "error: div: vertical dimensions mismatch (b is ";
-      error_message << b.size().M << "x_, A is " << A.size().M << "x_)\n";
+      error_message << b.M() << "x_, A is " << A.M() << "x_)\n";
       throw std::invalid_argument(error_message.str());
     }
 
     // verify that b is a column matrix
-    if (b.size().N != 1) {
+    if (b.N() != 1) {
       std::stringstream error_message;
       error_message << "error: div: horizontal dimension is not 1 (b is "
-                    << "_x" << A.size().N << ")\n";
+                    << "_x" << A.N() << ")\n";
       throw std::invalid_argument(error_message.str());
     }
 
     // store the dimensions of A
-    const size_t M = A.size().M;
-    const size_t N = A.size().N;
+    const size_t M = A.M();
+    const size_t N = A.N();
 
     // necessary matrices
     Matrix<double> Q(M, N), R(N, N), x(N, 1);
@@ -1252,11 +1790,190 @@ namespace Pinakas { namespace Backend
     }
     return x;
   }
+// -------------------------------------------------------------------------------
+  template<typename T>
+  Matrix<T> transpose(const Matrix<T>& A)
+  {
+    Matrix<T> result(A.N(), A.M());
+    for (size_t y = 0; y < A.M(); ++y)
+      for (size_t x = 0; x < A.N(); ++x)
+        result[x][y] = A[y][x];
+    return result;
+  }
+
+  template<typename T>
+  Matrix<T> reshape(const Matrix<T>& A, const size_t M, const size_t N)
+  {
+    if (A.numel() != M * N) {
+      std::stringstream error_message;
+      error_message << "error: reshape: can't reshape " << A.M() << 'x' << A.N();
+      error_message << " array to " << M << 'x' << N << " array";
+      throw std::invalid_argument(error_message.str());
+    }
+
+    Matrix<T> R(M, N);
+
+    const size_t n = A.numel();
+    for (size_t k = 0; k < n; ++k)
+      R[0][k] = A[0][k];
+
+    return R;
+  }
+// -------------------------------------------------------------------------------
+  template<typename T>
+  T min(const Matrix<T>& matrix) noexcept
+  {
+    T minimum = std::numeric_limits<T>::max();
+    for (size_t k = 0; k < matrix.numel(); ++k)
+      if (matrix[0][k] < minimum)
+        minimum = matrix[0][k];
+    return minimum;
+  }
+
+  template<typename T>
+  T min(const Slice<T>& slice) noexcept
+  {
+    T minimum = std::numeric_limits<T>::max();
+    for (size_t k = 0; k < slice.numel(); ++k)
+      if (slice[k] < minimum)
+        minimum = slice[k];
+    return minimum;
+  }
+  
+  template<typename T>
+  T max(const Matrix<T>& matrix) noexcept
+  {
+    T maximum = std::numeric_limits<T>::min();
+    for (size_t k = 0; k < matrix.numel(); ++k)
+      if (matrix[0][k] > maximum)
+        maximum = matrix[0][k];
+    return maximum;
+  }
+
+  template<typename T>
+  T max(const Slice<T>& slice) noexcept
+  {
+    T maximum = std::numeric_limits<T>::min();
+    for (size_t k = 0; k < slice.numel(); ++k)
+      if (slice[k] > maximum)
+        maximum = slice[k];
+    return maximum;
+  }
+  
+  template<typename T>
+  T sum(const Matrix<T>& A) noexcept
+  {
+    T summation = 0;
+    for (size_t k = 0; k < A.numel(); ++k)
+      summation += A[0][k];
+    return summation;
+  }
+
+  template<typename T>
+  double prod(const Matrix<T>& A) noexcept
+  {
+    double temporary = 0;
+    for (size_t k = 0; k < A.numel(); ++k)
+      temporary += std::log(A[0][k]);
+    return std::exp(temporary);
+  }
+
+  template<typename T>
+  double avg(const Matrix<T>& A) noexcept
+  {
+    const double iN = 1/A.numel();
+    double average = 0;
+    for (size_t k = 0; k < A.numel(); ++k)
+      average += A[0][k] * iN;
+    return average;
+  }
+
+  template<typename T>
+  double rms(const Matrix<T>& A) noexcept
+  {
+    const size_t N = A.numel();
+    double temporary = 0;
+    for (size_t k = 0; k < N; ++k)
+      temporary += A[0][k] * A[0][k];
+    return std::sqrt(temporary);
+  }
+
+  template<typename T>
+  double geo(const Matrix<T>& A) noexcept
+  {
+    double temporary = 0;
+    for (size_t k = 0; k < A.numel(); ++k)
+      temporary += std::log(A[0][k]);
+    return std::exp(temporary / A.numel());
+  }
+// -------------------------------------------------------------------------------
+  Matrix<double> orthogonalize(Matrix<double> A)
+  {
+    const size_t M = A.M();
+    const size_t N = A.N();
+
+    Matrix<double> Q(M, N);
+
+    // orthogonalize A using the modified Gram-Schmidt process
+    size_t i, j, k;
+    double sum_of_squares, inorm, projection;
+    for (i = 0; i < N; ++i) {
+      sum_of_squares = 0;
+      for (size_t j = 0; j < M; ++j)
+        sum_of_squares += A[j][i] * A[j][i];
+      inorm = std::pow(sum_of_squares, -0.5);
+      if (std::isfinite(inorm))
+        for (j = 0; j < M; ++j)
+          Q[j][i] = A[j][i] * inorm;
+      for (k = i + 1; k < N; ++k)
+      {
+        projection = 0;
+        for (j = 0; j < M; ++j)
+          projection += Q[j][i] * A[j][k];
+        for (j = 0; j < M; ++j)
+          A[j][k] -= projection * Q[j][i];
+      }
+    }
+    return Q;
+  }
+
+  std::unique_ptr<Matrix<double>[]> QR(Matrix<double> A)
+  {
+    const size_t M = A.M();
+    const size_t N = A.N();
+
+    std::unique_ptr<Matrix<double>[]> QR(new Matrix<double>[2]{{Matrix<double>(M, N)}, Matrix<double>(N, N, 0)});
+    Matrix<double>& Q = QR[0];
+    Matrix<double>& R = QR[1];
+
+    size_t i, j, k;
+    double sum_of_squares, inorm, projection;
+    for (i = 0; i < N; ++i) {
+      sum_of_squares = 0;
+      for (size_t j = 0; j < M; ++j)
+        sum_of_squares += A[j][i] * A[j][i];
+      inorm = std::pow(sum_of_squares, -0.5);
+      if (std::isfinite(inorm))
+        for (j = 0; j < M; ++j)
+          Q[j][i] = A[j][i] * inorm;
+      for (k = i; k < N; ++k) {
+        projection = 0;
+        for (j = 0; j < M; ++j)
+          projection += Q[j][i] * A[j][k];
+        if (k != i)
+          for (j = 0; (k != i) and (j < M); ++j)
+            A[j][k] -= projection * Q[j][i];
+        if (k >= i)
+          R[i][k] = projection;
+      }
+    }
+    return QR;
+  }
 
   std::unique_ptr<Matrix<double>[]> linearize(const Matrix<double>& data_x, const Matrix<double>& data_y)
   {
     // data is interpreted as a horizontal vector
-    if ((data_x.size().M != 1) or (data_y.size().M != 1))
+    if ((data_x.M() != 1) or (data_y.M() != 1))
       std::clog << "warning: linearize: data is interpreted as a horizontal 1-dimensional matrix\n";
     // validate data set
     if (data_x.numel() != data_y.numel()) {
@@ -1298,28 +2015,35 @@ namespace Pinakas { namespace Backend
   Matrix<double> linspace(const double x1, const double x2, const size_t N)
   {
     Matrix<double> vector(1, N);
-    double step = (x2 - x1) / (N - 1);
+
+    double step  = (x2 - x1) / (N - 1);
+
+
+    const size_t n = N-1;
     vector[0][0] = x1;
-    vector[0][N - 1] = x2;
-    for (size_t index = 1; index < (N - 1); ++index)
-      vector[0][index] = vector[0][index - 1] + step;
+    for (size_t k = 1; k < n; ++k)
+      vector[0][k] = vector[0][k - 1] + step;
+    vector[0][n] = x2;
+
     return vector;
   }
 
-  Matrix<double> iota(const size_t N)
+  Matrix<size_t> iota(const size_t N)
   {
-    Matrix<double> indices(1, N);
-    for (size_t index = 0; index < N; ++index)
-      indices[0][index] = index;
+    Matrix<size_t> indices(1, N);
+
+    for (size_t k = 0; k < N; ++k)
+      indices[0][k] = k;
+
     return indices;
   }
 
   Matrix<double> diff(const Matrix<double>& A, size_t n)
   {
     if (n) {
-      Matrix<double> derivative(A.size().M, A.size().N - 1, 0);
-      for (size_t y = 0; y < derivative.size().M; ++y)
-        for (size_t x = 0; x < derivative.size().N; ++x)
+      Matrix<double> derivative(A.M(), A.N() - 1);
+      for (size_t y = 0; y < derivative.M(); ++y)
+        for (size_t x = 0; x < derivative.N(); ++x)
           derivative[y][x] = A[y][x + 1] - A[y][x];
 
       return diff(derivative, n - 1);
@@ -1327,22 +2051,27 @@ namespace Pinakas { namespace Backend
     return A;
   }
 
-  Matrix<double> reverse(const Matrix<double>& A)
+  template<typename T>
+  Matrix<T> reverse(const Matrix<T>& A)
   {
-    const size_t N = A.numel();
-    Matrix<double> result(A.size());
-    for (size_t index = 0; index < N; ++index)
-      result[0][index] = A[0][N-1 - index];
-    return result;
+    Matrix<T> R(A.size());
+
+    const size_t n = A.numel();
+    for (size_t k = 0; k < n; ++k)
+      R[0][k] = A[0][n-1 - k];
+
+    return R;
   }
 
-  Matrix<double> reverse(Matrix<double>&& A) noexcept
+  template<typename T>
+  Matrix<T>&& reverse(Matrix<T>&& A) noexcept
   {
-    const size_t N   = A.numel();
-    const size_t N_2 = N >> 1;
-    for (size_t k = 0; k < N_2; ++k)
-      std::swap(A[0][k], A[0][N-1 - k]);
-    return A;
+    const size_t n   = A.numel();
+    const size_t n_2 = n >> 1;
+    for (size_t k = 0; k < n_2; ++k)
+      std::swap(A[0][k], A[0][n-1 - k]);
+
+    return std::move(A);
   }
 // -------------------------------------------------------------------------------
   Matrix<double> conv(const Matrix<double>& A, const Matrix<double>& B)
@@ -1401,7 +2130,7 @@ namespace Pinakas { namespace Backend
 
   Matrix<double> lpc(const Matrix<double>& A, const size_t p)
   {
-    if (A.size().M != 1)
+    if (A.M() != 1)
       std::clog << "warning: lpc: A should be a horizontal vector\n";
     if (p >= A.numel())
       throw std::invalid_argument("error: lpc: p should be smaller than the smaller of elements in A");
@@ -1518,51 +2247,70 @@ namespace Pinakas { namespace Backend
     return root;
   }
 // -------------------------------------------------------------------------------
-  Matrix<double> cos(Matrix<double>& A)
+  template<typename T>
+  Matrix<double> cos(Matrix<T>& A)
   {
-    Matrix<double> result(A.size());
-    for (size_t index = 0; index < result.numel(); ++index)
-      result[0][index] = std::cos(A[0][index]);
-    return result;
+    Matrix<double> R(A.size());
+
+    const size_t n = A.numel();
+    for (size_t k = 0; k < n; ++k)
+      R[0][k] = std::cos(A[0][k]);
+
+    return R;
   }
 
   Matrix<double> cos(Matrix<double>&& A) noexcept
   {
-    for (size_t index = 0; index < A.numel(); ++index)
-      A[0][index] = std::cos(A[0][index]);
+    const size_t n = A.numel();
+    for (size_t k = 0; k < n; ++k)
+      A[0][k] = std::cos(A[0][k]);
+
     return A;
   }
-  Matrix<double> sin(Matrix<double>& A)
+
+  template<typename T>
+  Matrix<double> sin(Matrix<T>& A)
   {
-    Matrix<double> result(A.size());
-    for (size_t index = 0; index < result.numel(); ++index)
-      result[0][index] = std::sin(A[0][index]);
-    return result;
+    Matrix<double> R(A.size());
+
+    const size_t n = A.numel();
+    for (size_t k = 0; k < n; ++k)
+      R[0][k] = std::sin(A[0][k]);
+
+    return R;
   }
 
   Matrix<double> sin(Matrix<double>&& A) noexcept
   {
-    for (size_t index = 0; index < A.numel(); ++index)
-      A[0][index] = std::sin(A[0][index]);
+    const size_t n = A.numel();
+    for (size_t k = 0; k < n; ++k)
+      A[0][k] = std::sin(A[0][k]);
+
     return A;
   }
 
-  Matrix<double> sinc(Matrix<double>& A)
+  template<typename T>
+  Matrix<double> sinc(Matrix<T>& A)
   {
-    Matrix<double> result(A.size());
-    for (size_t index = 0; index < result.numel(); ++index) {
-      double temporary = M_PI * A[0][index];
-      result[0][index] = (temporary == 0) ? 1 : std::sin(temporary) / temporary;
+    Matrix<double> R(A.size());
+
+    const size_t n = A.numel();
+    for (size_t k = 0; k < n; ++k) {
+      double temporary = M_PI * A[0][k];
+      R[0][k] = (temporary == 0) ? 1 : std::sin(temporary) / temporary;
     }
-    return result;
+
+    return R;
   }
 
   Matrix<double> sinc(Matrix<double>&& A) noexcept
   {
-    for (size_t index = 0; index < A.numel(); ++index) {
-      double temporary = M_PI * A[0][index];
-      A[0][index] = (temporary == 0) ? 1 : std::sin(temporary) / temporary;
+    const size_t n = A.numel();
+    for (size_t k = 0; k < n; ++k) {
+      double temporary = M_PI * A[0][k];
+      A[0][k] = (temporary == 0) ? 1 : std::sin(temporary) / temporary;
     }
+
     return A;
   }
 // -------------------------------------------------------------------------------
@@ -1595,7 +2343,7 @@ namespace Pinakas { namespace Backend
 
   Matrix<double> resample(const Matrix<double>& data, const size_t L, const size_t keep, const double alpha, const bool tail)
   {
-    if (data.size().M != 1)
+    if (data.M() != 1)
       std::clog << "warning: resample: data is interpreted as a horizontal 1-dimensional matrix\n";
     if (data.numel() == 0)
       throw std::invalid_argument("error: resample: data must contain atleast 1 element");
@@ -1660,8 +2408,8 @@ namespace Pinakas { namespace Backend
     if (A.numel()) {
       std::size_t max_len = 0;
 
-      for (size_t y = 0; y < A.size().M; ++y) {
-        for (size_t x = 0; x < A.size().N; ++x) {
+      for (size_t y = 0; y < A.M(); ++y) {
+        for (size_t x = 0; x < A.N(); ++x) {
           std::stringstream ss;
           ss.copyfmt(ostream);
           ss << A[y][x];
@@ -1669,8 +2417,8 @@ namespace Pinakas { namespace Backend
         }
       }
 
-      for (size_t y = 0; y < A.size().M; ++y) {
-        for (size_t x = 0; x < A.size().N; ++x)
+      for (size_t y = 0; y < A.M(); ++y) {
+        for (size_t x = 0; x < A.N(); ++x)
           ostream << std::setw(max_len + 1) << A[y][x];
         ostream << '\n';
       }
@@ -1964,12 +2712,12 @@ namespace Pinakas { namespace Backend
 
   Matrix<complex> ifft(const Matrix<complex>& spectrum)
   {
-    return conj(fft(conj(spectrum))) / complex(spectrum.numel());
+    return conj(fft(conj(spectrum))) / spectrum.numel();
   }
 
   Matrix<complex> ifft(Matrix<complex>&& spectrum) noexcept
   {
-    return conj(fft(conj(std::move(spectrum)))) / complex(spectrum.numel());
+    return conj(fft(conj(std::move(spectrum)))) / spectrum.numel();
   }
 }}
 //
@@ -1979,7 +2727,7 @@ int main()
   using namespace Keyword;
   using namespace Chronometro;
   /*
-  size_t N = 1 << 24;
+  size_t N = 1 << 8;
   //size_t L = 100;
   //auto   f = [](const Matrix<double>& x) {return ((1-x)^ 2) + sin((x-0.5) * 5) / 5 - 2;};
   //auto   f = [](const Matrix<double>& x) {return sin(6.28*x*100) + sin(6.28*x*50);};
@@ -1996,13 +2744,13 @@ int main()
   puts("------------");
 
   auto X2 = abs(y2);
-  //plot({"spectrum2", "signal"}, {{iota(X2.numel()), X2}, {iota(N), y_linear}}, true, false);
+  plot({"spectrum2", "signal"}, {{iota(X2.numel()), X2}, {iota(N), y_linear}}, true, false);
   //*/
 
-  /*
-  struct test {} t;
-  Matrix<int> x = iota(10) + Random(0, 1);
-  Matrix<double> y = iota(10) + Random(0, 1);
+  
+  auto x = iota(10) + Random(0, 1);
+
+  /*Matrix<double> y = iota(10) + Random(0, 1);
   puts("----------------");
   auto t1 =  x + y;
   puts("----------------");
