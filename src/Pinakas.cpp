@@ -514,7 +514,7 @@ namespace Pinakas { namespace Backend
   {
     if (size_A != size_B) {
       std::stringstream error_message;
-      error_message << "error: add_inplace: nonconformant arguments (" << "A is ";
+      error_message << "error: add_mat_inplace: nonconformant arguments (" << "A is ";
       error_message << size_A.M << 'x' << size_A.N << ", B is ";
       error_message << size_B.M << 'x' << size_B.N << ")\n";
       throw std::invalid_argument(error_message.str());
@@ -549,7 +549,7 @@ namespace Pinakas { namespace Backend
   {
     if (size_A != size_B) {
       std::stringstream error_message;
-      error_message << "error: add: nonconformant arguments (" << "A is ";
+      error_message << "error: add_mat: nonconformant arguments (" << "A is ";
       error_message << size_A.M << 'x' << size_A.N << ", B is ";
       error_message << size_B.M << 'x' << size_B.N << ")\n";
       throw std::invalid_argument(error_message.str());
@@ -694,6 +694,181 @@ namespace Pinakas { namespace Backend
   Matrix<T>&& operator+(Matrix<T>&& A) noexcept
   {
     return std::move(A);
+  }
+// -------------------------------------------------------------------------------
+  template<typename T1, typename T2>
+  Matrix<T1>& mul_mat_inplace(Matrix<T1>& A, const Matrix<T2>& B)
+  {
+    if (size_A != size_B) {
+      std::stringstream error_message;
+      error_message << "error: mul_mat_inplace: nonconformant arguments (" << "A is ";
+      error_message << size_A.M << 'x' << size_A.N << ", B is ";
+      error_message << size_B.M << 'x' << size_B.N << ")\n";
+      throw std::invalid_argument(error_message.str());
+    }
+
+    for (size_t k = 0; k < A.numel(); ++k)
+      A[0][k] *= B[0][k];
+    return A;
+  }
+
+  template<typename T1, typename T2>
+  Matrix<T1>& mul_rng_inplace(Matrix<T1>& A, const T2 B) noexcept
+  {
+    for (size_t k = 0; k < A.numel(); ++k)
+      A[0][k] *= B;
+    return A;
+  }
+
+  template<typename T>
+  Matrix<T>& mul_val_inplace(Matrix<T>& A, const Random B) noexcept
+  {
+    std::random_device device;
+    std::mt19937 generator(device());
+    std::uniform_real_distribution<> uniform_distribution(B.min_, B.max_);
+    for (size_t k = 0; k < A.numel(); ++k)
+      A[0][k] *= uniform_distribution(generator);
+    return A;
+  }
+
+  template<typename T1, typename T2, typename T3 = appropriate_type<T1, T2>>
+  Matrix<T3> mul_mat(const Matrix<T1>& A, const Matrix<T2>& B)
+  {
+    if (size_A != size_B) {
+      std::stringstream error_message;
+      error_message << "error: mul_mat: nonconformant arguments (" << "A is ";
+      error_message << size_A.M << 'x' << size_A.N << ", B is ";
+      error_message << size_B.M << 'x' << size_B.N << ")\n";
+      throw std::invalid_argument(error_message.str());
+    }
+
+    Matrix<T3> R(A.size());
+    for (size_t k = 0; k < A.numel(); ++k)
+      R[0][k] = A[0][k] * B[0][k];
+    return R;
+  }
+
+  template<typename T1, typename T2, typename T3 = appropriate_type<T1, T2>>
+  Matrix<T3> mul_rng(const Matrix<T1>& A, const T2 B) noexcept
+  {
+    Matrix<T3> R(A.size());
+    for (size_t k = 0; k < A.numel(); ++k)
+      R[0][k] += A[0][k] * B;
+    return R;
+  }
+
+  template<typename T1, typename T3 = appropriate_type<T1, double>>
+  Matrix<T3> mul_val(const Matrix<T1>& A, const Random B) noexcept
+  {
+    std::random_device device;
+    std::mt19937 generator(device());
+    std::uniform_real_distribution<> uniform_distribution(B.min_, B.max_);
+    Matrix<T3> R(A.size());
+    for (size_t k = 0; k < A.numel(); ++k)
+      R[0][k] = A[0][k] * uniform_distribution(generator);
+    return R;
+  }
+// -------------------------------------------------------------------------------
+  template<typename T1, typename T2>
+  auto operator*=(Matrix<T1>& A, const Matrix<T2>& B) -> Matrix<T1>&
+  {
+    return mul_mat_inplace(A, B);
+  }
+
+  template<typename T>
+  auto operator*=(Matrix<T>& A, const Random B) noexcept -> Matrix<T>&
+  {
+    return mul_rng_inplace(A, B);
+  }
+
+  template<typename T1, typename T2>
+  auto operator*=(Matrix<T1>& A, const T2 B) noexcept -> Matrix<T1>&
+  {
+    return mul_val_inplace(A, B);
+  }
+  
+  template<typename T1, typename T2>
+  auto operator*(const Matrix<T1>& A, const Matrix<T2>& B) -> Matrix<appropriate_type<T1, T2>>
+  {
+    return mul_mat(A, B);
+  }
+
+  template<typename T>
+  auto operator*(const Matrix<T>& A, const Random B) noexcept -> Matrix<appropriate_type<T, double>>
+  {
+    return mul_rng(A, B);
+  }
+
+  template<typename T>
+  auto operator*(const Random A, const Matrix<T>& B) noexcept -> Matrix<appropriate_type<T, double>>
+  {
+    return mul_rng(B, A);
+  }
+  
+  template<typename T1, typename T2>
+  auto operator*(const Matrix<T1>& A, const T2 B) noexcept -> Matrix<appropriate_type<T1, T2>>
+  {
+    return mul_val(A, B);
+  }
+  
+  template<typename T1, typename T2>
+  auto operator*(const T1 A, const Matrix<T2>& B) noexcept -> Matrix<appropriate_type<T1, T2>>
+  {
+    return mul_val(B, A);
+  }
+
+  template<typename T1, typename T2>
+  auto operator*(const Matrix<T1>& A, Matrix<T2>&& B) -> Matrix<if_no_loss<T2, T1>>&&
+  {
+    return std::move(mul_mat_inplace(B, A));
+  }
+  
+  template<typename T1, typename T2>
+  auto operator*(Matrix<T1>&& A, const Matrix<T2>& B) -> Matrix<if_no_loss<T1, T2>>&&
+  {
+    return std::move(mul_mat_inplace(A, B));
+  }
+  
+  template<typename T1, typename T2>
+  auto operator*(Matrix<T1>&& A, Matrix<T2>&& B) -> Matrix<if_no_loss<T2, T1>>&&
+  {
+    return std::move(mul_mat_inplace(B, A));
+  }
+  
+  template<typename T1, typename T2>
+  auto operator*(Matrix<T1>&& A, Matrix<T2>&& B) -> Matrix<if_no_loss<T1, T2>>&&
+  {
+    return std::move(mul_mat_inplace(A, B));
+  }
+  
+  template<typename T>
+  auto operator*(Matrix<T>&& A, Matrix<T>&& B) -> Matrix<T>&&
+  {
+    return std::move(mul_mat_inplace(A, B));
+  }
+
+  template<typename T>
+  auto operator*(Matrix<T>&& A, const Random B) noexcept -> Matrix<if_no_loss<T, double>>&&
+  {
+    return std::move(mul_rng_inplace(A, B));
+  }
+
+  template<typename T>
+  auto operator*(const Random A, Matrix<T>&& B) noexcept -> Matrix<if_no_loss<T, double>>&&
+  {
+    return std::move(mul_rng_inplace(B, A));
+  }
+  
+  template<typename T1, typename T2>
+  auto operator*(const T1 A, Matrix<T2>&& B) noexcept -> Matrix<if_no_loss<T2, T1>>&&
+  {
+    return std::move(mul_val_inplace(B, A));
+  }
+
+  template<typename T1, typename T2>
+  auto operator*(Matrix<T1>&& A, const T2 B) noexcept -> Matrix<if_no_loss<T1, T2>>&&
+  {
+    return std::move(mul_val_inplace(A, B));
   }
 // -------------------------------------------------------------------------------
   template<typename T>
