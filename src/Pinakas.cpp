@@ -544,7 +544,7 @@ namespace Pinakas { namespace Backend
     return A;
   }
 
-  template<typename T1, typename T2, typename T3 = typename std::common_type<T1, T2>::type>
+  template<typename T1, typename T2, typename T3 = appropriate_type<T1, T2>>
   Matrix<T3> add_mat(const Matrix<T1>& A, const Matrix<T2>& B)
   {
     if (size_A != size_B) {
@@ -561,7 +561,7 @@ namespace Pinakas { namespace Backend
     return R;
   }
 
-  template<typename T1, typename T2, typename T3 = typename std::common_type<T1, T2>::type>
+  template<typename T1, typename T2, typename T3 = appropriate_type<T1, T2>>
   Matrix<T3> add_rng(const Matrix<T1>& A, const T2 B) noexcept
   {
     Matrix<T3> R(A.size());
@@ -570,7 +570,7 @@ namespace Pinakas { namespace Backend
     return R;
   }
 
-  template<typename T1, typename T3 = typename std::common_type<T1, double>::type>
+  template<typename T1, typename T3 = appropriate_type<T1, double>>
   Matrix<T3> add_val(const Matrix<T1>& A, const Random B) noexcept
   {
     std::random_device device;
@@ -601,31 +601,31 @@ namespace Pinakas { namespace Backend
   }
   
   template<typename T1, typename T2>
-  auto operator+(const Matrix<T1>& A, const Matrix<T2>& B) -> Matrix<typename std::common_type<T1, T2>::type>
+  auto operator+(const Matrix<T1>& A, const Matrix<T2>& B) -> Matrix<appropriate_type<T1, T2>>
   {
     return add_mat(A, B);
   }
 
   template<typename T>
-  auto operator+(const Matrix<T>& A, const Random B) noexcept -> Matrix<typename std::common_type<T, double>::type>
+  auto operator+(const Matrix<T>& A, const Random B) noexcept -> Matrix<appropriate_type<T, double>>
   {
     return add_rng(A, B);
   }
 
   template<typename T>
-  auto operator+(const Random A, const Matrix<T>& B) noexcept -> Matrix<typename std::common_type<T, double>::type>
+  auto operator+(const Random A, const Matrix<T>& B) noexcept -> Matrix<appropriate_type<T, double>>
   {
     return add_rng(B, A);
   }
   
   template<typename T1, typename T2>
-  auto operator+(const Matrix<T1>& A, const T2 B) noexcept -> Matrix<typename std::common_type<T1, T2>::type>
+  auto operator+(const Matrix<T1>& A, const T2 B) noexcept -> Matrix<appropriate_type<T1, T2>>
   {
     return add_val(A, B);
   }
   
   template<typename T1, typename T2>
-  auto operator+(const T1 A, const Matrix<T2>& B) noexcept -> Matrix<typename std::common_type<T1, T2>::type>
+  auto operator+(const T1 A, const Matrix<T2>& B) noexcept -> Matrix<appropriate_type<T1, T2>>
   {
     return add_val(B, A);
   }
