@@ -510,15 +510,23 @@ namespace Pinakas { namespace Backend
   }
 // -------------------------------------------------------------------------------
   template<typename T1, typename T2>
-  Matrix<T1>& add_inplace(Matrix<T1>& A, const Matrix<T2>& B) noexcept
+  Matrix<T1>& add_mat_inplace(Matrix<T1>& A, const Matrix<T2>& B)
   {
+    if (size_A != size_B) {
+      std::stringstream error_message;
+      error_message << "error: add_inplace: nonconformant arguments (" << "A is ";
+      error_message << size_A.M << 'x' << size_A.N << ", B is ";
+      error_message << size_B.M << 'x' << size_B.N << ")\n";
+      throw std::invalid_argument(error_message.str());
+    }
+
     for (size_t k = 0; k < A.numel(); ++k)
       A[0][k] += B[0][k];
     return A;
   }
 
   template<typename T1, typename T2>
-  Matrix<T1>& add_inplace(Matrix<T1>& A, const T2 B) noexcept
+  Matrix<T1>& add_rng_inplace(Matrix<T1>& A, const T2 B) noexcept
   {
     for (size_t k = 0; k < A.numel(); ++k)
       A[0][k] += B;
@@ -526,19 +534,27 @@ namespace Pinakas { namespace Backend
   }
 
   template<typename T>
-  Matrix<T>& add_inplace(Matrix<T>& A, const Random range) noexcept
+  Matrix<T>& add_val_inplace(Matrix<T>& A, const Random B) noexcept
   {
     std::random_device device;
     std::mt19937 generator(device());
-    std::uniform_real_distribution<> uniform_distribution(range.min_, range.max_);
+    std::uniform_real_distribution<> uniform_distribution(B.min_, B.max_);
     for (size_t k = 0; k < A.numel(); ++k)
       A[0][k] += uniform_distribution(generator);
     return A;
   }
 
   template<typename T1, typename T2, typename T3 = typename std::common_type<T1, T2>::type>
-  Matrix<T3> add(const Matrix<T1>& A, const Matrix<T2>& B)
+  Matrix<T3> add_mat(const Matrix<T1>& A, const Matrix<T2>& B)
   {
+    if (size_A != size_B) {
+      std::stringstream error_message;
+      error_message << "error: add: nonconformant arguments (" << "A is ";
+      error_message << size_A.M << 'x' << size_A.N << ", B is ";
+      error_message << size_B.M << 'x' << size_B.N << ")\n";
+      throw std::invalid_argument(error_message.str());
+    }
+
     Matrix<T3> R(A.size());
     for (size_t k = 0; k < A.numel(); ++k)
       R[0][k] = A[0][k] + B[0][k];
@@ -546,7 +562,7 @@ namespace Pinakas { namespace Backend
   }
 
   template<typename T1, typename T2, typename T3 = typename std::common_type<T1, T2>::type>
-  Matrix<T3> add(const Matrix<T1>& A, const T2 B)
+  Matrix<T3> add_rng(const Matrix<T1>& A, const T2 B) noexcept
   {
     Matrix<T3> R(A.size());
     for (size_t k = 0; k < A.numel(); ++k)
@@ -555,11 +571,11 @@ namespace Pinakas { namespace Backend
   }
 
   template<typename T1, typename T3 = typename std::common_type<T1, double>::type>
-  Matrix<T3> add(const Matrix<T1>& A, const Random range)
+  Matrix<T3> add_val(const Matrix<T1>& A, const Random B) noexcept
   {
     std::random_device device;
     std::mt19937 generator(device());
-    std::uniform_real_distribution<> uniform_distribution(range.min_, range.max_);
+    std::uniform_real_distribution<> uniform_distribution(B.min_, B.max_);
     Matrix<T3> R(A.size());
     for (size_t k = 0; k < A.numel(); ++k)
       R[0][k] = A[0][k] + uniform_distribution(generator);
@@ -569,49 +585,49 @@ namespace Pinakas { namespace Backend
   template<typename T1, typename T2>
   auto operator+=(Matrix<T1>& A, const Matrix<T2>& B) -> Matrix<T1>&
   {
-    return add_inplace(A, B);
+    return add_mat_inplace(A, B);
   }
 
   template<typename T>
-  auto operator+=(Matrix<T>& A, const Random B) -> Matrix<T>&
+  auto operator+=(Matrix<T>& A, const Random B) noexcept -> Matrix<T>&
   {
-    return add_inplace(A, B);
+    return add_rng_inplace(A, B);
   }
 
   template<typename T1, typename T2>
-  auto operator+=(Matrix<T1>& A, const T2 B) -> Matrix<T1>&
+  auto operator+=(Matrix<T1>& A, const T2 B) noexcept -> Matrix<T1>&
   {
-    return add_inplace(A, B);
+    return add_val_inplace(A, B);
   }
   
   template<typename T1, typename T2>
   auto operator+(const Matrix<T1>& A, const Matrix<T2>& B) -> Matrix<typename std::common_type<T1, T2>::type>
   {
-    return add(A, B);
+    return add_mat(A, B);
   }
 
   template<typename T>
-  auto operator+(const Matrix<T>& A, const Random B) -> Matrix<typename std::common_type<T, double>::type>
+  auto operator+(const Matrix<T>& A, const Random B) noexcept -> Matrix<typename std::common_type<T, double>::type>
   {
-    return add(A, B);
+    return add_rng(A, B);
   }
 
   template<typename T>
-  auto operator+(const Random A, const Matrix<T>& B) -> Matrix<typename std::common_type<T, double>::type>
+  auto operator+(const Random A, const Matrix<T>& B) noexcept -> Matrix<typename std::common_type<T, double>::type>
   {
-    return add(B, A);
+    return add_rng(B, A);
   }
   
   template<typename T1, typename T2>
-  auto operator+(const Matrix<T1>& A, const T2 B) -> Matrix<typename std::common_type<T1, T2>::type>
+  auto operator+(const Matrix<T1>& A, const T2 B) noexcept -> Matrix<typename std::common_type<T1, T2>::type>
   {
-    return add(A, B);
+    return add_val(A, B);
   }
   
   template<typename T1, typename T2>
-  auto operator+(const T1 A, const Matrix<T2>& B) -> Matrix<typename std::common_type<T1, T2>::type>
+  auto operator+(const T1 A, const Matrix<T2>& B) noexcept -> Matrix<typename std::common_type<T1, T2>::type>
   {
-    return add(B, A);
+    return add_val(B, A);
   }
 
   template<typename T>
@@ -623,55 +639,55 @@ namespace Pinakas { namespace Backend
   template<typename T1, typename T2>
   auto operator+(const Matrix<T1>& A, Matrix<T2>&& B) -> Matrix<if_no_loss<T2, T1>>&&
   {
-    return std::move(add_inplace(B, A));
+    return std::move(add_mat_inplace(B, A));
   }
   
   template<typename T1, typename T2>
   auto operator+(Matrix<T1>&& A, const Matrix<T2>& B) -> Matrix<if_no_loss<T1, T2>>&&
   {
-    return std::move(add_inplace(A, B));
+    return std::move(add_mat_inplace(A, B));
   }
   
   template<typename T1, typename T2>
   auto operator+(Matrix<T1>&& A, Matrix<T2>&& B) -> Matrix<if_no_loss<T2, T1>>&&
   {
-    return std::move(add_inplace(B, A));
+    return std::move(add_mat_inplace(B, A));
   }
   
   template<typename T1, typename T2>
   auto operator+(Matrix<T1>&& A, Matrix<T2>&& B) -> Matrix<if_no_loss<T1, T2>>&&
   {
-    return std::move(add_inplace(A, B));
+    return std::move(add_mat_inplace(A, B));
   }
   
   template<typename T>
   auto operator+(Matrix<T>&& A, Matrix<T>&& B) -> Matrix<T>&&
   {
-    return std::move(add_inplace(A, B));
+    return std::move(add_mat_inplace(A, B));
   }
 
   template<typename T>
-  auto operator+(Matrix<T>&& A, const Random B) -> Matrix<if_no_loss<T, double>>&&
+  auto operator+(Matrix<T>&& A, const Random B) noexcept -> Matrix<if_no_loss<T, double>>&&
   {
-    return std::move(add_inplace(A, B));
+    return std::move(add_rng_inplace(A, B));
   }
 
   template<typename T>
-  auto operator+(const Random A, Matrix<T>&& B) -> Matrix<if_no_loss<T, double>>&&
+  auto operator+(const Random A, Matrix<T>&& B) noexcept -> Matrix<if_no_loss<T, double>>&&
   {
-    return std::move(add_inplace(B, A));
+    return std::move(add_rng_inplace(B, A));
   }
   
   template<typename T1, typename T2>
-  auto operator+(const T1 A, Matrix<T2>&& B) -> Matrix<if_no_loss<T2, T1>>&&
+  auto operator+(const T1 A, Matrix<T2>&& B) noexcept -> Matrix<if_no_loss<T2, T1>>&&
   {
-    return std::move(add_inplace(B, A));
+    return std::move(add_val_inplace(B, A));
   }
 
   template<typename T1, typename T2>
-  auto operator+(Matrix<T1>&& A, const T2 B) -> Matrix<if_no_loss<T1, T2>>&&
+  auto operator+(Matrix<T1>&& A, const T2 B) noexcept -> Matrix<if_no_loss<T1, T2>>&&
   {
-    return std::move(add_inplace(A, B));
+    return std::move(add_val_inplace(A, B));
   }
 
   template<typename T>
@@ -2242,6 +2258,7 @@ int main()
   auto X2 = abs(y2);
   //plot({"spectrum2", "signal"}, {{iota(X2.numel()), X2}, {iota(N), y_linear}}, true, false);
   //*/
+  struct test {} t;
   Matrix<int> x = iota(10) + Random(0, 1);
   Matrix<double> y = iota(10) + Random(0, 1);
   puts("----------------");
