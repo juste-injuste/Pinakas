@@ -86,9 +86,12 @@ namespace Pinakas { namespace Backend
   template<typename T>
   class ConstIterator;
   //
-  typedef std::pair<const Matrix<double>&, const Matrix<double>&> DataSet;
+  typedef std::pair<const Matrix<double>, const Matrix<double>> DataSet;
   typedef std::complex<double> complex;
-// -------------------------------------------------------------------------------
+}}
+// --Pinakas library: template meta programming-----------------------------------
+namespace Pinakas { namespace Backend
+{
   // gives the common type T1 and T2 can be implicitely converted to
   template<typename T1, typename T2>
   using appropriate_type = typename std::common_type<T1, T2>::type;
@@ -100,7 +103,10 @@ namespace Pinakas { namespace Backend
   // enables an overload T is a floating type
   template<typename T>
   using if_floating = typename std::enable_if<std::is_floating_point<T>::value, T>::type;
+}}
 // -------------------------------------------------------------------------------
+namespace Pinakas { namespace Backend
+{
   template<typename T1, typename T2>
   Matrix<T1>& add_mat_inplace(Matrix<T1>& A, const Matrix<T2>& B);
   template<typename T1, typename T2>
@@ -115,45 +121,6 @@ namespace Pinakas { namespace Backend
   Matrix<T3> add_rng(const Matrix<T1>& A, const Random B) noexcept;
 // -------------------------------------------------------------------------------
   template<typename T1, typename T2>
-  auto operator+=(Matrix<T1>& A, const Matrix<T2>& B) -> Matrix<T1>&;
-  template<typename T>
-  auto operator+=(Matrix<T>& A, const Random B) noexcept -> Matrix<T>&;
-  template<typename T1, typename T2>
-  auto operator+=(Matrix<T1>& A, const T2 B) noexcept -> Matrix<T1>&;
-  template<typename T1, typename T2>
-  auto operator+(const Matrix<T1>& A, const Matrix<T2>& B) -> Matrix<appropriate_type<T1, T2>>;
-  template<typename T>
-  auto operator+(const Matrix<T>& A, const Random B) noexcept -> Matrix<appropriate_type<T, double>>;
-  template<typename T>
-  auto operator+(const Random A, const Matrix<T>& B) noexcept -> Matrix<appropriate_type<T, double>>;
-  template<typename T1, typename T2>
-  auto operator+(const Matrix<T1>& A, const T2 B) noexcept -> Matrix<appropriate_type<T1, T2>>;
-  template<typename T1, typename T2>
-  auto operator+(const T1 A, const Matrix<T2>& B) noexcept -> Matrix<appropriate_type<T1, T2>>;
-  template<typename T1, typename T2>
-  auto operator+(const Matrix<T1>& A, Matrix<T2>&& B) -> Matrix<if_no_loss<T2, T1>>&&;
-  template<typename T1, typename T2>
-  auto operator+(Matrix<T1>&& A, const Matrix<T2>& B) -> Matrix<if_no_loss<T1, T2>>&&;
-  template<typename T1, typename T2>
-  auto operator+(Matrix<T1>&& A, Matrix<T2>&& B) -> Matrix<if_no_loss<T2, T1>>&&;
-  template<typename T1, typename T2>
-  auto operator+(Matrix<T1>&& A, Matrix<T2>&& B) -> Matrix<if_no_loss<T1, T2>>&&;
-  template<typename T>
-  auto operator+(Matrix<T>&& A, Matrix<T>&& B) -> Matrix<T>&&;
-  template<typename T>
-  auto operator+(Matrix<T>&& A, const Random B) noexcept -> Matrix<if_no_loss<T, double>>&&;
-  template<typename T>
-  auto operator+(const Random A, Matrix<T>&& B) noexcept -> Matrix<if_no_loss<T, double>>&&;
-  template<typename T1, typename T2>
-  auto operator+(const T1 A, Matrix<T2>&& B) noexcept -> Matrix<if_no_loss<T2, T1>>&&;
-  template<typename T1, typename T2>
-  auto operator+(Matrix<T1>&& A, const T2 B) noexcept -> Matrix<if_no_loss<T1, T2>>&&;
-  template<typename T>
-  auto operator+(const Matrix<T>& A) noexcept -> Matrix<T>&;
-  template<typename T>
-  auto operator+(Matrix<T>&& A) noexcept -> Matrix<T>&&;
-// -------------------------------------------------------------------------------
-  template<typename T1, typename T2>
   Matrix<T1>& mul_mat_inplace(Matrix<T1>& A, const Matrix<T2>& B);
   template<typename T1, typename T2>
   Matrix<T1>& mul_val_inplace(Matrix<T1>& A, const T2 B) noexcept;
@@ -165,41 +132,6 @@ namespace Pinakas { namespace Backend
   Matrix<T3> mul_val(const Matrix<T1>& A, const T2 B) noexcept;
   template<typename T1, typename T3 = appropriate_type<T1, double>>
   Matrix<T3> mul_rng(const Matrix<T1>& A, const Random B) noexcept;
-// -------------------------------------------------------------------------------
-  template<typename T1, typename T2>
-  auto operator*=(Matrix<T1>& A, const Matrix<T2>& B) -> Matrix<T1>&;
-  template<typename T>
-  auto operator*=(Matrix<T>& A, const Random B) noexcept -> Matrix<T>&;
-  template<typename T1, typename T2>
-  auto operator*=(Matrix<T1>& A, const T2 B) noexcept -> Matrix<T1>&;
-  template<typename T1, typename T2>
-  auto operator*(const Matrix<T1>& A, const Matrix<T2>& B) -> Matrix<appropriate_type<T1, T2>>;
-  template<typename T>
-  auto operator*(const Matrix<T>& A, const Random B) noexcept -> Matrix<appropriate_type<T, double>>;
-  template<typename T>
-  auto operator*(const Random A, const Matrix<T>& B) noexcept -> Matrix<appropriate_type<T, double>>;
-  template<typename T1, typename T2>
-  auto operator*(const Matrix<T1>& A, const T2 B) noexcept -> Matrix<appropriate_type<T1, T2>>;
-  template<typename T1, typename T2>
-  auto operator*(const T1 A, const Matrix<T2>& B) noexcept -> Matrix<appropriate_type<T1, T2>>;
-  template<typename T1, typename T2>
-  auto operator*(const Matrix<T1>& A, Matrix<T2>&& B) -> Matrix<if_no_loss<T2, T1>>&&;
-  template<typename T1, typename T2>
-  auto operator*(Matrix<T1>&& A, const Matrix<T2>& B) -> Matrix<if_no_loss<T1, T2>>&&;
-  template<typename T1, typename T2>
-  auto operator*(Matrix<T1>&& A, Matrix<T2>&& B) -> Matrix<if_no_loss<T2, T1>>&&;
-  template<typename T1, typename T2>
-  auto operator*(Matrix<T1>&& A, Matrix<T2>&& B) -> Matrix<if_no_loss<T1, T2>>&&;
-  template<typename T>
-  auto operator*(Matrix<T>&& A, Matrix<T>&& B) -> Matrix<T>&&;
-  template<typename T>
-  auto operator*(Matrix<T>&& A, const Random B) noexcept -> Matrix<if_no_loss<T, double>>&&;
-  template<typename T>
-  auto operator*(const Random A, Matrix<T>&& B) noexcept -> Matrix<if_no_loss<T, double>>&&;
-  template<typename T1, typename T2>
-  auto operator*(const T1 A, Matrix<T2>&& B) noexcept -> Matrix<if_no_loss<T2, T1>>&&;
-  template<typename T1, typename T2>
-  auto operator*(Matrix<T1>&& A, const T2 B) noexcept -> Matrix<if_no_loss<T1, T2>>&&;
 // -------------------------------------------------------------------------------
   template<typename T1, typename T2>
   Matrix<T1>& sub_ll_mat_inplace(Matrix<T1>& A, const Matrix<T2>& B);
@@ -229,45 +161,6 @@ namespace Pinakas { namespace Backend
   Matrix<T> negate(const Matrix<T> A);
 // -------------------------------------------------------------------------------
   template<typename T1, typename T2>
-  auto operator-=(Matrix<T1>& A, const Matrix<T2>& B) -> Matrix<T1>&;
-  template<typename T>
-  auto operator-=(Matrix<T>& A, const Random B) noexcept -> Matrix<T>&;
-  template<typename T1, typename T2>
-  auto operator-=(Matrix<T1>& A, const T2 B) noexcept -> Matrix<T1>&;
-  template<typename T1, typename T2>
-  auto operator-(const Matrix<T1>& A, const Matrix<T2>& B) -> Matrix<appropriate_type<T1, T2>>;
-  template<typename T>
-  auto operator-(const Matrix<T>& A, const Random B) noexcept -> Matrix<appropriate_type<T, double>>;
-  template<typename T>
-  auto operator-(const Random A, const Matrix<T>& B) noexcept -> Matrix<appropriate_type<T, double>>;
-  template<typename T1, typename T2>
-  auto operator-(const Matrix<T1>& A, const T2 B) noexcept -> Matrix<appropriate_type<T1, T2>>;
-  template<typename T1, typename T2>
-  auto operator-(const T1 A, const Matrix<T2>& B) noexcept -> Matrix<appropriate_type<T1, T2>>;
-  template<typename T>
-  auto operator-(const Matrix<T>& A) -> Matrix<T>&;
-  template<typename T1, typename T2>
-  auto operator-(const Matrix<T1>& A, Matrix<T2>&& B) -> Matrix<if_no_loss<T2, T1>>&&;
-  template<typename T1, typename T2>
-  auto operator-(Matrix<T1>&& A, const Matrix<T2>& B) -> Matrix<if_no_loss<T1, T2>>&&;
-  template<typename T1, typename T2>
-  auto operator-(Matrix<T1>&& A, Matrix<T2>&& B) -> Matrix<if_no_loss<T2, T1>>&&;
-  template<typename T1, typename T2>
-  auto operator-(Matrix<T1>&& A, Matrix<T2>&& B) -> Matrix<if_no_loss<T1, T2>>&&;
-  template<typename T>
-  auto operator-(Matrix<T>&& A, Matrix<T>&& B) -> Matrix<T>&&;
-  template<typename T>
-  auto operator-(Matrix<T>&& A, const Random B) noexcept -> Matrix<if_no_loss<T, double>>&&;
-  template<typename T>
-  auto operator-(const Random A, Matrix<T>&& B) noexcept -> Matrix<if_no_loss<T, double>>&&;
-  template<typename T1, typename T2>
-  auto operator-(const T1 A, Matrix<T2>&& B) noexcept -> Matrix<if_no_loss<T2, T1>>&&;
-  template<typename T1, typename T2>
-  auto operator-(Matrix<T1>&& A, const T2 B) noexcept -> Matrix<if_no_loss<T1, T2>>&&;
-  template<typename T>
-  auto operator-(Matrix<T>&& A) noexcept -> Matrix<T>&&;
-// -------------------------------------------------------------------------------
-  template<typename T1, typename T2>
   Matrix<T1>& div_ll_mat_inplace(Matrix<T1>& A, const Matrix<T2>& B);
   template<typename T1, typename T2>
   Matrix<T1>& div_rl_mat_inplace(Matrix<T1>& B, const Matrix<T2>& A);
@@ -291,41 +184,6 @@ namespace Pinakas { namespace Backend
   Matrix<T3> div_rl_rng(const Matrix<T1>& B, const Random A) noexcept;
 // -------------------------------------------------------------------------------
   template<typename T1, typename T2>
-  auto operator/=(Matrix<T1>& A, const Matrix<T2>& B) -> Matrix<T1>&;
-  template<typename T>
-  auto operator/=(Matrix<T>& A, const Random B) noexcept -> Matrix<T>&;
-  template<typename T1, typename T2>
-  auto operator/=(Matrix<T1>& A, const T2 B) noexcept -> Matrix<T1>&;
-  template<typename T1, typename T2>
-  auto operator/(const Matrix<T1>& A, const Matrix<T2>& B) -> Matrix<appropriate_type<T1, T2>>;
-  template<typename T>
-  auto operator/(const Matrix<T>& A, const Random B) noexcept -> Matrix<appropriate_type<T, double>>;
-  template<typename T>
-  auto operator/(const Random A, const Matrix<T>& B) noexcept -> Matrix<appropriate_type<T, double>>;
-  template<typename T1, typename T2>
-  auto operator/(const Matrix<T1>& A, const T2 B) noexcept -> Matrix<appropriate_type<T1, T2>>;
-  template<typename T1, typename T2>
-  auto operator/(const T1 A, const Matrix<T2>& B) noexcept -> Matrix<appropriate_type<T1, T2>>;
-  template<typename T1, typename T2>
-  auto operator/(const Matrix<T1>& A, Matrix<T2>&& B) -> Matrix<if_no_loss<T2, T1>>&&;
-  template<typename T1, typename T2>
-  auto operator/(Matrix<T1>&& A, const Matrix<T2>& B) -> Matrix<if_no_loss<T1, T2>>&&;
-  template<typename T1, typename T2>
-  auto operator/(Matrix<T1>&& A, Matrix<T2>&& B) -> Matrix<if_no_loss<T2, T1>>&&;
-  template<typename T1, typename T2>
-  auto operator/(Matrix<T1>&& A, Matrix<T2>&& B) -> Matrix<if_no_loss<T1, T2>>&&;
-  template<typename T>
-  auto operator/(Matrix<T>&& A, Matrix<T>&& B) -> Matrix<T>&&;
-  template<typename T>
-  auto operator/(Matrix<T>&& A, const Random B) noexcept -> Matrix<if_no_loss<T, double>>&&;
-  template<typename T>
-  auto operator/(const Random A, Matrix<T>&& B) noexcept -> Matrix<if_no_loss<T, double>>&&;
-  template<typename T1, typename T2>
-  auto operator/(const T1 A, Matrix<T2>&& B) noexcept -> Matrix<if_no_loss<T2, T1>>&&;
-  template<typename T1, typename T2>
-  auto operator/(Matrix<T1>&& A, const T2 B) noexcept -> Matrix<if_no_loss<T1, T2>>&&;
-// -------------------------------------------------------------------------------
-  template<typename T1, typename T2>
   Matrix<T1>& pow_ll_mat_inplace(Matrix<T1>& A, const Matrix<T2>& B);
   template<typename T1, typename T2>
   Matrix<T1>& pow_rl_mat_inplace(Matrix<T1>& B, const Matrix<T2>& A);
@@ -340,50 +198,27 @@ namespace Pinakas { namespace Backend
   template<typename T1, typename T2, typename T3 = appropriate_type<T1, T2>>
   Matrix<T3> pow_rl_val(const Matrix<T1>& B, const T2 A) noexcept;
 // -------------------------------------------------------------------------------
-  template<typename T1, typename T2>
-  auto operator^=(Matrix<T1>& A, const Matrix<T2>& B) -> Matrix<T1>&;
-  template<typename T1, typename T2>
-  auto operator^=(Matrix<T1>& A, const T2 B) noexcept -> Matrix<T1>&;
-  template<typename T1, typename T2>
-  auto operator^(const Matrix<T1>& A, const Matrix<T2>& B) -> Matrix<appropriate_type<T1, T2>>;
-  template<typename T1, typename T2>
-  auto operator^(const Matrix<T1>& A, const T2 B) noexcept -> Matrix<appropriate_type<T1, T2>>;
-  template<typename T1, typename T2>
-  auto operator^(const T1 A, const Matrix<T2>& B) noexcept -> Matrix<appropriate_type<T1, T2>>;
-  template<typename T1, typename T2>
-  auto operator^(const Matrix<T1>& A, Matrix<T2>&& B) -> Matrix<if_no_loss<T2, T1>>&&;
-  template<typename T1, typename T2>
-  auto operator^(Matrix<T1>&& A, const Matrix<T2>& B) -> Matrix<if_no_loss<T1, T2>>&&;
-  template<typename T1, typename T2>
-  auto operator^(Matrix<T1>&& A, Matrix<T2>&& B) -> Matrix<if_no_loss<T2, T1>>&&;
-  template<typename T1, typename T2>
-  auto operator^(Matrix<T1>&& A, Matrix<T2>&& B) -> Matrix<if_no_loss<T1, T2>>&&;
-  template<typename T>
-  auto operator^(Matrix<T>&& A, Matrix<T>&& B) -> Matrix<T>&&;
-  template<typename T1, typename T2>
-  auto operator^(const T1 A, Matrix<T2>&& B) noexcept -> Matrix<if_no_loss<T2, T1>>&&;
-  template<typename T1, typename T2>
-  auto operator^(Matrix<T1>&& A, const T2 B) noexcept -> Matrix<if_no_loss<T1, T2>>&&;
-// -------------------------------------------------------------------------------
-  template<typename T>
-  auto floor(const Matrix<T>& A) -> Matrix<if_floating<T>>;
-  template<typename T>
-  auto floor(Matrix<T>&& A) noexcept -> Matrix<if_floating<T>>&&;
-  template<typename T>
-  auto round(const Matrix<T>& A) -> Matrix<if_floating<T>>;
-  template<typename T>
-  auto round(Matrix<T>&& A) noexcept -> Matrix<if_floating<T>>&&;
-  template<typename T>
-  auto ceil(const Matrix<T>& A) -> Matrix<if_floating<T>>;
-  template<typename T>
-  auto ceil(Matrix<T>&& A) noexcept -> Matrix<if_floating<T>>&&;
+  template<typename T, typename T3 = if_floating<T>>
+  Matrix<T3> floor(const Matrix<T>& A);
+  template<typename T, typename T3 = if_floating<T>>
+  Matrix<T3>&& floor(Matrix<T>&& A) noexcept;
+  template<typename T, typename T3 = if_floating<T>>
+  Matrix<T3> round(const Matrix<T>& A);
+  template<typename T, typename T3 = if_floating<T>>
+  Matrix<T3>&& round(Matrix<T>&& A) noexcept;
+  template<typename T, typename T3 = if_floating<T>>
+  Matrix<T3> ceil(const Matrix<T>& A);
+  template<typename T, typename T3 = if_floating<T>>
+  Matrix<T3>&& ceil(Matrix<T>&& A) noexcept;
 // -------------------------------------------------------------------------------
   template<typename T1, typename T2>
   Matrix<double> mul(const Matrix<T1>& A, const Matrix<T2>& B);
   Matrix<double> div(const Matrix<double>& A, Matrix<double> B);
 // -------------------------------------------------------------------------------
   Matrix<double> linspace(const double x1, const double x2, const size_t N);
-  Matrix<size_t> iota(const size_t N);
+  Matrix<size_t> iota(const size_t n);
+  template<typename T>
+  Matrix<size_t> iota(const Matrix<T>& A);
 // -------------------------------------------------------------------------------
   template<typename T>
   Matrix<T> transpose(const Matrix<T>& A);
@@ -421,9 +256,12 @@ namespace Pinakas { namespace Backend
 // -------------------------------------------------------------------------------
   Matrix<double> diff(const Matrix<double>& A, size_t n = 1);
 // -------------------------------------------------------------------------------
-  Matrix<double> conv(const Matrix<double>& A, const Matrix<double>& B);
-  Matrix<double> corr(const Matrix<double>& A, const Matrix<double>& B);
-  Matrix<double> corr(const Matrix<double>& A);
+  template<typename T1, typename T2, typename T3 = appropriate_type<T1, T2>>
+  Matrix<T3> conv(const Matrix<T1>& A, const Matrix<T2>& B);
+  template<typename T1, typename T2, typename T3 = appropriate_type<T1, T2>>
+  Matrix<T3> corr(const Matrix<T1>& A, const Matrix<T2>& B);
+  template<typename T>
+  Matrix<T> corr(const Matrix<T>& A);
   Matrix<double> Rxx(const Matrix<double>& A);
   Matrix<double> Rxx(const Matrix<double>& A, const size_t K);
   Matrix<double> lpc(const Matrix<double>& A, const size_t p);
@@ -453,7 +291,6 @@ namespace Pinakas { namespace Backend
   Matrix<double> sinc_impulse(const size_t length, const double frequency);
   Matrix<double> resample(const Matrix<double>& data, const size_t L, const size_t keep=2, const double alpha=3.5, const bool tail=false);
 // -------------------------------------------------------------------------------
-  void plot(std::string title, List<DataSet> data_sets, bool persistent = true, bool remove = true, bool pause = false, bool lines = true);
   void plot(List<std::string> titles, List<DataSet> data_sets, bool persistent = true, bool remove = true, bool pause = false, bool lines = true);
 // -------------------------------------------------------------------------------
   template<typename T>
@@ -464,11 +301,9 @@ namespace Pinakas { namespace Backend
   Matrix<complex> conj(const Matrix<complex>& A);
   Matrix<complex> conj(Matrix<complex>&& A) noexcept;
 // -------------------------------------------------------------------------------
-  template<typename T>
-  Matrix<complex> fft(const Matrix<T>& signal);
-  Matrix<complex> fft(Matrix<complex>&& signal) noexcept;
+  Matrix<complex> fft(Matrix<complex>&& signal);
   Matrix<complex> ifft(const Matrix<complex>& spectrum);
-  Matrix<complex> ifft(Matrix<complex>&& spectrum) noexcept;
+  Matrix<complex> ifft(Matrix<complex>&& spectrum);
 }}
 // --Pinakas library: frontend forward declarations-------------------------------
 namespace Pinakas { inline namespace Frontend
@@ -651,5 +486,178 @@ namespace Pinakas { namespace Backend
   std::ostream& operator<<(std::ostream& ostream, const Matrix<T>& A);
   std::ostream& operator<<(std::ostream& ostream, const Size size);
   std::ostream& operator<<(std::ostream& ostream, const Slice<double>& A);
+// -------------------------------------------------------------------------------
+  template<typename T1, typename T2>
+  Matrix<T1>& operator+=(Matrix<T1>& A, const Matrix<T2>& B);
+  template<typename T>
+  Matrix<T>& operator+=(Matrix<T>& A, const Random B) noexcept;
+  template<typename T1, typename T2>
+  Matrix<T1>& operator+=(Matrix<T1>& A, const T2 B) noexcept;
+  template<typename T1, typename T2, typename T3 = appropriate_type<T1, T2>>
+  Matrix<T3> operator+(const Matrix<T1>& A, const Matrix<T2>& B);
+  template<typename T, typename T3 = appropriate_type<T, double>>
+  Matrix<T3> operator+(const Matrix<T>& A, const Random B) noexcept;
+  template<typename T, typename T3 = appropriate_type<T, double>>
+  Matrix<T3> operator+(const Random A, const Matrix<T>& B) noexcept;
+  template<typename T1, typename T2, typename T3 = appropriate_type<T1, T2>>
+  Matrix<T3> operator+(const Matrix<T1>& A, const T2 B) noexcept;
+  template<typename T1, typename T2, typename T3 = appropriate_type<T1, T2>>
+  Matrix<T3> operator+(const T1 A, const Matrix<T2>& B) noexcept;
+  template<typename T>
+  Matrix<T>& operator+(const Matrix<T>& A) noexcept;
+  template<typename T1, typename T2, typename T3 = if_no_loss<T2, T1>>
+  Matrix<T3>&& operator+(const Matrix<T1>& A, Matrix<T2>&& B);
+  template<typename T1, typename T2, typename T3 = if_no_loss<T1, T2>>
+  Matrix<T3>&& operator+(Matrix<T1>&& A, const Matrix<T2>& B);
+  template<typename T1, typename T2, typename T3 = if_no_loss<T2, T1>>
+  Matrix<T3>&& operator+(Matrix<T1>&& A, Matrix<T2>&& B);
+  template<typename T1, typename T2, typename T3 = if_no_loss<T1, T2>>
+  Matrix<T3>&& operator+(Matrix<T1>&& A, Matrix<T2>&& B);
+  template<typename T>
+  Matrix<T>&& operator+(Matrix<T>&& A, Matrix<T>&& B);
+  template<typename T, typename T3 = if_no_loss<T, double>>
+  Matrix<T3>&& operator+(Matrix<T>&& A, const Random B) noexcept;
+  template<typename T, typename T3 = if_no_loss<T, double>>
+  Matrix<T3>&& operator+(const Random A, Matrix<T>&& B) noexcept;
+  template<typename T1, typename T2, typename T3 = if_no_loss<T2, T1>>
+  Matrix<T3>&& operator+(const T1 A, Matrix<T2>&& B) noexcept;
+  template<typename T1, typename T2, typename T3 = if_no_loss<T1, T2>>
+  Matrix<T3>&& operator+(Matrix<T1>&& A, const T2 B) noexcept;
+  template<typename T>
+  Matrix<T>&& operator+(Matrix<T>&& A) noexcept;
+// -------------------------------------------------------------------------------
+  template<typename T1, typename T2>
+  Matrix<T1>& operator-=(Matrix<T1>& A, const Matrix<T2>& B);
+  template<typename T>
+  Matrix<T>& operator-=(Matrix<T>& A, const Random B) noexcept;
+  template<typename T1, typename T2>
+  Matrix<T1>& operator-=(Matrix<T1>& A, const T2 B) noexcept;
+  template<typename T1, typename T2, typename T3 = appropriate_type<T1, T2>>
+  Matrix<T3> operator-(const Matrix<T1>& A, const Matrix<T2>& B);
+  template<typename T, typename T3 = appropriate_type<T, double>>
+  Matrix<T3> operator-(const Matrix<T>& A, const Random B) noexcept;
+  template<typename T, typename T3 = appropriate_type<T, double>>
+  Matrix<T3> operator-(const Random A, const Matrix<T>& B) noexcept;
+  template<typename T1, typename T2, typename T3 = appropriate_type<T1, T2>>
+  Matrix<T3> operator-(const Matrix<T1>& A, const T2 B) noexcept;
+  template<typename T1, typename T2, typename T3 = appropriate_type<T1, T2>>
+  Matrix<T3> operator-(const T1 A, const Matrix<T2>& B) noexcept;
+  template<typename T1, typename T2, typename T3 = if_no_loss<T2, T1>>
+  Matrix<T3>&& operator-(const Matrix<T1>& A, Matrix<T2>&& B);
+  template<typename T1, typename T2, typename T3 = if_no_loss<T1, T2>>
+  Matrix<T3>&& operator-(Matrix<T1>&& A, const Matrix<T2>& B);
+  template<typename T1, typename T2, typename T3 = if_no_loss<T2, T1>>
+  Matrix<T3>&& operator-(Matrix<T1>&& A, Matrix<T2>&& B);
+  template<typename T1, typename T2, typename T3 = if_no_loss<T1, T2>>
+  Matrix<T3>&& operator-(Matrix<T1>&& A, Matrix<T2>&& B);
+  template<typename T>
+  Matrix<T>&& operator-(Matrix<T>&& A, Matrix<T>&& B);
+  template<typename T, typename T3 = if_no_loss<T, double>>
+  Matrix<T3>&& operator-(Matrix<T>&& A, const Random B) noexcept;
+  template<typename T, typename T3 = if_no_loss<T, double>>
+  Matrix<T3>&& operator-(const Random A, Matrix<T>&& B) noexcept;
+  template<typename T1, typename T2, typename T3 = if_no_loss<T2, T1>>
+  Matrix<T3>&& operator-(const T1 A, Matrix<T2>&& B) noexcept;
+  template<typename T1, typename T2, typename T3 = if_no_loss<T1, T2>>
+  Matrix<T3>&& operator-(Matrix<T1>&& A, const T2 B) noexcept;
+  template<typename T>
+  Matrix<T>& operator-(const Matrix<T>& A);
+  template<typename T>
+  Matrix<T>&& operator-(Matrix<T>&& A) noexcept;
+// -------------------------------------------------------------------------------
+  template<typename T1, typename T2>
+  Matrix<T1>& operator*=(Matrix<T1>& A, const Matrix<T2>& B);
+  template<typename T>
+  Matrix<T>& operator*=(Matrix<T>& A, const Random B) noexcept;
+  template<typename T1, typename T2>
+  Matrix<T1>& operator*=(Matrix<T1>& A, const T2 B) noexcept;
+  template<typename T1, typename T2, typename T3 = appropriate_type<T1, T2>>
+  Matrix<T3> operator*(const Matrix<T1>& A, const Matrix<T2>& B);
+  template<typename T, typename T3 = appropriate_type<T, double>>
+  Matrix<T3> operator*(const Matrix<T>& A, const Random B) noexcept;
+  template<typename T, typename T3 = appropriate_type<T, double>>
+  Matrix<T3> operator*(const Random A, const Matrix<T>& B) noexcept;
+  template<typename T1, typename T2, typename T3 = appropriate_type<T1, T2>>
+  Matrix<T3> operator*(const Matrix<T1>& A, const T2 B) noexcept;
+  template<typename T1, typename T2, typename T3 = appropriate_type<T1, T2>>
+  Matrix<T3> operator*(const T1 A, const Matrix<T2>& B) noexcept;
+  template<typename T1, typename T2, typename T3 = if_no_loss<T2, T1>>
+  Matrix<T3>&& operator*(const Matrix<T1>& A, Matrix<T2>&& B);
+  template<typename T1, typename T2, typename T3 = if_no_loss<T1, T2>>
+  Matrix<T3>&& operator*(Matrix<T1>&& A, const Matrix<T2>& B);
+  template<typename T1, typename T2, typename T3 = if_no_loss<T2, T1>>
+  Matrix<T3>&& operator*(Matrix<T1>&& A, Matrix<T2>&& B);
+  template<typename T1, typename T2, typename T3 = if_no_loss<T1, T2>>
+  Matrix<T3>&& operator*(Matrix<T1>&& A, Matrix<T2>&& B);
+  template<typename T>
+  Matrix<T>&& operator*(Matrix<T>&& A, Matrix<T>&& B);
+  template<typename T, typename T3 = if_no_loss<T, double>>
+  Matrix<T3>&& operator*(Matrix<T>&& A, const Random B) noexcept;
+  template<typename T, typename T3 = if_no_loss<T, double>>
+  Matrix<T3>&& operator*(const Random A, Matrix<T>&& B) noexcept;
+  template<typename T1, typename T2, typename T3 = if_no_loss<T2, T1>>
+  Matrix<T3>&& operator*(const T1 A, Matrix<T2>&& B) noexcept;
+  template<typename T1, typename T2, typename T3 = if_no_loss<T1, T2>>
+  Matrix<T3>&& operator*(Matrix<T1>&& A, const T2 B) noexcept;
+// -------------------------------------------------------------------------------
+  template<typename T1, typename T2>
+  Matrix<T1>& operator/=(Matrix<T1>& A, const Matrix<T2>& B);
+  template<typename T>
+  Matrix<T>& operator/=(Matrix<T>& A, const Random B) noexcept;
+  template<typename T1, typename T2>
+  Matrix<T1>& operator/=(Matrix<T1>& A, const T2 B) noexcept;
+  template<typename T1, typename T2, typename T3 = appropriate_type<T1, T2>>
+  Matrix<T3> operator/(const Matrix<T1>& A, const Matrix<T2>& B);
+  template<typename T, typename T3 = appropriate_type<T, double>>
+  Matrix<T3> operator/(const Matrix<T>& A, const Random B) noexcept;
+  template<typename T, typename T3 = appropriate_type<T, double>>
+  Matrix<T3> operator/(const Random A, const Matrix<T>& B) noexcept;
+  template<typename T1, typename T2, typename T3 = appropriate_type<T1, T2>>
+  Matrix<T3> operator/(const Matrix<T1>& A, const T2 B) noexcept;
+  template<typename T1, typename T2, typename T3 = appropriate_type<T1, T2>>
+  Matrix<T3> operator/(const T1 A, const Matrix<T2>& B) noexcept;
+  template<typename T1, typename T2, typename T3 = if_no_loss<T2, T1>>
+  Matrix<T3>&& operator/(const Matrix<T1>& A, Matrix<T2>&& B);
+  template<typename T1, typename T2, typename T3 = if_no_loss<T1, T2>>
+  Matrix<T3>&& operator/(Matrix<T1>&& A, const Matrix<T2>& B);
+  template<typename T1, typename T2, typename T3 = if_no_loss<T2, T1>>
+  Matrix<T3>&& operator/(Matrix<T1>&& A, Matrix<T2>&& B);
+  template<typename T1, typename T2, typename T3 = if_no_loss<T1, T2>>
+  Matrix<T3>&& operator/(Matrix<T1>&& A, Matrix<T2>&& B);
+  template<typename T>
+  Matrix<T>&& operator/(Matrix<T>&& A, Matrix<T>&& B);
+  template<typename T, typename T3 = if_no_loss<T, double>>
+  Matrix<T3>&& operator/(Matrix<T>&& A, const Random B) noexcept;
+  template<typename T, typename T3 = if_no_loss<T, double>>
+  Matrix<T3>&& operator/(const Random A, Matrix<T>&& B) noexcept;
+  template<typename T1, typename T2, typename T3 = if_no_loss<T2, T1>>
+  Matrix<T3>&& operator/(const T1 A, Matrix<T2>&& B) noexcept;
+  template<typename T1, typename T2, typename T3 = if_no_loss<T1, T2>>
+  Matrix<T3>&& operator/(Matrix<T1>&& A, const T2 B) noexcept;
+// -------------------------------------------------------------------------------
+  template<typename T1, typename T2>
+  Matrix<T1>& operator^=(Matrix<T1>& A, const Matrix<T2>& B);
+  template<typename T1, typename T2>
+  Matrix<T1>& operator^=(Matrix<T1>& A, const T2 B) noexcept;
+  template<typename T1, typename T2, typename T3 = appropriate_type<T1, T2>>
+  Matrix<T3> operator^(const Matrix<T1>& A, const Matrix<T2>& B);
+  template<typename T1, typename T2, typename T3 = appropriate_type<T1, T2>>
+  Matrix<T3> operator^(const Matrix<T1>& A, const T2 B) noexcept;
+  template<typename T1, typename T2, typename T3 = appropriate_type<T1, T2>>
+  Matrix<T3> operator^(const T1 A, const Matrix<T2>& B) noexcept;
+  template<typename T1, typename T2, typename T3 = if_no_loss<T2, T1>>
+  Matrix<T3>&& operator^(const Matrix<T1>& A, Matrix<T2>&& B);
+  template<typename T1, typename T2, typename T3 = if_no_loss<T1, T2>>
+  Matrix<T3>&& operator^(Matrix<T1>&& A, const Matrix<T2>& B);
+  template<typename T1, typename T2, typename T3 = if_no_loss<T2, T1>>
+  Matrix<T3>&& operator^(Matrix<T1>&& A, Matrix<T2>&& B);
+  template<typename T1, typename T2, typename T3 = if_no_loss<T1, T2>>
+  Matrix<T3>&& operator^(Matrix<T1>&& A, Matrix<T2>&& B);
+  template<typename T>
+  Matrix<T>&& operator^(Matrix<T>&& A, Matrix<T>&& B);
+  template<typename T1, typename T2, typename T3 = if_no_loss<T2, T1>>
+  Matrix<T3>&& operator^(const T1 A, Matrix<T2>&& B) noexcept;
+  template<typename T1, typename T2, typename T3 = if_no_loss<T1, T2>>
+  Matrix<T3>&& operator^(Matrix<T1>&& A, const T2 B) noexcept;
 }}
 #endif

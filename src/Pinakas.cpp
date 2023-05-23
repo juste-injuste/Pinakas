@@ -46,8 +46,8 @@ namespace Pinakas { namespace Backend
       allocate(this, other.size_.M, other.size_.N);
 
       // store value
-      for (size_t index = 0; index < size_.numel; ++index)
-        data_[index] = other[0][index];
+      for (size_t k = 0; k < size_.numel; ++k)
+        data_[k] = other[0][k];
     }
   }
 
@@ -90,8 +90,8 @@ namespace Pinakas { namespace Backend
     allocate(this, M, N);
 
     // store values
-    for (size_t index = 0; index < size_.numel; ++index)
-      data_[index] = value;
+    for (size_t k = 0; k < size_.numel; ++k)
+      data_[k] = value;
   }
 
   template<typename T>
@@ -115,8 +115,8 @@ namespace Pinakas { namespace Backend
     std::uniform_real_distribution<> uniform_distribution(range.min_, range.max_);
 
     // assign random value to matrix
-    for (size_t index = 0; index < size_.numel; ++index)
-      data_[index] = uniform_distribution(generator);
+    for (size_t k = 0; k < size_.numel; ++k)
+      data_[k] = uniform_distribution(generator);
   }
 
   template<typename T>
@@ -200,12 +200,12 @@ namespace Pinakas { namespace Backend
     allocate(this, temp_M, temp_N);
 
     // store values
-    size_t index = 0;
+    size_t k = 0;
     for (const Matrix<T>& matrix : list) {
       for (size_t y = 0; y < matrix.size_.M; ++y)
         for (size_t x = 0; x < matrix.size_.N; ++x)
-          data_[x + index + y * size_.N] = matrix[y][x];
-      index += matrix.size_.N;
+          data_[x + k + y * size_.N] = matrix[y][x];
+      k += matrix.size_.N;
     }
   }
 
@@ -327,8 +327,8 @@ namespace Pinakas { namespace Backend
         allocate(this, other.size_.M, other.size_.N);
 
       // store values
-      for (size_t index = 0; index < size_.numel; ++index)
-        data_[index] = other[0][index];
+      for (size_t k = 0; k < size_.numel; ++k)
+        data_[k] = other[0][k];
     }
     return *this;
   }
@@ -350,8 +350,8 @@ namespace Pinakas { namespace Backend
   Matrix<T>& Matrix<T>::operator=(const T value) & noexcept
   {
     // store values
-    for (size_t index = 0; index < size_.numel; ++index)
-      data_[index] = value;
+    for (size_t k = 0; k < size_.numel; ++k)
+      data_[k] = value;
     return *this;
   }
 // -------------------------------------------------------------------------------
@@ -589,115 +589,115 @@ namespace Pinakas { namespace Backend
   }
 // -------------------------------------------------------------------------------
   template<typename T1, typename T2>
-  auto operator+=(Matrix<T1>& A, const Matrix<T2>& B) -> Matrix<T1>&
+  Matrix<T1>& operator+=(Matrix<T1>& A, const Matrix<T2>& B)
   {
     return add_mat_inplace(A, B);
   }
 
   template<typename T>
-  auto operator+=(Matrix<T>& A, const Random B) noexcept -> Matrix<T>&
+  Matrix<T>& operator+=(Matrix<T>& A, const Random B) noexcept
   {
     return add_rng_inplace(A, B);
   }
 
   template<typename T1, typename T2>
-  auto operator+=(Matrix<T1>& A, const T2 B) noexcept -> Matrix<T1>&
+  Matrix<T1>& operator+=(Matrix<T1>& A, const T2 B) noexcept
   {
     return add_val_inplace(A, B);
   }
   
-  template<typename T1, typename T2>
-  auto operator+(const Matrix<T1>& A, const Matrix<T2>& B) -> Matrix<appropriate_type<T1, T2>>
+  template<typename T1, typename T2, typename T3 = appropriate_type<T1, T2>>
+  Matrix<T3> operator+(const Matrix<T1>& A, const Matrix<T2>& B)
   {
     return add_mat(A, B);
   }
 
-  template<typename T>
-  auto operator+(const Matrix<T>& A, const Random B) noexcept -> Matrix<appropriate_type<T, double>>
+  template<typename T, typename T3 = appropriate_type<T, double>>
+  Matrix<T3> operator+(const Matrix<T>& A, const Random B) noexcept
   {
     return add_rng(A, B);
   }
 
-  template<typename T>
-  auto operator+(const Random A, const Matrix<T>& B) noexcept -> Matrix<appropriate_type<T, double>>
+  template<typename T, typename T3 = appropriate_type<T, double>>
+  Matrix<T3> operator+(const Random A, const Matrix<T>& B) noexcept
   {
     return add_rng(B, A);
   }
   
-  template<typename T1, typename T2>
-  auto operator+(const Matrix<T1>& A, const T2 B) noexcept -> Matrix<appropriate_type<T1, T2>>
+  template<typename T1, typename T2, typename T3 = appropriate_type<T1, T2>>
+  Matrix<T3> operator+(const Matrix<T1>& A, const T2 B) noexcept
   {
     return add_val(A, B);
   }
   
-  template<typename T1, typename T2>
-  auto operator+(const T1 A, const Matrix<T2>& B) noexcept -> Matrix<appropriate_type<T1, T2>>
+  template<typename T1, typename T2, typename T3 = appropriate_type<T1, T2>>
+  Matrix<T3> operator+(const T1 A, const Matrix<T2>& B) noexcept
   {
     return add_val(B, A);
   }
 
   template<typename T>
-  auto operator+(const Matrix<T>& A) noexcept -> Matrix<T>&
+  Matrix<T>& operator+(const Matrix<T>& A) noexcept
   {
     return A;
   }
 
-  template<typename T1, typename T2>
-  auto operator+(const Matrix<T1>& A, Matrix<T2>&& B) -> Matrix<if_no_loss<T2, T1>>&&
+  template<typename T1, typename T2, typename T3 = if_no_loss<T2, T1>>
+  Matrix<T3>&& operator+(const Matrix<T1>& A, Matrix<T2>&& B)
   {
     return std::move(add_mat_inplace(B, A));
   }
   
-  template<typename T1, typename T2>
-  auto operator+(Matrix<T1>&& A, const Matrix<T2>& B) -> Matrix<if_no_loss<T1, T2>>&&
+  template<typename T1, typename T2, typename T3 = if_no_loss<T1, T2>>
+  Matrix<T3>&& operator+(Matrix<T1>&& A, const Matrix<T2>& B)
   {
     return std::move(add_mat_inplace(A, B));
   }
   
-  template<typename T1, typename T2>
-  auto operator+(Matrix<T1>&& A, Matrix<T2>&& B) -> Matrix<if_no_loss<T2, T1>>&&
+  template<typename T1, typename T2, typename T3 = if_no_loss<T2, T1>>
+  Matrix<T3>&& operator+(Matrix<T1>&& A, Matrix<T2>&& B)
   {
     return std::move(add_mat_inplace(B, A));
   }
   
-  template<typename T1, typename T2>
-  auto operator+(Matrix<T1>&& A, Matrix<T2>&& B) -> Matrix<if_no_loss<T1, T2>>&&
+  template<typename T1, typename T2, typename T3 = if_no_loss<T1, T2>>
+  Matrix<T3>&& operator+(Matrix<T1>&& A, Matrix<T2>&& B)
   {
     return std::move(add_mat_inplace(A, B));
   }
   
   template<typename T>
-  auto operator+(Matrix<T>&& A, Matrix<T>&& B) -> Matrix<T>&&
+  Matrix<T>&& operator+(Matrix<T>&& A, Matrix<T>&& B)
   {
     return std::move(add_mat_inplace(A, B));
   }
 
-  template<typename T>
-  auto operator+(Matrix<T>&& A, const Random B) noexcept -> Matrix<if_no_loss<T, double>>&&
+  template<typename T, typename T3 = if_no_loss<T, double>>
+  Matrix<T3>&& operator+(Matrix<T>&& A, const Random B) noexcept
   {
     return std::move(add_rng_inplace(A, B));
   }
 
-  template<typename T>
-  auto operator+(const Random A, Matrix<T>&& B) noexcept -> Matrix<if_no_loss<T, double>>&&
+  template<typename T, typename T3 = if_no_loss<T, double>>
+  Matrix<T3>&& operator+(const Random A, Matrix<T>&& B) noexcept
   {
     return std::move(add_rng_inplace(B, A));
   }
   
-  template<typename T1, typename T2>
-  auto operator+(const T1 A, Matrix<T2>&& B) noexcept -> Matrix<if_no_loss<T2, T1>>&&
+  template<typename T1, typename T2, typename T3 = if_no_loss<T2, T1>>
+  Matrix<T3>&& operator+(const T1 A, Matrix<T2>&& B) noexcept
   {
     return std::move(add_val_inplace(B, A));
   }
 
-  template<typename T1, typename T2>
-  auto operator+(Matrix<T1>&& A, const T2 B) noexcept -> Matrix<if_no_loss<T1, T2>>&&
+  template<typename T1, typename T2, typename T3 = if_no_loss<T1, T2>>
+  Matrix<T3>&& operator+(Matrix<T1>&& A, const T2 B) noexcept
   {
     return std::move(add_val_inplace(A, B));
   }
 
   template<typename T>
-  auto operator+(Matrix<T>&& A) noexcept -> Matrix<T>&&
+  Matrix<T>&& operator+(Matrix<T>&& A) noexcept
   {
     return std::move(A);
   }
@@ -793,103 +793,103 @@ namespace Pinakas { namespace Backend
   }
 // -------------------------------------------------------------------------------
   template<typename T1, typename T2>
-  auto operator*=(Matrix<T1>& A, const Matrix<T2>& B) -> Matrix<T1>&
+  Matrix<T1>& operator*=(Matrix<T1>& A, const Matrix<T2>& B)
   {
     return mul_mat_inplace(A, B);
   }
 
   template<typename T>
-  auto operator*=(Matrix<T>& A, const Random B) noexcept -> Matrix<T>&
+  Matrix<T>& operator*=(Matrix<T>& A, const Random B) noexcept
   {
     return mul_rng_inplace(A, B);
   }
 
   template<typename T1, typename T2>
-  auto operator*=(Matrix<T1>& A, const T2 B) noexcept -> Matrix<T1>&
+  Matrix<T1>& operator*=(Matrix<T1>& A, const T2 B) noexcept
   {
     return mul_val_inplace(A, B);
   }
   
-  template<typename T1, typename T2>
-  auto operator*(const Matrix<T1>& A, const Matrix<T2>& B) -> Matrix<appropriate_type<T1, T2>>
+  template<typename T1, typename T2, typename T3 = appropriate_type<T1, T2>>
+  Matrix<T3> operator*(const Matrix<T1>& A, const Matrix<T2>& B)
   {
     return mul_mat(A, B);
   }
 
-  template<typename T>
-  auto operator*(const Matrix<T>& A, const Random B) noexcept -> Matrix<appropriate_type<T, double>>
+  template<typename T, typename T3 = appropriate_type<T, double>>
+  Matrix<T3> operator*(const Matrix<T>& A, const Random B) noexcept
   {
     return mul_rng(A, B);
   }
 
-  template<typename T>
-  auto operator*(const Random A, const Matrix<T>& B) noexcept -> Matrix<appropriate_type<T, double>>
+  template<typename T, typename T3 = appropriate_type<T, double>>
+  Matrix<T3> operator*(const Random A, const Matrix<T>& B) noexcept
   {
     return mul_rng(B, A);
   }
   
-  template<typename T1, typename T2>
-  auto operator*(const Matrix<T1>& A, const T2 B) noexcept -> Matrix<appropriate_type<T1, T2>>
+  template<typename T1, typename T2, typename T3 = appropriate_type<T1, T2>>
+  Matrix<T3> operator*(const Matrix<T1>& A, const T2 B) noexcept
   {
     return mul_val(A, B);
   }
   
-  template<typename T1, typename T2>
-  auto operator*(const T1 A, const Matrix<T2>& B) noexcept -> Matrix<appropriate_type<T1, T2>>
+  template<typename T1, typename T2, typename T3 = appropriate_type<T1, T2>>
+  Matrix<T3> operator*(const T1 A, const Matrix<T2>& B) noexcept
   {
     return mul_val(B, A);
   }
 
-  template<typename T1, typename T2>
-  auto operator*(const Matrix<T1>& A, Matrix<T2>&& B) -> Matrix<if_no_loss<T2, T1>>&&
+  template<typename T1, typename T2, typename T3 = if_no_loss<T2, T1>>
+  Matrix<T3>&& operator*(const Matrix<T1>& A, Matrix<T2>&& B)
   {
     return std::move(mul_mat_inplace(B, A));
   }
   
-  template<typename T1, typename T2>
-  auto operator*(Matrix<T1>&& A, const Matrix<T2>& B) -> Matrix<if_no_loss<T1, T2>>&&
+  template<typename T1, typename T2, typename T3 = if_no_loss<T1, T2>>
+  Matrix<T3>&& operator*(Matrix<T1>&& A, const Matrix<T2>& B)
   {
     return std::move(mul_mat_inplace(A, B));
   }
   
-  template<typename T1, typename T2>
-  auto operator*(Matrix<T1>&& A, Matrix<T2>&& B) -> Matrix<if_no_loss<T2, T1>>&&
+  template<typename T1, typename T2, typename T3 = if_no_loss<T2, T1>>
+  Matrix<T3>&& operator*(Matrix<T1>&& A, Matrix<T2>&& B)
   {
     return std::move(mul_mat_inplace(B, A));
   }
   
-  template<typename T1, typename T2>
-  auto operator*(Matrix<T1>&& A, Matrix<T2>&& B) -> Matrix<if_no_loss<T1, T2>>&&
+  template<typename T1, typename T2, typename T3 = if_no_loss<T1, T2>>
+  Matrix<T3>&& operator*(Matrix<T1>&& A, Matrix<T2>&& B)
   {
     return std::move(mul_mat_inplace(A, B));
   }
   
   template<typename T>
-  auto operator*(Matrix<T>&& A, Matrix<T>&& B) -> Matrix<T>&&
+  Matrix<T>&& operator*(Matrix<T>&& A, Matrix<T>&& B)
   {
     return std::move(mul_mat_inplace(A, B));
   }
 
-  template<typename T>
-  auto operator*(Matrix<T>&& A, const Random B) noexcept -> Matrix<if_no_loss<T, double>>&&
+  template<typename T, typename T3 = if_no_loss<T, double>>
+  Matrix<T3>&& operator*(Matrix<T>&& A, const Random B) noexcept
   {
     return std::move(mul_rng_inplace(A, B));
   }
 
-  template<typename T>
-  auto operator*(const Random A, Matrix<T>&& B) noexcept -> Matrix<if_no_loss<T, double>>&&
+  template<typename T, typename T3 = if_no_loss<T, double>>
+  Matrix<T3>&& operator*(const Random A, Matrix<T>&& B) noexcept
   {
     return std::move(mul_rng_inplace(B, A));
   }
   
-  template<typename T1, typename T2>
-  auto operator*(const T1 A, Matrix<T2>&& B) noexcept -> Matrix<if_no_loss<T2, T1>>&&
+  template<typename T1, typename T2, typename T3 = if_no_loss<T2, T1>>
+  Matrix<T3>&& operator*(const T1 A, Matrix<T2>&& B) noexcept
   {
     return std::move(mul_val_inplace(B, A));
   }
 
-  template<typename T1, typename T2>
-  auto operator*(Matrix<T1>&& A, const T2 B) noexcept -> Matrix<if_no_loss<T1, T2>>&&
+  template<typename T1, typename T2, typename T3 = if_no_loss<T1, T2>>
+  Matrix<T3>&& operator*(Matrix<T1>&& A, const T2 B) noexcept
   {
     return std::move(mul_val_inplace(A, B));
   }
@@ -1075,115 +1075,115 @@ namespace Pinakas { namespace Backend
   }
 // -------------------------------------------------------------------------------
   template<typename T1, typename T2>
-  auto operator-=(Matrix<T1>& A, const Matrix<T2>& B) -> Matrix<T1>&
+  Matrix<T1>& operator-=(Matrix<T1>& A, const Matrix<T2>& B)
   {
     return sub_ll_mat_inplace(A, B);
   }
   
   template<typename T>
-  auto operator-=(Matrix<T>& A, const Random B) noexcept -> Matrix<T>&
+  Matrix<T>& operator-=(Matrix<T>& A, const Random B) noexcept
   {
     return sub_ll_rng_inplace(A, B);
   }
 
   template<typename T1, typename T2>
-  auto operator-=(Matrix<T1>& A, const T2 B) noexcept -> Matrix<T1>&
+  Matrix<T1>& operator-=(Matrix<T1>& A, const T2 B) noexcept
   {
     return sub_ll_val_inplace(A, B);
   }
   
-  template<typename T1, typename T2>
-  auto operator-(const Matrix<T1>& A, const Matrix<T2>& B) -> Matrix<appropriate_type<T1, T2>>
+  template<typename T1, typename T2, typename T3 = appropriate_type<T1, T2>>
+  Matrix<T3> operator-(const Matrix<T1>& A, const Matrix<T2>& B)
   {
     return sub_ll_mat(A, B);
   }
 
-  template<typename T>
-  auto operator-(const Matrix<T>& A, const Random B) noexcept -> Matrix<appropriate_type<T, double>>
+  template<typename T, typename T3 = appropriate_type<T, double>>
+  Matrix<T3> operator-(const Matrix<T>& A, const Random B) noexcept
   {
     return sub_ll_rng(A, B);
   }
 
-  template<typename T>
-  auto operator-(const Random A, const Matrix<T>& B) noexcept -> Matrix<appropriate_type<T, double>>
+  template<typename T, typename T3 = appropriate_type<T, double>>
+  Matrix<T3> operator-(const Random A, const Matrix<T>& B) noexcept
   {
     return sub_rl_rng(B, A);
   }
   
-  template<typename T1, typename T2>
-  auto operator-(const Matrix<T1>& A, const T2 B) noexcept -> Matrix<appropriate_type<T1, T2>>
+  template<typename T1, typename T2, typename T3 = appropriate_type<T1, T2>>
+  Matrix<T3> operator-(const Matrix<T1>& A, const T2 B) noexcept
   {
     return sub_ll_val(A, B);
   }
   
-  template<typename T1, typename T2>
-  auto operator-(const T1 A, const Matrix<T2>& B) noexcept -> Matrix<appropriate_type<T1, T2>>
+  template<typename T1, typename T2, typename T3 = appropriate_type<T1, T2>>
+  Matrix<T3> operator-(const T1 A, const Matrix<T2>& B) noexcept
   {
     return sub_rl_val(B, A);
   }
 
-  template<typename T1, typename T2>
-  auto operator-(const Matrix<T1>& A, Matrix<T2>&& B) -> Matrix<if_no_loss<T2, T1>>&&
+  template<typename T1, typename T2, typename T3 = if_no_loss<T2, T1>>
+  Matrix<T3>&& operator-(const Matrix<T1>& A, Matrix<T2>&& B)
   {
     return std::move(sub_rl_mat_inplace(B, A));
   }
   
-  template<typename T1, typename T2>
-  auto operator-(Matrix<T1>&& A, const Matrix<T2>& B) -> Matrix<if_no_loss<T1, T2>>&&
+  template<typename T1, typename T2, typename T3 = if_no_loss<T1, T2>>
+  Matrix<T3>&& operator-(Matrix<T1>&& A, const Matrix<T2>& B)
   {
     return std::move(sub_ll_mat_inplace(A, B));
   }
   
-  template<typename T1, typename T2>
-  auto operator-(Matrix<T1>&& A, Matrix<T2>&& B) -> Matrix<if_no_loss<T2, T1>>&&
+  template<typename T1, typename T2, typename T3 = if_no_loss<T2, T1>>
+  Matrix<T3>&& operator-(Matrix<T1>&& A, Matrix<T2>&& B)
   {
     return std::move(sub_rl_mat_inplace(B, A));
   }
   
-  template<typename T1, typename T2>
-  auto operator-(Matrix<T1>&& A, Matrix<T2>&& B) -> Matrix<if_no_loss<T1, T2>>&&
+  template<typename T1, typename T2, typename T3 = if_no_loss<T1, T2>>
+  Matrix<T3>&& operator-(Matrix<T1>&& A, Matrix<T2>&& B)
   {
     return std::move(sub_ll_mat_inplace(A, B));
   }
   
   template<typename T>
-  auto operator-(Matrix<T>&& A, Matrix<T>&& B) -> Matrix<T>&&
+  Matrix<T>&& operator-(Matrix<T>&& A, Matrix<T>&& B)
   {
     return std::move(sub_ll_mat_inplace(A, B));
   }
 
-  template<typename T>
-  auto operator-(Matrix<T>&& A, const Random B) noexcept -> Matrix<if_no_loss<T, double>>&&
+  template<typename T, typename T3 = if_no_loss<T, double>>
+  Matrix<T3>&& operator-(Matrix<T>&& A, const Random B) noexcept
   {
     return std::move(sub_ll_rng_inplace(A, B));
   }
 
-  template<typename T>
-  auto operator-(const Random A, Matrix<T>&& B) noexcept -> Matrix<if_no_loss<T, double>>&&
+  template<typename T, typename T3 = if_no_loss<T, double>>
+  Matrix<T3>&& operator-(const Random A, Matrix<T>&& B) noexcept
   {
     return std::move(sub_rl_rng_inplace(B, A));
   }
   
-  template<typename T1, typename T2>
-  auto operator-(const T1 A, Matrix<T2>&& B) noexcept -> Matrix<if_no_loss<T2, T1>>&&
+  template<typename T1, typename T2, typename T3 = if_no_loss<T2, T1>>
+  Matrix<T3>&& operator-(const T1 A, Matrix<T2>&& B) noexcept
   {
     return std::move(sub_rl_val_inplace(B, A));
   }
 
-  template<typename T1, typename T2>
-  auto operator-(Matrix<T1>&& A, const T2 B) noexcept -> Matrix<if_no_loss<T1, T2>>&&
+  template<typename T1, typename T2, typename T3 = if_no_loss<T1, T2>>
+  Matrix<T3>&& operator-(Matrix<T1>&& A, const T2 B) noexcept
   {
     return std::move(sub_ll_val_inplace(A, B));
   }
   
   template<typename T>
-  auto operator-(const Matrix<T>& A) -> Matrix<T>&
+  Matrix<T>& operator-(const Matrix<T>& A)
   {
     return negate(A);
   }
 
   template<typename T>
-  auto operator-(Matrix<T>&& A) noexcept -> Matrix<T>&&
+  Matrix<T>&& operator-(Matrix<T>&& A) noexcept
   {
     return std::move(negate_inplace(A));
   }
@@ -1227,7 +1227,7 @@ namespace Pinakas { namespace Backend
   template<typename T1, typename T2>
   Matrix<T1>& div_ll_val_inplace(Matrix<T1>& A, const T2 B) noexcept
   {
-    const T2 iB = 1.0 / B;
+    const T1 iB = 1.0 / B;
 
     const size_t n = A.numel();
     for (size_t k = 0; k < n; ++k)
@@ -1298,7 +1298,7 @@ namespace Pinakas { namespace Backend
   Matrix<T3> div_ll_val(const Matrix<T1>& A, const T2 B) noexcept
   {
     Matrix<T3> R(A.size());
-    const T2 iB = 1.0 / B;
+    const T1 iB = 1.0 / B;
 
     const size_t n = A.numel();
     for (size_t k = 0; k < n; ++k)
@@ -1352,103 +1352,103 @@ namespace Pinakas { namespace Backend
   }
 // -------------------------------------------------------------------------------
   template<typename T1, typename T2>
-  auto operator/=(Matrix<T1>& A, const Matrix<T2>& B) -> Matrix<T1>&
+  Matrix<T1>& operator/=(Matrix<T1>& A, const Matrix<T2>& B)
   {
     return div_ll_mat_inplace(A, B);
   }
   
   template<typename T>
-  auto operator/=(Matrix<T>& A, const Random B) noexcept -> Matrix<T>&
+  Matrix<T>& operator/=(Matrix<T>& A, const Random B) noexcept
   {
     return div_ll_rng_inplace(A, B);
   }
 
   template<typename T1, typename T2>
-  auto operator/=(Matrix<T1>& A, const T2 B) noexcept -> Matrix<T1>&
+  Matrix<T1>& operator/=(Matrix<T1>& A, const T2 B) noexcept
   {
     return div_ll_val_inplace(A, B);
   }
   
-  template<typename T1, typename T2>
-  auto operator/(const Matrix<T1>& A, const Matrix<T2>& B) -> Matrix<appropriate_type<T1, T2>>
+  template<typename T1, typename T2, typename T3 = appropriate_type<T1, T2>>
+  Matrix<T3> operator/(const Matrix<T1>& A, const Matrix<T2>& B)
   {
     return div_ll_mat(A, B);
   }
 
-  template<typename T>
-  auto operator/(const Matrix<T>& A, const Random B) noexcept -> Matrix<appropriate_type<T, double>>
+  template<typename T, typename T3 = appropriate_type<T, double>>
+  Matrix<T3> operator/(const Matrix<T>& A, const Random B) noexcept
   {
     return div_ll_rng(A, B);
   }
 
-  template<typename T>
-  auto operator/(const Random A, const Matrix<T>& B) noexcept -> Matrix<appropriate_type<T, double>>
+  template<typename T, typename T3 = appropriate_type<T, double>>
+  Matrix<T3> operator/(const Random A, const Matrix<T>& B) noexcept
   {
     return div_rl_rng(B, A);
   }
   
-  template<typename T1, typename T2>
-  auto operator/(const Matrix<T1>& A, const T2 B) noexcept -> Matrix<appropriate_type<T1, T2>>
+  template<typename T1, typename T2, typename T3 = appropriate_type<T1, T2>>
+  Matrix<T3> operator/(const Matrix<T1>& A, const T2 B) noexcept
   {
     return div_ll_val(A, B);
   }
   
-  template<typename T1, typename T2>
-  auto operator/(const T1 A, const Matrix<T2>& B) noexcept -> Matrix<appropriate_type<T1, T2>>
+  template<typename T1, typename T2, typename T3 = appropriate_type<T1, T2>>
+  Matrix<T3> operator/(const T1 A, const Matrix<T2>& B) noexcept
   {
     return div_rl_val(B, A);
   }
 
-  template<typename T1, typename T2>
-  auto operator/(const Matrix<T1>& A, Matrix<T2>&& B) -> Matrix<if_no_loss<T2, T1>>&&
+  template<typename T1, typename T2, typename T3 = if_no_loss<T2, T1>>
+  Matrix<T3>&& operator/(const Matrix<T1>& A, Matrix<T2>&& B)
   {
     return std::move(div_rl_mat_inplace(B, A));
   }
   
-  template<typename T1, typename T2>
-  auto operator/(Matrix<T1>&& A, const Matrix<T2>& B) -> Matrix<if_no_loss<T1, T2>>&&
+  template<typename T1, typename T2, typename T3 = if_no_loss<T1, T2>>
+  Matrix<T3>&& operator/(Matrix<T1>&& A, const Matrix<T2>& B)
   {
     return std::move(div_ll_mat_inplace(A, B));
   }
   
-  template<typename T1, typename T2>
-  auto operator/(Matrix<T1>&& A, Matrix<T2>&& B) -> Matrix<if_no_loss<T2, T1>>&&
+  template<typename T1, typename T2, typename T3 = if_no_loss<T2, T1>>
+  Matrix<T3>&& operator/(Matrix<T1>&& A, Matrix<T2>&& B)
   {
     return std::move(div_rl_mat_inplace(B, A));
   }
   
-  template<typename T1, typename T2>
-  auto operator/(Matrix<T1>&& A, Matrix<T2>&& B) -> Matrix<if_no_loss<T1, T2>>&&
+  template<typename T1, typename T2, typename T3 = if_no_loss<T1, T2>>
+  Matrix<T3>&& operator/(Matrix<T1>&& A, Matrix<T2>&& B)
   {
     return std::move(div_ll_mat_inplace(A, B));
   }
   
   template<typename T>
-  auto operator/(Matrix<T>&& A, Matrix<T>&& B) -> Matrix<T>&&
+  Matrix<T>&& operator/(Matrix<T>&& A, Matrix<T>&& B)
   {
     return std::move(div_ll_mat_inplace(A, B));
   }
 
-  template<typename T>
-  auto operator/(Matrix<T>&& A, const Random B) noexcept -> Matrix<if_no_loss<T, double>>&&
+  template<typename T, typename T3 = if_no_loss<T, double>>
+  Matrix<T3>&& operator/(Matrix<T>&& A, const Random B) noexcept
   {
     return std::move(div_ll_rng_inplace(A, B));
   }
 
-  template<typename T>
-  auto operator/(const Random A, Matrix<T>&& B) noexcept -> Matrix<if_no_loss<T, double>>&&
+  template<typename T, typename T3 = if_no_loss<T, double>>
+  Matrix<T3>&& operator/(const Random A, Matrix<T>&& B) noexcept
   {
     return std::move(div_rl_rng_inplace(B, A));
   }
   
-  template<typename T1, typename T2>
-  auto operator/(const T1 A, Matrix<T2>&& B) noexcept -> Matrix<if_no_loss<T2, T1>>&&
+  template<typename T1, typename T2, typename T3 = if_no_loss<T2, T1>>
+  Matrix<T3>&& operator/(const T1 A, Matrix<T2>&& B) noexcept
   {
     return std::move(div_rl_val_inplace(B, A));
   }
 
-  template<typename T1, typename T2>
-  auto operator/(Matrix<T1>&& A, const T2 B) noexcept -> Matrix<if_no_loss<T1, T2>>&&
+  template<typename T1, typename T2, typename T3 = if_no_loss<T1, T2>>
+  Matrix<T3>&& operator/(Matrix<T1>&& A, const T2 B) noexcept
   {
     return std::move(div_ll_val_inplace(A, B));
   }
@@ -1554,78 +1554,79 @@ namespace Pinakas { namespace Backend
   }
 // -------------------------------------------------------------------------------
   template<typename T1, typename T2>
-  auto operator^=(Matrix<T1>& A, const Matrix<T2>& B) -> Matrix<T1>&
+  Matrix<T1>& operator^=(Matrix<T1>& A, const Matrix<T2>& B)
   {
     return pow_ll_mat_inplace(A, B);
   }
 
   template<typename T1, typename T2>
-  auto operator^=(Matrix<T1>& A, const T2 B) noexcept -> Matrix<T1>&
+  Matrix<T1>& operator^=(Matrix<T1>& A, const T2 B) noexcept
   {
     return pow_ll_val_inplace(A, B);
   }
   
-  template<typename T1, typename T2>
-  auto operator^(const Matrix<T1>& A, const Matrix<T2>& B) -> Matrix<appropriate_type<T1, T2>>
+  template<typename T1, typename T2, typename T3 = appropriate_type<T1, T2>>
+  Matrix<T3> operator^(const Matrix<T1>& A, const Matrix<T2>& B)
   {
     return pow_mat(A, B);
   }
-  template<typename T1, typename T2>
-  auto operator^(const Matrix<T1>& A, const T2 B) noexcept -> Matrix<appropriate_type<T1, T2>>
+
+  template<typename T1, typename T2, typename T3 = appropriate_type<T1, T2>>
+  Matrix<T3> operator^(const Matrix<T1>& A, const T2 B) noexcept
   {
     return pow_ll_val(A, B);
   }
   
-  template<typename T1, typename T2>
-  auto operator^(const T1 A, const Matrix<T2>& B) noexcept -> Matrix<appropriate_type<T1, T2>>
+  template<typename T1, typename T2, typename T3 = appropriate_type<T1, T2>>
+  Matrix<T3> operator^(const T1 A, const Matrix<T2>& B) noexcept
   {
     return pow_rl_val(B, A);
   }
 
-  template<typename T1, typename T2>
-  auto operator^(const Matrix<T1>& A, Matrix<T2>&& B) -> Matrix<if_no_loss<T2, T1>>&&
+  template<typename T1, typename T2, typename T3 = if_no_loss<T2, T1>>
+  Matrix<T3>&& operator^(const Matrix<T1>& A, Matrix<T2>&& B)
   {
     return std::move(pow_rl_mat_inplace(B, A));
   }
   
-  template<typename T1, typename T2>
-  auto operator^(Matrix<T1>&& A, const Matrix<T2>& B) -> Matrix<if_no_loss<T1, T2>>&&
+  template<typename T1, typename T2, typename T3 = if_no_loss<T1, T2>>
+  Matrix<T3>&& operator^(Matrix<T1>&& A, const Matrix<T2>& B)
   {
     return std::move(pow_ll_mat_inplace(A, B));
   }
   
-  template<typename T1, typename T2>
-  auto operator^(Matrix<T1>&& A, Matrix<T2>&& B) -> Matrix<if_no_loss<T2, T1>>&&
+  template<typename T1, typename T2, typename T3 = if_no_loss<T2, T1>>
+  Matrix<T3>&& operator^(Matrix<T1>&& A, Matrix<T2>&& B)
   {
     return std::move(pow_rl_mat_inplace(B, A));
   }
   
-  template<typename T1, typename T2>
-  auto operator^(Matrix<T1>&& A, Matrix<T2>&& B) -> Matrix<if_no_loss<T1, T2>>&&
+  template<typename T1, typename T2, typename T3 = if_no_loss<T1, T2>>
+  Matrix<T3>&& operator^(Matrix<T1>&& A, Matrix<T2>&& B)
   {
     return std::move(pow_ll_mat_inplace(A, B));
   }
   
   template<typename T>
-  auto operator^(Matrix<T>&& A, Matrix<T>&& B) -> Matrix<T>&&
+  Matrix<T>&& operator^(Matrix<T>&& A, Matrix<T>&& B)
   {
     return std::move(pow_ll_mat_inplace(A, B));
   }
   
-  template<typename T1, typename T2>
-  auto operator^(const T1 A, Matrix<T2>&& B) noexcept -> Matrix<if_no_loss<T2, T1>>&&
+  template<typename T1, typename T2, typename T3 = if_no_loss<T2, T1>>
+  Matrix<T3>&& operator^(const T1 A, Matrix<T2>&& B) noexcept
   {
     return std::move(pow_rl_val_inplace(B, A));
   }
 
-  template<typename T1, typename T2>
-  auto operator^(Matrix<T1>&& A, const T2 B) noexcept -> Matrix<if_no_loss<T1, T2>>&&
+  template<typename T1, typename T2, typename T3 = if_no_loss<T1, T2>>
+  Matrix<T3>&& operator^(Matrix<T1>&& A, const T2 B) noexcept
   {
     return std::move(pow_ll_val_inplace(A, B));
   }
 // -------------------------------------------------------------------------------
-  template<typename T>
-  auto floor(const Matrix<T>& A) -> Matrix<if_floating<T>>
+  template<typename T, typename T3 = if_floating<T>>
+  Matrix<T3> floor(const Matrix<T>& A)
   {
     Matrix<T> R(A.size());
 
@@ -1636,8 +1637,8 @@ namespace Pinakas { namespace Backend
     return R;
   }
 
-  template<typename T>
-  auto floor(Matrix<T>&& A) noexcept -> Matrix<if_floating<T>>&&
+  template<typename T, typename T3 = if_floating<T>>
+  Matrix<T3>&& floor(Matrix<T>&& A) noexcept
   {
     const size_t n = A.numel();
     for (size_t k = 0; k < n; ++k)
@@ -1646,8 +1647,8 @@ namespace Pinakas { namespace Backend
     return std::move(A);
   }
 // -------------------------------------------------------------------------------
-  template<typename T>
-  auto round(const Matrix<T>& A) -> Matrix<if_floating<T>>
+  template<typename T, typename T3 = if_floating<T>>
+  Matrix<T3> round(const Matrix<T>& A)
   {
     Matrix<T> R(A.size());
 
@@ -1658,8 +1659,8 @@ namespace Pinakas { namespace Backend
     return R;
   }
 
-  template<typename T>
-  auto round(Matrix<T>&& A) noexcept -> Matrix<if_floating<T>>&&
+  template<typename T, typename T3 = if_floating<T>>
+  Matrix<T3>&& round(Matrix<T>&& A) noexcept
   {
     const size_t n = A.numel();
     for (size_t k = 0; k < n; ++k)
@@ -1668,8 +1669,8 @@ namespace Pinakas { namespace Backend
     return std::move(A);
   }
 // -------------------------------------------------------------------------------
-  template<typename T>
-  auto ceil(const Matrix<T>& A) -> Matrix<if_floating<T>>
+  template<typename T, typename T3 = if_floating<T>>
+  Matrix<T3> ceil(const Matrix<T>& A)
   {
     Matrix<T> R(A.size());
 
@@ -1680,8 +1681,8 @@ namespace Pinakas { namespace Backend
     return R;
   }
 
-  template<typename T>
-  auto ceil(Matrix<T>&& A) noexcept -> Matrix<if_floating<T>>&&
+  template<typename T, typename T3 = if_floating<T>>
+  Matrix<T3>&& ceil(Matrix<T>&& A) noexcept
   {
     const size_t n = A.numel();
     for (size_t k = 0; k < n; ++k)
@@ -1997,16 +1998,16 @@ namespace Pinakas { namespace Backend
     // build linearly spaced x data and its associated y value
     const double step = (data_x[0][N - 1] - data_x[0][0]) / (N - 1);
     double x1, x2, y1, y2;
-    for (size_t index = 1; index < (N - 1); ++index) {
+    for (size_t k = 1; k < (N - 1); ++k) {
       // build linearly spaced x data
-      lin_x[0][index] = lin_x[0][index - 1] + step;
+      lin_x[0][k] = lin_x[0][k - 1] + step;
 
       // linearly interpolate y value
-      x1 = data_x[0][index];
-      y1 = data_y[0][index];
-      x2 = data_x[0][index + 1];
-      y2 = data_y[0][index + 1];
-      lin_y[0][index] = y1 + (lin_x[0][index] - x1) * (y2 - y1) / (x2 - x1);
+      x1 = data_x[0][k];
+      y1 = data_y[0][k];
+      x2 = data_x[0][k + 1];
+      y2 = data_y[0][k + 1];
+      lin_y[0][k] = y1 + (lin_x[0][k] - x1) * (y2 - y1) / (x2 - x1);
     }
 
     return data_set;
@@ -2028,11 +2029,23 @@ namespace Pinakas { namespace Backend
     return vector;
   }
 
-  Matrix<size_t> iota(const size_t N)
+  Matrix<size_t> iota(const size_t n)
   {
-    Matrix<size_t> indices(1, N);
+    Matrix<size_t> indices(1, n);
 
-    for (size_t k = 0; k < N; ++k)
+    for (size_t k = 0; k < n; ++k)
+      indices[0][k] = k;
+
+    return indices;
+  }
+
+  template<typename T>
+  Matrix<size_t> iota(const Matrix<T>& A)
+  {
+    const size_t n = A.numel();
+
+    Matrix<size_t> indices(1, n);
+    for (size_t k = 0; k < n; ++k)
       indices[0][k] = k;
 
     return indices;
@@ -2074,41 +2087,51 @@ namespace Pinakas { namespace Backend
     return std::move(A);
   }
 // -------------------------------------------------------------------------------
-  Matrix<double> conv(const Matrix<double>& A, const Matrix<double>& B)
+  template<typename T1, typename T2, typename T3 = appropriate_type<T1, T2>>
+  Matrix<T3> conv(const Matrix<T1>& A, const Matrix<T2>& B)
   {
     const size_t n1 = A.numel();
     const size_t n2 = B.numel();
-    Matrix<double> convoluted(1, n1 + n2 - 1, 0);
+
+    Matrix<T3> convoluted(1, n1 + n2 - 1, 0);
     for (size_t i = 0; i < n1; ++i)
       for (size_t j = 0; j < n2; ++j)
         convoluted[0][i + j] += A[0][i] * B[0][j];
+
     return convoluted;
   }
 
-  Matrix<double> corr(const Matrix<double>& A, const Matrix<double>& B)
+  template<typename T1, typename T2, typename T3 = appropriate_type<T1, T2>>
+  Matrix<T3> corr(const Matrix<T1>& A, const Matrix<T2>& B)
   {
     const size_t n1 = A.numel();
     const size_t n2 = B.numel();
-    Matrix<double> result(1, n1 + n2 - 1, 0);
+
+    Matrix<T3> result(1, n1 + n2 - 1, 0);
     for (size_t i = 0; i < n1; ++i)
       for (size_t j = 0; j < n2; ++j)
         result[0][i + j] += A[0][n1-1 - i] * B[0][j];
+
     return result; 
   }
 
-  Matrix<double> corr(const Matrix<double>& A)
+  template<typename T>
+  Matrix<T> corr(const Matrix<T>& A)
   {
     const size_t n = A.numel();
-    Matrix<double> result(1, 2*n - 1, 0);
+
+    Matrix<T> result(1, 2*n - 1, 0);
     for (size_t i = 0; i < n; ++i)
       for (size_t j = 0; j < n; ++j)
         result[0][i + j] += A[0][n-1 - i] * A[0][j];
+
     return result;
   }
 
   Matrix<double> Rxx(const Matrix<double>& A)
   {
     const size_t n = A.numel();
+
     Matrix<double> Rxx(1, n, 0);
     for (size_t i = 0; i < n; ++i)
       for (size_t j = 0; j < n; ++j)
@@ -2120,11 +2143,13 @@ namespace Pinakas { namespace Backend
   Matrix<double> Rxx(const Matrix<double>& A, const size_t K)
   {
     const size_t n = A.numel();
+
     Matrix<double> Rxx(1, K, 0);
     for (size_t i = 0; i < n; ++i)
       for (size_t j = 0; j < n; ++j)
         if ((i+j - n+1) < K)
           Rxx[0][i+j - n+1] += A[0][n-1 - i] * A[0][j];
+
     return Rxx;
   }
 
@@ -2317,8 +2342,8 @@ namespace Pinakas { namespace Backend
   Matrix<double> upsample(const Matrix<double>& data, const size_t L)
   {
     Matrix<double> upsampled(1, L * data.numel(), 0);
-    for (size_t index = 0; index < data.numel(); ++index)
-      upsampled[0][index * L] = data[0][index];
+    for (size_t k = 0; k < data.numel(); ++k)
+      upsampled[0][k * L] = data[0][k];
     return upsampled;
   }
 
@@ -2361,7 +2386,7 @@ namespace Pinakas { namespace Backend
 
     // indices to the first and last upsampled elements in the symetrically extended data
     const size_t first = L * keep;
-    const size_t last  = L * (N - !tail) + first;
+    const size_t last  = L * (N - !tail) + first - tail;
 
     // temporary variables
     size_t i, j, k;
@@ -2455,79 +2480,6 @@ namespace Pinakas { namespace Backend
     return ostream << size.M << 'x' << size.N;
   }
 
-  void plot(std::string title, List<DataSet> data_sets, bool persistent, bool remove, bool pause, bool lines)
-  {
-    // validate that gnuplot is in system path
-    static bool gnuplot_on_system_path = false;
-    if ((!gnuplot_on_system_path) and std::system("gnuplot --version"))
-      throw std::runtime_error("error: plot: gnuplot could not be found in the system path");
-    gnuplot_on_system_path = true;
-
-    // validate that x and y have the same number of elements
-    for (auto& data_set : data_sets) {
-      const Matrix<double>& xdata = data_set.first;
-      const Matrix<double>& ydata = data_set.second;
-      if (xdata.numel() != ydata.numel()) {
-        std::stringstream error_message;
-        error_message << "error: plot: number of element mismatch (x has " << xdata.numel();
-        error_message << " elements,  y has " << ydata.numel() << " elements)\n";
-        throw std::invalid_argument(error_message.str());
-      }
-    }
-
-    // create temporary file
-    std::ofstream file("gnuplot.data");
-
-    // validate file opening
-    if (!file)
-      throw std::runtime_error("could not open gnuplot.data");
-
-    // write x and y data to file for each data set
-    for (auto& data_set : data_sets) {
-      const Matrix<double>& x = data_set.first;
-      const Matrix<double>& y = data_set.second;
-      for (size_t index = 0; index < x.numel(); ++index)
-        file << x[0][index] << ' ' << y[0][index] << '\n';
-      // separate data sets
-      file << "\n\n";
-    }
-
-    // close file
-    file.close();
-
-    // gnuplot command pipeline
-    std::stringstream gnuplot_pipeline;
-    gnuplot_pipeline << "gnuplot";
-
-    // conditionally set plot to persistent
-    if (persistent)
-      gnuplot_pipeline << " -persistent";
-
-    // plot all data sets
-    gnuplot_pipeline << " -e \"set title \\\"gnuplot\\\"; plot 'gnuplot.data'";
-
-    for (size_t k = 0; k < data_sets.size(); ++k) {
-      if (k)
-        gnuplot_pipeline << ", ''";
-      gnuplot_pipeline << " index " << k;
-      if (lines)
-        gnuplot_pipeline << " with lines";
-      gnuplot_pipeline << " title '" << title << '\'';
-    }
-    gnuplot_pipeline << '"';
-
-    // conditionally pause after plotting
-    if (pause)
-      gnuplot_pipeline << " -e \"pause -1 'press any key to continue...'\"";
-
-    // execute command pipeline
-    std::system(gnuplot_pipeline.str().c_str());
-
-    // conditionally remove file after creation
-    if (remove)
-      std::remove("gnuplot.data");
-  }
-
   void plot(List<std::string> titles, List<DataSet> data_sets, bool persistent, bool remove, bool pause, bool lines)
   {
     // validate that gnuplot is in system path
@@ -2562,8 +2514,8 @@ namespace Pinakas { namespace Backend
     for (auto& data_set : data_sets) {
       const Matrix<double>& x = data_set.first;
       const Matrix<double>& y = data_set.second;
-      for (size_t index = 0; index < x.numel(); ++index)
-        file << x[0][index] << ' ' << y[0][index] << '\n';
+      for (size_t k = 0; k < x.numel(); ++k)
+        file << x[0][k] << ' ' << y[0][k] << '\n';
       // separate data sets
       file << "\n\n";
     }
@@ -2658,18 +2610,17 @@ namespace Pinakas { namespace Backend
     return A;
   }
 
-  template<typename T>
-  Matrix<complex> fft(const Matrix<T>& signal)
+  Matrix<complex> fft(Matrix<complex>&& signal)
   {
-    return fft(Matrix<complex>(signal));
-  }
+    const size_t N = signal.numel();
 
-  Matrix<complex> fft(Matrix<complex>&& signal) noexcept
-  {
-    const size_t N = signal.numel(); // Size of the input array
+    // validate that the signal has a power of 2 number of elements
+    if (N & (N - 1))
+      throw std::invalid_argument("error: fft: signal must have a power of 2 number of elements");
+    
     size_t k = N; // Current stage size
     size_t n; // Size of butterfly operations
-    double thetaT = 3.14159265358979323846264338328L / N; // Angle for twiddle factor
+    double thetaT = M_PI / N; // Angle for twiddle factor
     complex phiT = complex(std::cos(thetaT), -std::sin(thetaT)); // Twiddle factor for the first stage
 
     // Perform the FFT computation
@@ -2677,17 +2628,18 @@ namespace Pinakas { namespace Backend
       n = k;
       k >>= 1; // Halve the stage size
       phiT *= phiT; // Square the twiddle factor for the next stage
-      complex twiddle_factor = 1.0L; // Initialize the twiddle factor for the current stage
+      complex twiddle_factor = 1; // Initialize the twiddle factor for the current stage
 
-        // Perform butterfly operations
+      // Perform butterfly operations
       for (size_t l = 0; l < k; ++l) {
         for (size_t a = l; a < N; a += n) {
-          size_t b = a + k; // Index of the element to combine with 'a'
-          complex temporary = signal[0][a] - signal[0][b]; // Difference between 'a' and 'b'
-          signal[0][a] += signal[0][b]; // Sum of 'a' and 'b'
-          signal[0][b]  = temporary * twiddle_factor; // Multiply 't' by the twiddle factor
+          size_t b = a + k;
+          complex temporary = signal[0][a] - signal[0][b];
+          signal[0][a] += signal[0][b];
+          signal[0][b]  = temporary * twiddle_factor;
         }
-        twiddle_factor *= phiT; // Update the twiddle factor for the next butterfly operation
+        // Update the twiddle factor for the next butterfly operation
+        twiddle_factor *= phiT;
       }
     }
 
@@ -2715,7 +2667,7 @@ namespace Pinakas { namespace Backend
     return conj(fft(conj(spectrum))) / spectrum.numel();
   }
 
-  Matrix<complex> ifft(Matrix<complex>&& spectrum) noexcept
+  Matrix<complex> ifft(Matrix<complex>&& spectrum)
   {
     return conj(fft(conj(std::move(spectrum)))) / spectrum.numel();
   }
@@ -2726,6 +2678,9 @@ int main()
   using namespace Pinakas;
   using namespace Keyword;
   using namespace Chronometro;
+
+
+  Matrix<size_t> x;
   /*
   size_t N = 1 << 8;
   //size_t L = 100;
@@ -2736,10 +2691,9 @@ int main()
   Matrix<double> x_linear = linspace(0, 1, N);
   Matrix<double> y_linear = sin(x_linear*1000) + sin(x_linear*300);//f(x_linear);
 
-  auto y2 = (Matrix<complex>)y_linear;
   puts("------------");
   sw.start();
-  y2 = fft(y2);
+  auto y2 = fft(y_linear);
   sw.stop();
   puts("------------");
 
@@ -2747,10 +2701,10 @@ int main()
   plot({"spectrum2", "signal"}, {{iota(X2.numel()), X2}, {iota(N), y_linear}}, true, false);
   //*/
 
-  
-  auto x = iota(10) + Random(0, 1);
 
-  /*Matrix<double> y = iota(10) + Random(0, 1);
+  //*
+  Matrix<int> x = iota(10);
+  Matrix<double> y = iota(10);
   puts("----------------");
   auto t1 =  x + y;
   puts("----------------");
@@ -2760,17 +2714,54 @@ int main()
   puts("----------------");
   auto t4 =  (x + 1) + (y + 1.0);
   puts("----------------");
+  (x + 1) += 1;
+  puts("----------------");
+  x += 1;
+  puts("----------------");
+  x += 1;
+  puts("----------------");
+  x += 1.0;
+  puts("----------------");
+  x += Random(0, 1);
+  puts("----------------");
+  x += x;
+  puts("----------------");
+  x += y;
+  puts("----------------");
+  y += 1;
+  puts("----------------");
+  y += 1.0;
+  puts("----------------");
+  y += Random(0, 1);
+  puts("----------------");
+  y += y;
+  puts("----------------");
+  y += x;
+  puts("----------------");
   //*/
 
-  /* 
-  Matrix<double> A(1000, 1000, {0, 1});
-  Matrix<double> B(1000, 1000, {0, 1});
-  
-  for (int k = 0; k < 10; ++k){
-    Chronometro::Stopwatch sw;
-    for (int i = 0; i < 10; ++i)
-      A + B;
-  }
+  /*
+  size_t N = 1<<4;
+  size_t L = 1<<2;
+  auto   f = [](const Matrix<double>& x) {return (x ^ 2) + sin(x * 20) / 10 - 2;};
+
+  auto x_lo = linspace(0, 1, N);
+  auto y_lo = f(x_lo);
+
+  auto y_hi = resample(y_lo, L, 2, 3.5, true);
+  auto x_hi = linspace(0, 1, y_hi.numel());
+
+  std::cout << x_lo.numel() << '\n';
+  std::cout << x_hi.numel() << '\n';
+
+  auto h_lo = abs(fft(y_lo));
+  auto f_lo = iota(h_lo);
+
+  auto h_hi = abs(fft(y_hi));
+  auto f_hi = iota(h_hi);
+
+  plot({"original", "resampled"}, {{x_lo, y_lo}, {x_hi, y_hi}}, true, false);
+  plot({"original spectrum", "resampled spectrum"}, {{f_lo, h_lo}, {f_hi, h_hi}}, true, false);
   //*/
 
 
