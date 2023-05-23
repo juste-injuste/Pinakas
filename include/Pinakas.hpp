@@ -509,10 +509,10 @@ namespace Pinakas { namespace Backend
   Matrix<T3>&& operator+(const Matrix<T1>& A, Matrix<T2>&& B);
   template<typename T1, typename T2, typename T3 = if_no_loss<T1, T2>>
   Matrix<T3>&& operator+(Matrix<T1>&& A, const Matrix<T2>& B);
-  template<typename T1, typename T2, typename T3 = if_no_loss<T2, T1>>
-  Matrix<T3>&& operator+(Matrix<T1>&& A, Matrix<T2>&& B);
-  template<typename T1, typename T2, typename T3 = if_no_loss<T1, T2>>
-  Matrix<T3>&& operator+(Matrix<T1>&& A, Matrix<T2>&& B);
+  template<typename T1, typename T2>
+  auto operator+(Matrix<T1>&& A, Matrix<T2>&& B) -> Matrix<if_no_loss<T2, T1>>&&;
+  template<typename T1, typename T2>
+  auto operator+(Matrix<T1>&& A, Matrix<T2>&& B) -> Matrix<if_no_loss<T1, T2>>&&;
   template<typename T>
   Matrix<T>&& operator+(Matrix<T>&& A, Matrix<T>&& B);
   template<typename T, typename T3 = if_no_loss<T, double>>
@@ -546,10 +546,10 @@ namespace Pinakas { namespace Backend
   Matrix<T3>&& operator-(const Matrix<T1>& A, Matrix<T2>&& B);
   template<typename T1, typename T2, typename T3 = if_no_loss<T1, T2>>
   Matrix<T3>&& operator-(Matrix<T1>&& A, const Matrix<T2>& B);
-  template<typename T1, typename T2, typename T3 = if_no_loss<T2, T1>>
-  Matrix<T3>&& operator-(Matrix<T1>&& A, Matrix<T2>&& B);
-  template<typename T1, typename T2, typename T3 = if_no_loss<T1, T2>>
-  Matrix<T3>&& operator-(Matrix<T1>&& A, Matrix<T2>&& B);
+  template<typename T1, typename T2>
+  auto operator-(Matrix<T1>&& A, Matrix<T2>&& B) -> Matrix<if_no_loss<T2, T1>>&&;
+  template<typename T1, typename T2>
+  auto operator-(Matrix<T1>&& A, Matrix<T2>&& B) -> Matrix<if_no_loss<T1, T2>>&&;
   template<typename T>
   Matrix<T>&& operator-(Matrix<T>&& A, Matrix<T>&& B);
   template<typename T, typename T3 = if_no_loss<T, double>>
@@ -585,10 +585,10 @@ namespace Pinakas { namespace Backend
   Matrix<T3>&& operator*(const Matrix<T1>& A, Matrix<T2>&& B);
   template<typename T1, typename T2, typename T3 = if_no_loss<T1, T2>>
   Matrix<T3>&& operator*(Matrix<T1>&& A, const Matrix<T2>& B);
-  template<typename T1, typename T2, typename T3 = if_no_loss<T2, T1>>
-  Matrix<T3>&& operator*(Matrix<T1>&& A, Matrix<T2>&& B);
-  template<typename T1, typename T2, typename T3 = if_no_loss<T1, T2>>
-  Matrix<T3>&& operator*(Matrix<T1>&& A, Matrix<T2>&& B);
+  template<typename T1, typename T2>
+  auto operator*(Matrix<T1>&& A, Matrix<T2>&& B) -> Matrix<if_no_loss<T2, T1>>&&;
+  template<typename T1, typename T2>
+  auto operator*(Matrix<T1>&& A, Matrix<T2>&& B) -> Matrix<if_no_loss<T1, T2>>&&;
   template<typename T>
   Matrix<T>&& operator*(Matrix<T>&& A, Matrix<T>&& B);
   template<typename T, typename T3 = if_no_loss<T, double>>
@@ -620,10 +620,10 @@ namespace Pinakas { namespace Backend
   Matrix<T3>&& operator/(const Matrix<T1>& A, Matrix<T2>&& B);
   template<typename T1, typename T2, typename T3 = if_no_loss<T1, T2>>
   Matrix<T3>&& operator/(Matrix<T1>&& A, const Matrix<T2>& B);
-  template<typename T1, typename T2, typename T3 = if_no_loss<T2, T1>>
-  Matrix<T3>&& operator/(Matrix<T1>&& A, Matrix<T2>&& B);
-  template<typename T1, typename T2, typename T3 = if_no_loss<T1, T2>>
-  Matrix<T3>&& operator/(Matrix<T1>&& A, Matrix<T2>&& B);
+  template<typename T1, typename T2>
+  auto operator/(Matrix<T1>&& A, Matrix<T2>&& B) -> Matrix<if_no_loss<T2, T1>>&&;
+  template<typename T1, typename T2>
+  auto operator/(Matrix<T1>&& A, Matrix<T2>&& B) -> Matrix<if_no_loss<T1, T2>>&&;
   template<typename T>
   Matrix<T>&& operator/(Matrix<T>&& A, Matrix<T>&& B);
   template<typename T, typename T3 = if_no_loss<T, double>>
@@ -649,10 +649,10 @@ namespace Pinakas { namespace Backend
   Matrix<T3>&& operator^(const Matrix<T1>& A, Matrix<T2>&& B);
   template<typename T1, typename T2, typename T3 = if_no_loss<T1, T2>>
   Matrix<T3>&& operator^(Matrix<T1>&& A, const Matrix<T2>& B);
-  template<typename T1, typename T2, typename T3 = if_no_loss<T2, T1>>
-  Matrix<T3>&& operator^(Matrix<T1>&& A, Matrix<T2>&& B);
-  template<typename T1, typename T2, typename T3 = if_no_loss<T1, T2>>
-  Matrix<T3>&& operator^(Matrix<T1>&& A, Matrix<T2>&& B);
+  template<typename T1, typename T2>
+  auto operator^(Matrix<T1>&& A, Matrix<T2>&& B) -> Matrix<if_no_loss<T2, T1>>&&;
+  template<typename T1, typename T2>
+  auto operator^(Matrix<T1>&& A, Matrix<T2>&& B) -> Matrix<if_no_loss<T1, T2>>&&;
   template<typename T>
   Matrix<T>&& operator^(Matrix<T>&& A, Matrix<T>&& B);
   template<typename T1, typename T2, typename T3 = if_no_loss<T2, T1>>

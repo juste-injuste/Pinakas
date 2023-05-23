@@ -654,14 +654,14 @@ namespace Pinakas { namespace Backend
     return std::move(add_mat_inplace(A, B));
   }
   
-  template<typename T1, typename T2, typename T3 = if_no_loss<T2, T1>>
-  Matrix<T3>&& operator+(Matrix<T1>&& A, Matrix<T2>&& B)
+  template<typename T1, typename T2>
+  auto operator+(Matrix<T1>&& A, Matrix<T2>&& B) -> Matrix<if_no_loss<T2, T1>>&&
   {
     return std::move(add_mat_inplace(B, A));
   }
-  
-  template<typename T1, typename T2, typename T3 = if_no_loss<T1, T2>>
-  Matrix<T3>&& operator+(Matrix<T1>&& A, Matrix<T2>&& B)
+
+  template<typename T1, typename T2>
+  auto operator+(Matrix<T1>&& A, Matrix<T2>&& B) -> Matrix<if_no_loss<T1, T2>>&&
   {
     return std::move(add_mat_inplace(A, B));
   }
@@ -852,14 +852,14 @@ namespace Pinakas { namespace Backend
     return std::move(mul_mat_inplace(A, B));
   }
   
-  template<typename T1, typename T2, typename T3 = if_no_loss<T2, T1>>
-  Matrix<T3>&& operator*(Matrix<T1>&& A, Matrix<T2>&& B)
+  template<typename T1, typename T2>
+  auto operator*(Matrix<T1>&& A, Matrix<T2>&& B) -> Matrix<if_no_loss<T2, T1>>&&
   {
     return std::move(mul_mat_inplace(B, A));
   }
   
-  template<typename T1, typename T2, typename T3 = if_no_loss<T1, T2>>
-  Matrix<T3>&& operator*(Matrix<T1>&& A, Matrix<T2>&& B)
+  template<typename T1, typename T2>
+  auto operator*(Matrix<T1>&& A, Matrix<T2>&& B) -> Matrix<if_no_loss<T1, T2>>&&
   {
     return std::move(mul_mat_inplace(A, B));
   }
@@ -1134,14 +1134,14 @@ namespace Pinakas { namespace Backend
     return std::move(sub_ll_mat_inplace(A, B));
   }
   
-  template<typename T1, typename T2, typename T3 = if_no_loss<T2, T1>>
-  Matrix<T3>&& operator-(Matrix<T1>&& A, Matrix<T2>&& B)
+  template<typename T1, typename T2>
+  auto operator-(Matrix<T1>&& A, Matrix<T2>&& B) -> Matrix<if_no_loss<T2, T1>>&&
   {
     return std::move(sub_rl_mat_inplace(B, A));
   }
   
-  template<typename T1, typename T2, typename T3 = if_no_loss<T1, T2>>
-  Matrix<T3>&& operator-(Matrix<T1>&& A, Matrix<T2>&& B)
+  template<typename T1, typename T2>
+  auto operator-(Matrix<T1>&& A, Matrix<T2>&& B) -> Matrix<if_no_loss<T1, T2>>&&
   {
     return std::move(sub_ll_mat_inplace(A, B));
   }
@@ -1411,14 +1411,14 @@ namespace Pinakas { namespace Backend
     return std::move(div_ll_mat_inplace(A, B));
   }
   
-  template<typename T1, typename T2, typename T3 = if_no_loss<T2, T1>>
-  Matrix<T3>&& operator/(Matrix<T1>&& A, Matrix<T2>&& B)
+  template<typename T1, typename T2>
+  auto operator/(Matrix<T1>&& A, Matrix<T2>&& B) -> Matrix<if_no_loss<T2, T1>>&&
   {
     return std::move(div_rl_mat_inplace(B, A));
   }
   
-  template<typename T1, typename T2, typename T3 = if_no_loss<T1, T2>>
-  Matrix<T3>&& operator/(Matrix<T1>&& A, Matrix<T2>&& B)
+  template<typename T1, typename T2>
+  auto operator/(Matrix<T1>&& A, Matrix<T2>&& B) -> Matrix<if_no_loss<T1, T2>>&&
   {
     return std::move(div_ll_mat_inplace(A, B));
   }
@@ -1595,14 +1595,14 @@ namespace Pinakas { namespace Backend
     return std::move(pow_ll_mat_inplace(A, B));
   }
   
-  template<typename T1, typename T2, typename T3 = if_no_loss<T2, T1>>
-  Matrix<T3>&& operator^(Matrix<T1>&& A, Matrix<T2>&& B)
+  template<typename T1, typename T2>
+  auto operator^(Matrix<T1>&& A, Matrix<T2>&& B) -> Matrix<if_no_loss<T2, T1>>&&
   {
     return std::move(pow_rl_mat_inplace(B, A));
   }
   
-  template<typename T1, typename T2, typename T3 = if_no_loss<T1, T2>>
-  Matrix<T3>&& operator^(Matrix<T1>&& A, Matrix<T2>&& B)
+  template<typename T1, typename T2>
+  auto operator^(Matrix<T1>&& A, Matrix<T2>&& B) -> Matrix<if_no_loss<T1, T2>>&&
   {
     return std::move(pow_ll_mat_inplace(A, B));
   }
@@ -2679,8 +2679,6 @@ int main()
   using namespace Keyword;
   using namespace Chronometro;
 
-
-  Matrix<size_t> x;
   /*
   size_t N = 1 << 8;
   //size_t L = 100;
@@ -2714,7 +2712,7 @@ int main()
   puts("----------------");
   auto t4 =  (x + 1) + (y + 1.0);
   puts("----------------");
-  (x + 1) += 1;
+  //(x + 1) += 1;
   puts("----------------");
   x += 1;
   puts("----------------");
