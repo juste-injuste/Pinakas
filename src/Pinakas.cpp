@@ -1,5 +1,5 @@
 // --inclusion guard--------------------------------------------------------------
-#define LOGGING
+//#define LOGGING
 #include "../include/Pinakas.hpp"
 #define M_PI 3.14159265358979323846
 // --Pinakas library: backend forward declaration---------------------------------
@@ -7,12 +7,12 @@ namespace Pinakas { namespace Backend
 {
   bool Size::operator==(const Size B) const noexcept
   {
-    return (M == B.M) and (N == B.N) and (numel == B.numel);
+    return (M == B.M) && (N == B.N) && (numel == B.numel);
   }
 
   bool Size::operator!=(const Size B) const noexcept
   {
-    return (M != B.M) or (N != B.N) or (numel != B.numel);
+    return (M != B.M) ||(N != B.N) ||(numel != B.numel);
   }
 
   template<typename T>
@@ -151,7 +151,7 @@ namespace Pinakas { namespace Backend
     // dimension validation
     size_t temp_N = 0;
     for (const List<const T>& vector : values) {
-      if (temp_N and (temp_N != vector.size())) {
+      if (temp_N && (temp_N != vector.size())) {
         std::cerr << "error: vertical dimensions mismatch (" << temp_N << " vs " << vector.size() << ")\n";
         size_ = {0, 0, 0};
         return;
@@ -186,7 +186,7 @@ namespace Pinakas { namespace Backend
     size_t temp_M = 0;
     size_t temp_N = 0;
     for (const Matrix<T>& matrix : list) {
-      if (temp_M and (temp_M != matrix.size_.M)) {
+      if (temp_M && (temp_M != matrix.size_.M)) {
         std::cerr << "error: horizontal dimensions mismatch (" << temp_M << " vs " << matrix.size_.M << ")\n";
         size_ = {0, 0, 0};
         return;
@@ -213,7 +213,7 @@ namespace Pinakas { namespace Backend
   void allocate(Matrix<T>* matrix, const size_t M, const size_t N)
   {
     // validate sizes
-    if ((M == 0) or (N == 0)) {
+    if ((M == 0) ||(N == 0)) {
       std::stringstream error_message;
       error_message << "error: allocate: dimensions are " << M << 'x' << N;
       throw std::invalid_argument(error_message.str());
@@ -313,6 +313,7 @@ namespace Pinakas { namespace Backend
       punned[0][k] = data_[k];
     return punned;
   }
+
   template<typename T> template<typename T2>
   Matrix<T>& Matrix<T>::operator=(const Matrix<T2>& other) &
   {
@@ -323,7 +324,7 @@ namespace Pinakas { namespace Backend
     // validate both matrices are not the same
     if (this != &other) {
       // allocate memory if necessary
-      if ((size_ != other.size_) or !data_.get())
+      if ((size_ != other.size_) ||!data_.get())
         allocate(this, other.size_.M, other.size_.N);
 
       // store values
@@ -1962,7 +1963,7 @@ namespace Pinakas { namespace Backend
         for (j = 0; j < M; ++j)
           projection += Q[j][i] * A[j][k];
         if (k != i)
-          for (j = 0; (k != i) and (j < M); ++j)
+          for (j = 0; (k != i) && (j < M); ++j)
             A[j][k] -= projection * Q[j][i];
         if (k >= i)
           R[i][k] = projection;
@@ -1974,7 +1975,7 @@ namespace Pinakas { namespace Backend
   std::unique_ptr<Matrix<double>[]> linearize(const Matrix<double>& data_x, const Matrix<double>& data_y)
   {
     // data is interpreted as a horizontal vector
-    if ((data_x.M() != 1) or (data_y.M() != 1))
+    if ((data_x.M() != 1) ||(data_y.M() != 1))
       std::clog << "warning: linearize: data is interpreted as a horizontal 1-dimensional matrix\n";
     // validate data set
     if (data_x.numel() != data_y.numel()) {
@@ -2266,7 +2267,7 @@ namespace Pinakas { namespace Backend
     double root = seed;
 
     size_t iteration = 0;
-    while ((tol < std::abs(function(root))) and (iteration++ < max_iteration))
+    while ((tol < std::abs(function(root))) && (iteration++ < max_iteration))
       root -= tol * function(root) / (function(root + half_tol) - function(root - half_tol));
 
     return root;
@@ -2419,7 +2420,7 @@ namespace Pinakas { namespace Backend
       for (j = 0; j < filter.numel(); ++j) {
         k = i*L + j - offset;
         // skips if the index is not within the upsampled data range
-        if ((first <= k) and (k <= last))
+        if ((first <= k) && (k <= last))
           resampled[0][k - first] += extended[0][i] * filter[0][j];
       }
     }
@@ -2484,7 +2485,7 @@ namespace Pinakas { namespace Backend
   {
     // validate that gnuplot is in system path
     static bool gnuplot_on_system_path = false;
-    if ((!gnuplot_on_system_path) and std::system("gnuplot --version"))
+    if ((!gnuplot_on_system_path) && std::system("gnuplot --version"))
       throw std::runtime_error("error: plot: gnuplot could not be found in the system path");
     gnuplot_on_system_path = true;
 
@@ -2679,8 +2680,8 @@ int main()
   using namespace Keyword;
   using namespace Chronometro;
 
-  /*
-  size_t N = 1 << 8;
+  //*
+  size_t N = 1 << 16;
   //size_t L = 100;
   //auto   f = [](const Matrix<double>& x) {return ((1-x)^ 2) + sin((x-0.5) * 5) / 5 - 2;};
   //auto   f = [](const Matrix<double>& x) {return sin(6.28*x*100) + sin(6.28*x*50);};
@@ -2700,7 +2701,7 @@ int main()
   //*/
 
 
-  //*
+  /*
   Matrix<int> x = iota(10);
   Matrix<double> y = iota(10);
   puts("----------------");
