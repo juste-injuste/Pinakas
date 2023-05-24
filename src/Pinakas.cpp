@@ -2702,7 +2702,7 @@ int main()
 
   for (int i = 0; i < 10; ++i) {
     puts("------------");
-    CHRONOMETRO_EXECUTION_SPEED(fft, 6+i, y_linear);
+    chronometro_execution_speed(fft, 6+i, y_linear);
     puts("------------");
   }
 
