@@ -2692,7 +2692,7 @@ int main()
   using namespace Chronometro;
 
   //*
-  size_t N = 1 << 10;
+  size_t N = 1 << 8;
   //size_t L = 100;
   //auto   f = [](const Matrix<double>& x) {return ((1-x)^ 2) + sin((x-0.5) * 5) / 5 - 2;};
   //auto   f = [](const Matrix<double>& x) {return sin(6.28*x*100) + sin(6.28*x*50);};
@@ -2700,9 +2700,12 @@ int main()
   Matrix<double> x_linear = linspace(0, 1, N);
   Matrix<double> y_linear = sin(x_linear*1000) + sin(x_linear*300);//f(x_linear);
 
-  puts("------------");
-  CHRONOMETRO_EXECUTION_SPEED(fft, 60, Unit::ms, y_linear);
-  puts("------------");
+  for (int i = 0; i < 10; ++i) {
+    puts("------------");
+    CHRONOMETRO_EXECUTION_SPEED(fft, 6+i, y_linear);
+    puts("------------");
+  }
+
   auto y2 = fft(y_linear);
   auto X2 = abs(y2);
   plot({"spectrum2", "signal"}, {{iota(X2.numel()), X2}, {iota(N), y_linear}}, true, false);
