@@ -133,9 +133,11 @@ namespace Chronometro { namespace Backend {
 // --Chronometro library: frontend definitions------------------------------------
 namespace Chronometro { inline namespace Frontend {
   #undef  CHRONOMETRO_EXECUTION_SPEED
-  #define CHRONOMETRO_EXECUTION_SPEED(function, N, unit)   \
-    Stopwatch stopwatch(true, unit);                       \
-    for (size_t iteration = 0; iteration < N; ++iteration) \
-      function();
+  #define CHRONOMETRO_EXECUTION_SPEED(function, N, unit, args...) \
+    {                                                             \
+    Stopwatch stopwatch(true, unit);                              \
+    for (size_t iteration = 0; iteration < N; ++iteration)        \
+      function(args);                                             \
+    }
 }}
 #endif

@@ -2379,6 +2379,7 @@ namespace Pinakas { namespace Backend
       throw std::invalid_argument("error: resample: keep must be less than the number of elements of data");
     if (alpha < 1)
       throw std::invalid_argument("error: resample: alpha must be at least 1/L");
+      
     const size_t N = data.numel();
     // offset to impulse center
     const size_t offset = L * alpha;
@@ -2561,11 +2562,13 @@ namespace Pinakas { namespace Backend
   template<typename T>
   Matrix<double> abs(const Matrix<T>& A)
   {
+    Matrix<double> R(A.size());
+
     const size_t n = A.numel();
-    Matrix<double> result(A.size());
     for (size_t k = 0; k < n; ++k)
-      result[0][k] = std::abs(A[0][k]);
-    return result;
+      R[0][k] = std::abs(A[0][k]);
+
+    return R;
   }
   
   Matrix<double> abs(Matrix<double>&& A) noexcept
@@ -2573,34 +2576,41 @@ namespace Pinakas { namespace Backend
     const size_t n = A.numel();
     for (size_t k = 0; k < n; ++k)
       A[0][k] = std::abs(A[0][k]);
+
     return A;
   }
   
   Matrix<double> real(const Matrix<complex>& A)
   {
+    Matrix<double> R(A.size());
+
     const size_t n = A.numel();
-    Matrix<double> real_part(A.size());
     for (size_t k = 0; k < n; ++k)
-      real_part[0][k] = std::real(A[0][k]);
-    return real_part;
+      R[0][k] = std::real(A[0][k]);
+
+    return R;
   }
   
   Matrix<double> imag(const Matrix<complex>& A)
   {
+    Matrix<double> R(A.size());
+
     const size_t n = A.numel();
-    Matrix<double> imaginary_part(A.size());
     for (size_t k = 0; k < n; ++k)
-      imaginary_part[0][k] = std::imag(A[0][k]);
-    return imaginary_part;
+      R[0][k] = std::imag(A[0][k]);
+
+    return R;
   }
 
   Matrix<complex> conj(const Matrix<complex>& A)
   {
+    Matrix<complex> R(A.size());
+
     const size_t n = A.numel();
-    Matrix<complex> result(A.size());
     for (size_t k = 0; k < n; ++k)
-      result[0][k] = std::conj(A[0][k]);
-    return result;
+      R[0][k] = std::conj(A[0][k]);
+
+    return R;
   }
 
   Matrix<complex> conj(Matrix<complex>&& A) noexcept
@@ -2608,6 +2618,7 @@ namespace Pinakas { namespace Backend
     const size_t n = A.numel();
     for (size_t k = 0; k < n; ++k)
       A[0][k] = std::conj(A[0][k]);
+
     return A;
   }
 
@@ -2681,21 +2692,18 @@ int main()
   using namespace Chronometro;
 
   //*
-  size_t N = 1 << 16;
+  size_t N = 1 << 10;
   //size_t L = 100;
   //auto   f = [](const Matrix<double>& x) {return ((1-x)^ 2) + sin((x-0.5) * 5) / 5 - 2;};
   //auto   f = [](const Matrix<double>& x) {return sin(6.28*x*100) + sin(6.28*x*50);};
 
-  Stopwatch sw;
   Matrix<double> x_linear = linspace(0, 1, N);
   Matrix<double> y_linear = sin(x_linear*1000) + sin(x_linear*300);//f(x_linear);
 
   puts("------------");
-  sw.start();
-  auto y2 = fft(y_linear);
-  sw.stop();
+  CHRONOMETRO_EXECUTION_SPEED(fft, 60, Unit::ms, y_linear);
   puts("------------");
-
+  auto y2 = fft(y_linear);
   auto X2 = abs(y2);
   plot({"spectrum2", "signal"}, {{iota(X2.numel()), X2}, {iota(N), y_linear}}, true, false);
   //*/
