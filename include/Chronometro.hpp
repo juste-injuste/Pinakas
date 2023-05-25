@@ -51,7 +51,11 @@ namespace Chronometro { namespace Backend {
 namespace Chronometro { inline namespace Frontend {
   using Backend::Unit;
   using Backend::Stopwatch;
-  #define CHRONOMETRO_EXECUTION_SPEED(function, repetitions, ...)
+
+  template <typename F, typename... A>
+  void execution_time(const F function, const size_t repetitions, const A... arguments);
+
+  #define CHRONOMETRO_EXECUTION_TIME(function, repetitions, ...)
 }}
 // --Chronometro library: backend struct and class definitions--------------------
 namespace Chronometro { namespace Backend {
@@ -96,7 +100,7 @@ namespace Chronometro { namespace Backend {
   void Stopwatch::stop(void) noexcept
   {
     // measure duration
-    std::chrono::high_resolution_clock::duration duration = start_ - std::chrono::high_resolution_clock::now();
+    std::chrono::high_resolution_clock::duration duration = std::chrono::high_resolution_clock::now() - start_;
 
     // display elapsed time in unit_ units
     std::cout << "time elapsed: ";
@@ -156,21 +160,20 @@ namespace Chronometro { namespace Backend {
 }}
 // --Chronometro library: frontend definitions------------------------------------
 namespace Chronometro { inline namespace Frontend {
-  #undef  CHRONOMETRO_EXECUTION_SPEED
-  #define CHRONOMETRO_EXECUTION_SPEED(function, repetitions, ...)            \
-    {                                                                        \
-    Stopwatch stopwatch(true);                                               \
-    for (size_t iteration = 0; iteration < size_t(repetitions); ++iteration) \
-      function(__VA_ARGS__);                                                 \
-    }
-
-
-  template <typename Function, typename... Args>
-  void chronometro_execution_speed(Function function, size_t repetitions, Args... args)
+  template <typename F, typename... A>
+  void execution_time(const F function, const size_t repetitions, const A... arguments)
   {
     Stopwatch stopwatch(Unit::automatic, true);
     for (size_t iteration = 0; iteration < repetitions; ++iteration)
-      function(args...);
+      function(arguments...);
   }
+
+  #undef  CHRONOMETRO_EXECUTION_TIME
+  #define CHRONOMETRO_EXECUTION_TIME(function, repetitions, ...)             \
+    {                                                                        \
+    Chronometro::Stopwatch stopwatch(Chronometro::Unit::automatic, true);    \
+    for (size_t iteration = 0; iteration < size_t(repetitions); ++iteration) \
+      function(__VA_ARGS__);                                                 \
+    }
 }}
 #endif

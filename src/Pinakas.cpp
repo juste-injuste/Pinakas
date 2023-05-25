@@ -1738,31 +1738,27 @@ namespace Pinakas { namespace Backend
     // necessary matrices
     Matrix<double> Q(M, N), R(N, N), x(N, 1);
 
-    // temporary variables
-    double sum_of_squares, inorm, projection, substitution;
-    size_t i, j, k;
-
-    // reduced QR decomposition using the modified Gram-Schmidt process
-    for (i = 0; i < N; ++i) {
+    // QR decomposition using the modified Gram-Schmidt process
+    for (size_t i = 0; i < N; ++i) {
       // calculate the squared Euclidean norm of A's i'th column
-      sum_of_squares = 0;
-      for (j = 0; j < M; ++j)
+      double sum_of_squares = 0;
+      for (size_t j = 0; j < M; ++j)
         sum_of_squares += A[j][i] * A[j][i];
 
       // skips if the squared Euclidean norm is 0
       if (sum_of_squares != 0) {
         // calculate the inverse Euclidean norm of A's i'th column
-        inorm = std::pow(sum_of_squares, -0.5);
+        double inorm = std::pow(sum_of_squares, -0.5);
         // normalize and store A's normalized i'th column
-        for (j = 0; j < M; ++j)
+        for (size_t j = 0; j < M; ++j)
           Q[j][i] = A[j][i] * inorm;
       }
 
       // orthogonalize the remaining columns with respects to A's i'th column
-      for (k = i; k < N; ++k) {
+      for (size_t k = i; k < N; ++k) {
         // calculate Q's i'th orthonormal projection onto A's k'th unorthogonalized column
-        projection = 0;
-        for (j = 0; j < M; ++j)
+        double projection = 0;
+        for (size_t j = 0; j < M; ++j)
           projection += Q[j][i] * A[j][k];
 
         // construct upper triangle matrix R using Q's i'th orthonormal projection onto A's k'th unorthogonalized column
@@ -1771,20 +1767,20 @@ namespace Pinakas { namespace Backend
 
         // orthogonalize A's k'th column by removing Q's i'th orthonormal projection onto A's k'th unorthogonalized column
         if (k != i) // skips if k == i because the projection would be 0
-          for (j = 0; j < M; ++j)
+          for (size_t j = 0; j < M; ++j)
             A[j][k] -= projection * Q[j][i];
       }
     }
 
     // solve linear system Rx = Qt*b using back substitution
-    for (i = N - 1; i < N; --i) {
+    for (size_t i = N - 1; i < N; --i) {
       // calculate appropriate Qt*b component
-      substitution = 0;
-      for (j = 0; j < M; ++j)
+      double substitution = 0;
+      for (size_t j = 0; j < M; ++j)
         substitution += Q[j][i] * b[j][0];
 
       // back substitution of previously solved x components
-      for (k = N - 1; k > i; --k)
+      for (size_t k = N - 1; k > i; --k)
         substitution -= R[i][k] * x[k][0];
 
       // solve x's i'th component
@@ -1809,7 +1805,7 @@ namespace Pinakas { namespace Backend
     if (A.numel() != M * N) {
       std::stringstream error_message;
       error_message << "error: reshape: can't reshape " << A.M() << 'x' << A.N();
-      error_message << " array to " << M << 'x' << N << " array";
+      error_message << " matrix to " << M << 'x' << N << " matrix";
       throw std::invalid_argument(error_message.str());
     }
 
@@ -1916,26 +1912,36 @@ namespace Pinakas { namespace Backend
 
     Matrix<double> Q(M, N);
 
-    // orthogonalize A using the modified Gram-Schmidt process
-    size_t i, j, k;
-    double sum_of_squares, inorm, projection;
-    for (i = 0; i < N; ++i) {
-      sum_of_squares = 0;
+    // matrix orthogonalization using the modified Gram-Schmidt process
+    for (size_t i = 0; i < N; ++i) {
+      // calculate the squared Euclidean norm of A's i'th column
+      double sum_of_squares = 0;
       for (size_t j = 0; j < M; ++j)
         sum_of_squares += A[j][i] * A[j][i];
-      inorm = std::pow(sum_of_squares, -0.5);
-      if (std::isfinite(inorm))
-        for (j = 0; j < M; ++j)
+
+      // skips if the squared Euclidean norm is 0
+      if (sum_of_squares != 0) {
+        // calculate the inverse Euclidean norm of A's i'th column
+        double inorm = std::pow(sum_of_squares, -0.5);
+        // normalize and store A's normalized i'th column
+        for (size_t j = 0; j < M; ++j)
           Q[j][i] = A[j][i] * inorm;
-      for (k = i + 1; k < N; ++k)
-      {
-        projection = 0;
-        for (j = 0; j < M; ++j)
+      }
+
+      // orthogonalize the remaining columns with respects to A's i'th column
+      for (size_t k = i; k < N; ++k) {
+        // calculate Q's i'th orthonormal projection onto A's k'th unorthogonalized column
+        double projection = 0;
+        for (size_t j = 0; j < M; ++j)
           projection += Q[j][i] * A[j][k];
-        for (j = 0; j < M; ++j)
-          A[j][k] -= projection * Q[j][i];
+
+        // orthogonalize A's k'th column by removing Q's i'th orthonormal projection onto A's k'th unorthogonalized column
+        if (k != i) // skips if k == i because the projection would be 0
+          for (size_t j = 0; j < M; ++j)
+            A[j][k] -= projection * Q[j][i];
       }
     }
+
     return Q;
   }
 
@@ -1948,45 +1954,56 @@ namespace Pinakas { namespace Backend
     Matrix<double>& Q = QR[0];
     Matrix<double>& R = QR[1];
 
-    size_t i, j, k;
-    double sum_of_squares, inorm, projection;
-    for (i = 0; i < N; ++i) {
-      sum_of_squares = 0;
+    // QR decomposition using the modified Gram-Schmidt process
+    for (size_t i = 0; i < N; ++i) {
+      // calculate the squared Euclidean norm of A's i'th column
+      double sum_of_squares = 0;
       for (size_t j = 0; j < M; ++j)
         sum_of_squares += A[j][i] * A[j][i];
-      inorm = std::pow(sum_of_squares, -0.5);
-      if (std::isfinite(inorm))
-        for (j = 0; j < M; ++j)
+
+      // skips if the squared Euclidean norm is 0
+      if (sum_of_squares != 0) {
+        // calculate the inverse Euclidean norm of A's i'th column
+        double inorm = std::pow(sum_of_squares, -0.5);
+        // normalize and store A's normalized i'th column
+        for (size_t j = 0; j < M; ++j)
           Q[j][i] = A[j][i] * inorm;
-      for (k = i; k < N; ++k) {
-        projection = 0;
-        for (j = 0; j < M; ++j)
+      }
+
+      // orthogonalize the remaining columns with respects to A's i'th column
+      for (size_t k = i; k < N; ++k) {
+        // calculate Q's i'th orthonormal projection onto A's k'th unorthogonalized column
+        double projection = 0;
+        for (size_t j = 0; j < M; ++j)
           projection += Q[j][i] * A[j][k];
-        if (k != i)
-          for (j = 0; (k != i) && (j < M); ++j)
-            A[j][k] -= projection * Q[j][i];
+
+        // construct upper triangle matrix R using Q's i'th orthonormal projection onto A's k'th unorthogonalized column
         if (k >= i)
           R[i][k] = projection;
+
+        // orthogonalize A's k'th column by removing Q's i'th orthonormal projection onto A's k'th unorthogonalized column
+        if (k != i) // skips if k == i because the projection would be 0
+          for (size_t j = 0; j < M; ++j)
+            A[j][k] -= projection * Q[j][i];
       }
     }
+
     return QR;
   }
 
   std::unique_ptr<Matrix<double>[]> linearize(const Matrix<double>& data_x, const Matrix<double>& data_y)
   {
-    // data is interpreted as a horizontal vector
     if ((data_x.M() != 1) ||(data_y.M() != 1))
       std::clog << "warning: linearize: data is interpreted as a horizontal 1-dimensional matrix\n";
-    // validate data set
     if (data_x.numel() != data_y.numel()) {
       std::stringstream error_message;
-      error_message << "error: linearize: x and y data should have the same amount of elements";
+      error_message << "error: linearize: 'data_x' and 'data_y' must have the same number of elements";
       throw std::invalid_argument(error_message.str());
     }
 
     const size_t N = data_x.numel();
 
-    std::unique_ptr<Matrix<double>[]> data_set(new Matrix<double>[2]{{Matrix<double>(1, N, 0)}, {Matrix<double>(1, N, 0)}});
+    std::unique_ptr<Matrix<double>[]> data_set(new Matrix<double>[2]{Matrix<double>(1, N, 0), Matrix<double>(1, N, 0)});
     Matrix<double>& lin_x = data_set[0];
     Matrix<double>& lin_y = data_set[1];
 
@@ -2018,8 +2035,7 @@ namespace Pinakas { namespace Backend
   {
     Matrix<double> vector(1, N);
 
-    double step  = (x2 - x1) / (N - 1);
-
+    const double step  = (x2 - x1) / (N - 1);
 
     const size_t n = N-1;
     vector[0][0] = x1;
@@ -2138,6 +2154,7 @@ namespace Pinakas { namespace Backend
       for (size_t j = 0; j < n; ++j)
         if ((i+j - n+1) < n)
           Rxx[0][i+j - n+1] += A[0][n-1 - i] * A[0][j];
+
     return Rxx;
   }
 
@@ -2352,7 +2369,7 @@ namespace Pinakas { namespace Backend
   {
     // validate impulse length
     if ((length % 2) == 0)
-      throw std::invalid_argument("error: sinc_impulse: impulse length must be odd");
+      throw std::invalid_argument("error: sinc_impulse: 'length' must be odd");
 
     // offset to the impulse center
     const signed offset = (length - 1) * 0.5;
@@ -2370,17 +2387,18 @@ namespace Pinakas { namespace Backend
   Matrix<double> resample(const Matrix<double>& data, const size_t L, const size_t keep, const double alpha, const bool tail)
   {
     if (data.M() != 1)
-      std::clog << "warning: resample: data is interpreted as a horizontal 1-dimensional matrix\n";
+      std::clog << "warning: resample: 'data' is interpreted as a horizontal 1-dimensional matrix\n";
     if (data.numel() == 0)
-      throw std::invalid_argument("error: resample: data must contain atleast 1 element");
+      throw std::invalid_argument("error: resample: 'data' must contain atleast 1 element");
     if (L <= 1)
-      throw std::invalid_argument("error: resample: L must be 2 or more");
+      throw std::invalid_argument("error: resample: 'L' must be 2 or greater");
     if (keep >= data.numel())
-      throw std::invalid_argument("error: resample: keep must be less than the number of elements of data");
-    if (alpha < 1)
-      throw std::invalid_argument("error: resample: alpha must be at least 1/L");
-      
+      throw std::invalid_argument("error: resample: 'keep' must be less than the number of elements in 'data'");
+    if (alpha < (1/L))
+      throw std::invalid_argument("error: resample: 'alpha' must be at least 1/L");
+    
     const size_t N = data.numel();
+
     // offset to impulse center
     const size_t offset = L * alpha;
     // length of impulse
@@ -2388,39 +2406,33 @@ namespace Pinakas { namespace Backend
 
     // indices to the first and last upsampled elements in the symetrically extended data
     const size_t first = L * keep;
-    const size_t last  = L * (N - !tail) + first - tail;
-
-    // temporary variables
-    size_t i, j, k;
+    const size_t last  = L * N + first - (tail ? 1 : L);
 
     // symetrically extended data vector
     Matrix<double> extended(1, N + 2 * keep, 0);
-    // store and upsample left symetrical data
-    k = 0;
-    for (i = 0; i < keep; ++i) {
-      extended[0][k++] = 2 * data[0][0] - data[0][keep - i];
-      //++k;
-    }
-    // store and upsample data
-    for (i = 0; i < N; ++i) {
-      extended[0][k++] = data[0][i];
-      //++k;
-    }
-    // store and upsample right symetrical data
-    for (i = 0; i < keep; ++i) {
-      extended[0][k++] = 2 * data[0][N - 1] - data[0][N - 2 - i];
-      //++k;
-    }
 
+    // store and upsample left symetrical data
+    size_t k = 0;
+    for (size_t i = 0; i < keep; ++i)
+      extended[0][k++] = 2 * data[0][0] - data[0][keep - i];
+
+    // store and upsample data
+    for (size_t i = 0; i < N; ++i)
+      extended[0][k++] = data[0][i];
+      
+    // store and upsample right symetrical data
+    for (size_t i = 0; i < keep; ++i)
+      extended[0][k++] = 2 * data[0][N - 1] - data[0][N - 2 - i];
+      
     // design low-pass interpolation filter
     const Matrix<double> filter = blackman(sinc_impulse(length, 1.0 / L));
 
     // interpolate upsampled data using a cropped convolution
     Matrix<double> resampled(1, last - first + 1, 0);
-    for (i = 0; i < extended.numel(); ++i) {
-      for (j = 0; j < filter.numel(); ++j) {
-        k = i*L + j - offset;
-        // skips if the index is not within the upsampled data range
+    for (size_t i = 0; i < extended.numel(); ++i) {
+      for (size_t j = 0; j < filter.numel(); ++j) {
+        size_t k = i*L + j - offset;
+        // skips if the index is not within the upsampled data range (cropping)
         if ((first <= k) && (k <= last))
           resampled[0][k - first] += extended[0][i] * filter[0][j];
       }
@@ -2689,10 +2701,9 @@ int main()
 {
   using namespace Pinakas;
   using namespace Keyword;
-  using namespace Chronometro;
 
   //*
-  size_t N = 1 << 8;
+  size_t N = 1 << 14;
   //size_t L = 100;
   //auto   f = [](const Matrix<double>& x) {return ((1-x)^ 2) + sin((x-0.5) * 5) / 5 - 2;};
   //auto   f = [](const Matrix<double>& x) {return sin(6.28*x*100) + sin(6.28*x*50);};
@@ -2700,10 +2711,12 @@ int main()
   Matrix<double> x_linear = linspace(0, 1, N);
   Matrix<double> y_linear = sin(x_linear*1000) + sin(x_linear*300);//f(x_linear);
 
-  for (int i = 0; i < 10; ++i) {
-    puts("------------");
-    chronometro_execution_speed(fft, 6+i, y_linear);
-    puts("------------");
+  for (int i = 0; i < 50; ++i) {
+    Chronometro::execution_time(fft, 10, y_linear);
+  }
+  puts("-----macro-----");
+  for (int i = 0; i < 50; ++i) {
+    CHRONOMETRO_EXECUTION_TIME(fft, 10, y_linear);
   }
 
   auto y2 = fft(y_linear);
