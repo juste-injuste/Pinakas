@@ -1,8 +1,8 @@
-// --inclusion guard--------------------------------------------------------------
+// --inclusion guard---------------------------------------------------------------------
 //#define LOGGING
 #include "../include/Pinakas.hpp"
 #define M_PI 3.14159265358979323846
-// --Pinakas library: backend forward declaration---------------------------------
+// --Pinakas library: backend forward declaration----------------------------------------
 namespace Pinakas { namespace Backend
 {
   bool Size::operator==(const Size B) const noexcept
@@ -333,7 +333,7 @@ namespace Pinakas { namespace Backend
     }
     return *this;
   }
-// -------------------------------------------------------------------------------
+// --------------------------------------------------------------------------------------
   template<typename T> template<typename T2>
   Matrix<T>& Matrix<T>::operator=(Matrix<T2>&& other) & noexcept
   {
@@ -355,7 +355,7 @@ namespace Pinakas { namespace Backend
       data_[k] = value;
     return *this;
   }
-// -------------------------------------------------------------------------------
+// --------------------------------------------------------------------------------------
   template <typename T>
   Iterator<T>::Iterator(Matrix<T>& matrix, const size_t index) noexcept
     : // member initialization list
@@ -387,7 +387,7 @@ namespace Pinakas { namespace Backend
   {
     return matrix[0][index];
   }
-// -------------------------------------------------------------------------------
+// --------------------------------------------------------------------------------------
   template <typename T>
   ConstIterator<T>::ConstIterator(const T& matrix, const size_t index) noexcept
     : // member initialization list
@@ -419,7 +419,7 @@ namespace Pinakas { namespace Backend
   {
     return matrix[0][index];
   }
-// -------------------------------------------------------------------------------
+// --------------------------------------------------------------------------------------
   template<typename T>
   Iterator<Matrix<T>> Matrix<T>::begin(void) noexcept
   {
@@ -443,7 +443,7 @@ namespace Pinakas { namespace Backend
   {
     return ConstIterator<Matrix<T>>(*this, size_.numel);
   }
-// -------------------------------------------------------------------------------
+// --------------------------------------------------------------------------------------
   template<typename T>
   Slice<T>::Slice(Matrix<T>& matrix, const size_t n, Keyword::Column) noexcept
     : // member initialization list
@@ -492,13 +492,65 @@ namespace Pinakas { namespace Backend
   {
     return size_.numel;
   }
-// -------------------------------------------------------------------------------
-  Random::Random(double min, double max) noexcept
+// --------------------------------------------------------------------------------------
+  Random::Random(const double min, const double max) noexcept
     : // member initialization list
     min_(min),
     max_(max)
   {}
-// -------------------------------------------------------------------------------
+// --------------------------------------------------------------------------------------
+  Range::Range(const size_t high) noexcept
+    : // member initialization list
+    start(0),
+    stop(high-1),
+    step_(1)
+  {}
+
+  Range::Range(const int start, const int stop) noexcept
+    : // member initialization list
+    start(start),
+    stop(stop),
+    step_(((stop-start) >= 0) ? 1 : -1)
+  {}
+
+  Range::Range(const int start, const int stop, const size_t step) noexcept
+    : // member initialization list
+    start(start),
+    stop(stop),
+    step_(((stop-start) >= 0) ? step : -signed(step))
+  {}
+  
+  Range::Iterator::Iterator(const int value, const int step) noexcept
+    : // member initialization list
+    current_(value),
+    step_(step)
+  {}
+  
+  int Range::Iterator::operator*() const noexcept
+  {
+    return current_;
+  }
+
+  void Range::Iterator::operator++() noexcept
+  {
+    current_ += step_;
+  }
+
+  bool Range::Iterator::operator!=(const Iterator& other) const noexcept
+  {           
+    return (step_ > 0) ? (current_ <= other.current_) : (current_ >= other.current_);
+  }
+  
+  Range::Iterator Range::begin() const noexcept
+  {
+    return Iterator(start, step_);
+  }
+
+  Range::Iterator Range::end() const noexcept
+  {
+      return Iterator(stop, step_);
+  }
+// --------------------------------------------------------------------------------------
   template<typename T1, typename T2>
   Matrix<T1>& add_mat_inplace(Matrix<T1>& A, const Matrix<T2>& B)
   {
@@ -588,7 +640,7 @@ namespace Pinakas { namespace Backend
 
     return R;
   }
-// -------------------------------------------------------------------------------
+// --------------------------------------------------------------------------------------
   template<typename T1, typename T2>
   Matrix<T1>& operator+=(Matrix<T1>& A, const Matrix<T2>& B)
   {
@@ -702,7 +754,7 @@ namespace Pinakas { namespace Backend
   {
     return std::move(A);
   }
-// -------------------------------------------------------------------------------
+// --------------------------------------------------------------------------------------
   template<typename T1, typename T2>
   Matrix<T1>& mul_mat_inplace(Matrix<T1>& A, const Matrix<T2>& B)
   {
@@ -792,7 +844,7 @@ namespace Pinakas { namespace Backend
 
     return R;
   }
-// -------------------------------------------------------------------------------
+// --------------------------------------------------------------------------------------
   template<typename T1, typename T2>
   Matrix<T1>& operator*=(Matrix<T1>& A, const Matrix<T2>& B)
   {
@@ -894,7 +946,7 @@ namespace Pinakas { namespace Backend
   {
     return std::move(mul_val_inplace(A, B));
   }
-// -------------------------------------------------------------------------------
+// --------------------------------------------------------------------------------------
   template<typename T1, typename T2>
   Matrix<T1>& sub_ll_mat_inplace(Matrix<T1>& A, const Matrix<T2>& B)
   {
@@ -1074,7 +1126,7 @@ namespace Pinakas { namespace Backend
 
     return R;
   }
-// -------------------------------------------------------------------------------
+// --------------------------------------------------------------------------------------
   template<typename T1, typename T2>
   Matrix<T1>& operator-=(Matrix<T1>& A, const Matrix<T2>& B)
   {
@@ -1188,7 +1240,7 @@ namespace Pinakas { namespace Backend
   {
     return std::move(negate_inplace(A));
   }
-// -------------------------------------------------------------------------------
+// --------------------------------------------------------------------------------------
   template<typename T1, typename T2>
   Matrix<T1>& div_ll_mat_inplace(Matrix<T1>& A, const Matrix<T2>& B)
   {
@@ -1351,7 +1403,7 @@ namespace Pinakas { namespace Backend
 
     return R;
   }
-// -------------------------------------------------------------------------------
+// --------------------------------------------------------------------------------------
   template<typename T1, typename T2>
   Matrix<T1>& operator/=(Matrix<T1>& A, const Matrix<T2>& B)
   {
@@ -1453,7 +1505,7 @@ namespace Pinakas { namespace Backend
   {
     return std::move(div_ll_val_inplace(A, B));
   }
-// -------------------------------------------------------------------------------
+// --------------------------------------------------------------------------------------
   template<typename T1, typename T2>
   Matrix<T1>& pow_ll_mat_inplace(Matrix<T1>& A, const Matrix<T2>& B)
   {
@@ -1553,7 +1605,7 @@ namespace Pinakas { namespace Backend
 
     return R;
   }
-// -------------------------------------------------------------------------------
+// --------------------------------------------------------------------------------------
   template<typename T1, typename T2>
   Matrix<T1>& operator^=(Matrix<T1>& A, const Matrix<T2>& B)
   {
@@ -1625,7 +1677,7 @@ namespace Pinakas { namespace Backend
   {
     return std::move(pow_ll_val_inplace(A, B));
   }
-// -------------------------------------------------------------------------------
+// --------------------------------------------------------------------------------------
   template<typename T, typename T3 = if_floating<T>>
   Matrix<T3> floor(const Matrix<T>& A)
   {
@@ -1647,7 +1699,7 @@ namespace Pinakas { namespace Backend
 
     return std::move(A);
   }
-// -------------------------------------------------------------------------------
+// --------------------------------------------------------------------------------------
   template<typename T, typename T3 = if_floating<T>>
   Matrix<T3> round(const Matrix<T>& A)
   {
@@ -1669,7 +1721,7 @@ namespace Pinakas { namespace Backend
 
     return std::move(A);
   }
-// -------------------------------------------------------------------------------
+// --------------------------------------------------------------------------------------
   template<typename T, typename T3 = if_floating<T>>
   Matrix<T3> ceil(const Matrix<T>& A)
   {
@@ -1691,7 +1743,7 @@ namespace Pinakas { namespace Backend
 
     return std::move(A);
   }
-// -------------------------------------------------------------------------------
+// --------------------------------------------------------------------------------------
   template<typename T1, typename T2>
   Matrix<double> mul(const Matrix<T1>& A, const Matrix<T2>& B)
   {
@@ -1788,7 +1840,7 @@ namespace Pinakas { namespace Backend
     }
     return x;
   }
-// -------------------------------------------------------------------------------
+// --------------------------------------------------------------------------------------
   template<typename T>
   Matrix<T> transpose(const Matrix<T>& A)
   {
@@ -1817,7 +1869,7 @@ namespace Pinakas { namespace Backend
 
     return R;
   }
-// -------------------------------------------------------------------------------
+// --------------------------------------------------------------------------------------
   template<typename T>
   T min(const Matrix<T>& matrix) noexcept
   {
@@ -1825,6 +1877,7 @@ namespace Pinakas { namespace Backend
     for (size_t k = 0; k < matrix.numel(); ++k)
       if (matrix[0][k] < minimum)
         minimum = matrix[0][k];
+        
     return minimum;
   }
 
@@ -1835,6 +1888,7 @@ namespace Pinakas { namespace Backend
     for (size_t k = 0; k < slice.numel(); ++k)
       if (slice[k] < minimum)
         minimum = slice[k];
+
     return minimum;
   }
   
@@ -1845,6 +1899,7 @@ namespace Pinakas { namespace Backend
     for (size_t k = 0; k < matrix.numel(); ++k)
       if (matrix[0][k] > maximum)
         maximum = matrix[0][k];
+
     return maximum;
   }
 
@@ -1855,6 +1910,7 @@ namespace Pinakas { namespace Backend
     for (size_t k = 0; k < slice.numel(); ++k)
       if (slice[k] > maximum)
         maximum = slice[k];
+
     return maximum;
   }
   
@@ -1864,6 +1920,7 @@ namespace Pinakas { namespace Backend
     T summation = 0;
     for (size_t k = 0; k < A.numel(); ++k)
       summation += A[0][k];
+
     return summation;
   }
 
@@ -1873,26 +1930,28 @@ namespace Pinakas { namespace Backend
     double temporary = 0;
     for (size_t k = 0; k < A.numel(); ++k)
       temporary += std::log(A[0][k]);
+
     return std::exp(temporary);
   }
 
   template<typename T>
   double avg(const Matrix<T>& A) noexcept
   {
-    const double iN = 1/A.numel();
     double average = 0;
     for (size_t k = 0; k < A.numel(); ++k)
-      average += A[0][k] * iN;
-    return average;
+      average += A[0][k];
+
+    return average/A.numel();
   }
 
   template<typename T>
   double rms(const Matrix<T>& A) noexcept
   {
-    const size_t N = A.numel();
+    const size_t n = A.numel();
     double temporary = 0;
-    for (size_t k = 0; k < N; ++k)
+    for (size_t k = 0; k < n; ++k)
       temporary += A[0][k] * A[0][k];
+    
     return std::sqrt(temporary);
   }
 
@@ -1902,9 +1961,10 @@ namespace Pinakas { namespace Backend
     double temporary = 0;
     for (size_t k = 0; k < A.numel(); ++k)
       temporary += std::log(A[0][k]);
+
     return std::exp(temporary / A.numel());
   }
-// -------------------------------------------------------------------------------
+// --------------------------------------------------------------------------------------
   Matrix<double> orthogonalize(Matrix<double> A)
   {
     const size_t M = A.M();
@@ -1950,9 +2010,8 @@ namespace Pinakas { namespace Backend
     const size_t M = A.M();
     const size_t N = A.N();
 
-    std::unique_ptr<Matrix<double>[]> QR(new Matrix<double>[2]{{Matrix<double>(M, N)}, Matrix<double>(N, N, 0)});
-    Matrix<double>& Q = QR[0];
-    Matrix<double>& R = QR[1];
+    Matrix<double> Q(M, N);
+    Matrix<double> R(N, N, 0);
 
     // QR decomposition using the modified Gram-Schmidt process
     for (size_t i = 0; i < N; ++i) {
@@ -1988,7 +2047,7 @@ namespace Pinakas { namespace Backend
       }
     }
 
-    return QR;
+    return std::unique_ptr<Matrix<double>[]>(new Matrix<double>[2]{std::move(Q), std::move(R)});
   }
 
   std::unique_ptr<Matrix<double>[]> linearize(const Matrix<double>& data_x, const Matrix<double>& data_y)
@@ -2001,34 +2060,33 @@ namespace Pinakas { namespace Backend
       throw std::invalid_argument(error_message.str());
     }
 
-    const size_t N = data_x.numel();
+    const size_t n = data_x.numel();
 
-    std::unique_ptr<Matrix<double>[]> data_set(new Matrix<double>[2]{Matrix<double>(1, N, 0), Matrix<double>(1, N, 0)});
-    Matrix<double>& lin_x = data_set[0];
-    Matrix<double>& lin_y = data_set[1];
+    Matrix<double> lin_x(1, n, 0);
+    Matrix<double> lin_y(1, n, 0);
 
     // set first and last values of the linearized data set
-    lin_x[0][0] = data_x[0][0];
-    lin_y[0][0] = data_y[0][0];
-    lin_x[0][N - 1] = data_x[0][N - 1];
-    lin_y[0][N - 1] = data_y[0][N - 1];
+    lin_x[0][0]   = data_x[0][0];
+    lin_y[0][0]   = data_y[0][0];
+    lin_x[0][n-1] = data_x[0][n-1];
+    lin_y[0][n-1] = data_y[0][n-1];
 
     // build linearly spaced x data and its associated y value
-    const double step = (data_x[0][N - 1] - data_x[0][0]) / (N - 1);
+    const double step = (data_x[0][n - 1] - data_x[0][0]) / (n - 1);
     double x1, x2, y1, y2;
-    for (size_t k = 1; k < (N - 1); ++k) {
+    for (size_t k = 1; k < (n - 1); ++k) {
       // build linearly spaced x data
       lin_x[0][k] = lin_x[0][k - 1] + step;
 
       // linearly interpolate y value
       x1 = data_x[0][k];
       y1 = data_y[0][k];
-      x2 = data_x[0][k + 1];
-      y2 = data_y[0][k + 1];
+      x2 = data_x[0][k+1];
+      y2 = data_y[0][k+1];
       lin_y[0][k] = y1 + (lin_x[0][k] - x1) * (y2 - y1) / (x2 - x1);
     }
 
-    return data_set;
+    return std::unique_ptr<Matrix<double>[]>(new Matrix<double>[2]{std::move(lin_x), std::move(lin_y)});;
   }
 
   Matrix<double> linspace(const double x1, const double x2, const size_t N)
@@ -2103,7 +2161,7 @@ namespace Pinakas { namespace Backend
 
     return std::move(A);
   }
-// -------------------------------------------------------------------------------
+// --------------------------------------------------------------------------------------
   template<typename T1, typename T2, typename T3 = appropriate_type<T1, T2>>
   Matrix<T3> conv(const Matrix<T1>& A, const Matrix<T2>& B)
   {
@@ -2201,12 +2259,13 @@ namespace Pinakas { namespace Backend
 
     return result;
   }
-// -------------------------------------------------------------------------------
+// --------------------------------------------------------------------------------------
   Matrix<double> blackman(const size_t N)
   {
     Matrix<double> window(1, N);
     for (size_t k = 0; k < N; ++k)
-      window[0][k] = 0.42 - 0.5 * std::cos(2 * M_PI * k / (N - 1)) + 0.08 * std::cos(4 * M_PI * k / (N - 1));
+      window[0][k] = 0.42 - 0.5 * std::cos(2 * M_PI * k / (N - 1))
+                         + 0.08 * std::cos(4 * M_PI * k / (N - 1));
     return window;
   }
 
@@ -2215,7 +2274,8 @@ namespace Pinakas { namespace Backend
     const size_t N = signal.numel();
     Matrix<double> windowed(1, N);
     for (size_t k = 0; k < N; ++k)
-      windowed[0][k] = signal[0][k] * (0.42 - 0.5 * std::cos(2 * M_PI * k / (N - 1)) + 0.08 * std::cos(4 * M_PI * k / (N - 1)));
+      windowed[0][k] = signal[0][k] * (0.42 - 0.5 * std::cos(2 * M_PI * k / (N - 1))
+                                           + 0.08 * std::cos(4 * M_PI * k / (N - 1)));
     return windowed;
   }
 
@@ -2223,10 +2283,11 @@ namespace Pinakas { namespace Backend
   {
     const size_t N = signal.numel();
     for (size_t k = 0; k < N; ++k)
-      signal[0][k] *= 0.42 - 0.5 * std::cos(2 * M_PI * k / (N - 1)) + 0.08 * std::cos(4 * M_PI * k / (N - 1));
+      signal[0][k] *= 0.42 - 0.5 * std::cos(2 * M_PI * k / (N - 1))
+                          + 0.08 * std::cos(4 * M_PI * k / (N - 1));
     return signal;
   }
-// -------------------------------------------------------------------------------
+// --------------------------------------------------------------------------------------
   Matrix<double> hamming(const size_t N)
   {
     Matrix<double> window(1, N);
@@ -2251,7 +2312,7 @@ namespace Pinakas { namespace Backend
       signal[0][k] *= 0.54 - 0.46 * std::cos(2 * M_PI * k / (N - 1));
     return signal;
   }
-// -------------------------------------------------------------------------------
+// --------------------------------------------------------------------------------------
   Matrix<double> hann(const size_t N)
   {
     Matrix<double> window(1, N);
@@ -2276,8 +2337,11 @@ namespace Pinakas { namespace Backend
       signal[0][k] *= 0.5 - 0.5 * std::cos(2 * M_PI * k / (N - 1));
     return signal;
   }
-// -------------------------------------------------------------------------------
-  double newton(const std::function<double(double)> function, const double tol, const size_t max_iteration, const double seed) noexcept
+// --------------------------------------------------------------------------------------
+  double newton(const std::function<double(double)> function,
+                const double tol,
+                const size_t max_iteration,
+                const double seed) noexcept
   {
     const double half_tol = tol * 0.5;
 
@@ -2289,7 +2353,7 @@ namespace Pinakas { namespace Backend
 
     return root;
   }
-// -------------------------------------------------------------------------------
+// --------------------------------------------------------------------------------------
   template<typename T>
   Matrix<double> cos(Matrix<T>& A)
   {
@@ -2356,7 +2420,7 @@ namespace Pinakas { namespace Backend
 
     return A;
   }
-// -------------------------------------------------------------------------------
+// --------------------------------------------------------------------------------------
   Matrix<double> upsample(const Matrix<double>& data, const size_t L)
   {
     Matrix<double> upsampled(1, L * data.numel(), 0);
@@ -2697,12 +2761,19 @@ namespace Pinakas { namespace Backend
   }
 }}
 //
+
+void sleep_for_ms(int ms)
+{
+  auto start = std::chrono::high_resolution_clock::now();
+  while(std::chrono::duration_cast<std::chrono::microseconds>(std::chrono::high_resolution_clock::now()-start).count() < ms*1000);
+}
+
 int main()
 {
   using namespace Pinakas;
   using namespace Keyword;
 
-  //*
+  /*
   size_t N = 1 << 14;
   //size_t L = 100;
   //auto   f = [](const Matrix<double>& x) {return ((1-x)^ 2) + sin((x-0.5) * 5) / 5 - 2;};
@@ -2712,11 +2783,11 @@ int main()
   Matrix<double> y_linear = sin(x_linear*1000) + sin(x_linear*300);//f(x_linear);
 
   for (int i = 0; i < 50; ++i) {
-    Chronometro::execution_time(fft, 10, y_linear);
+    Chronometro::execution_time(fft, 100, y_linear);
   }
   puts("-----macro-----");
   for (int i = 0; i < 50; ++i) {
-    CHRONOMETRO_EXECUTION_TIME(fft, 10, y_linear);
+    CHRONOMETRO_EXECUTION_TIME(fft, 100, y_linear);
   }
 
   auto y2 = fft(y_linear);
@@ -2724,7 +2795,9 @@ int main()
   plot({"spectrum2", "signal"}, {{iota(X2.numel()), X2}, {iota(N), y_linear}}, true, false);
   //*/
 
-
+  for (auto test : Range(10, -10, 2))
+    std::cout << ' ' << test;
+    
   /*
   Matrix<int> x = iota(10);
   Matrix<double> y = iota(10);

@@ -1,10 +1,10 @@
-// --author-----------------------------------------------------------------------
+// --author------------------------------------------------------------------------------
 // 
 // Justin Asselin (juste-injuste)
 // justin.asselin@usherbrooke.ca
 // https://github.com/juste-injuste/Pinakas
 // 
-// --liscence---------------------------------------------------------------------
+// --liscence----------------------------------------------------------------------------
 // 
 // MIT License
 // 
@@ -28,14 +28,14 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
 //  
-// --versions---------------------------------------------------------------------
+// --versions----------------------------------------------------------------------------
 // 
-// --notice-----------------------------------------------------------------------
+// --notice------------------------------------------------------------------------------
 // Pinākás
-// --inclusion guard--------------------------------------------------------------
+// --inclusion guard---------------------------------------------------------------------
 #ifndef PINAKAS_HPP
 #define PINAKAS_HPP
-// --necessary standard libraries-------------------------------------------------
+// --necessary standard libraries--------------------------------------------------------
 #include <iostream>         // for io
 #include <iomanip>          // for io formatting
 #include <initializer_list> // for std::initializer_list
@@ -53,9 +53,9 @@
 #include <cstdio>           // for std::remove
 #include <complex>          // for std::complex
 #include <type_traits>      // for std::enable_if, std::is_same, std::common_type
-// --non-essential depencies------------------------------------------------------
+// --non-essential depencies-------------------------------------------------------------
 #include "Chronometro.hpp"
-// --Pinakas library: backend forward declaration---------------------------------
+// --Pinakas library: backend forward declaration----------------------------------------
 namespace Pinakas { namespace Backend
 {
   //
@@ -80,6 +80,8 @@ namespace Pinakas { namespace Backend
   //
   struct Random;
   //
+  class Range;
+
   template<typename T>
   class Iterator;
   //
@@ -89,7 +91,7 @@ namespace Pinakas { namespace Backend
   typedef std::pair<const Matrix<double>, const Matrix<double>> DataSet;
   typedef std::complex<double> complex;
 }}
-// --Pinakas library: template meta programming-----------------------------------
+// --Pinakas library: template meta programming------------------------------------------
 namespace Pinakas { namespace Backend
 {
   // gives the common type T1 and T2 can be implicitely converted to
@@ -104,7 +106,7 @@ namespace Pinakas { namespace Backend
   template<typename T>
   using if_floating = typename std::enable_if<std::is_floating_point<T>::value, T>::type;
 }}
-// -------------------------------------------------------------------------------
+// --------------------------------------------------------------------------------------
 namespace Pinakas { namespace Backend
 {
   template<typename T1, typename T2>
@@ -119,7 +121,7 @@ namespace Pinakas { namespace Backend
   Matrix<T3> add_val(const Matrix<T1>& A, const T2 B) noexcept;
   template<typename T1, typename T3 = appropriate_type<T1, double>>
   Matrix<T3> add_rng(const Matrix<T1>& A, const Random B) noexcept;
-// -------------------------------------------------------------------------------
+// --------------------------------------------------------------------------------------
   template<typename T1, typename T2>
   Matrix<T1>& mul_mat_inplace(Matrix<T1>& A, const Matrix<T2>& B);
   template<typename T1, typename T2>
@@ -132,7 +134,7 @@ namespace Pinakas { namespace Backend
   Matrix<T3> mul_val(const Matrix<T1>& A, const T2 B) noexcept;
   template<typename T1, typename T3 = appropriate_type<T1, double>>
   Matrix<T3> mul_rng(const Matrix<T1>& A, const Random B) noexcept;
-// -------------------------------------------------------------------------------
+// --------------------------------------------------------------------------------------
   template<typename T1, typename T2>
   Matrix<T1>& sub_ll_mat_inplace(Matrix<T1>& A, const Matrix<T2>& B);
   template<typename T1, typename T2>
@@ -159,7 +161,7 @@ namespace Pinakas { namespace Backend
   Matrix<T>& negate_inplace(Matrix<T>& A) noexcept;
   template<typename T>
   Matrix<T> negate(const Matrix<T> A);
-// -------------------------------------------------------------------------------
+// --------------------------------------------------------------------------------------
   template<typename T1, typename T2>
   Matrix<T1>& div_ll_mat_inplace(Matrix<T1>& A, const Matrix<T2>& B);
   template<typename T1, typename T2>
@@ -182,7 +184,7 @@ namespace Pinakas { namespace Backend
   Matrix<T3> div_ll_rng(const Matrix<T1>& A, const Random B) noexcept;
   template<typename T1, typename T3 = appropriate_type<T1, double>>
   Matrix<T3> div_rl_rng(const Matrix<T1>& B, const Random A) noexcept;
-// -------------------------------------------------------------------------------
+// --------------------------------------------------------------------------------------
   template<typename T1, typename T2>
   Matrix<T1>& pow_ll_mat_inplace(Matrix<T1>& A, const Matrix<T2>& B);
   template<typename T1, typename T2>
@@ -197,7 +199,7 @@ namespace Pinakas { namespace Backend
   Matrix<T3> pow_ll_val(const Matrix<T1>& A, const T2 B) noexcept;
   template<typename T1, typename T2, typename T3 = appropriate_type<T1, T2>>
   Matrix<T3> pow_rl_val(const Matrix<T1>& B, const T2 A) noexcept;
-// -------------------------------------------------------------------------------
+// --------------------------------------------------------------------------------------
   template<typename T, typename T3 = if_floating<T>>
   Matrix<T3> floor(const Matrix<T>& A);
   template<typename T, typename T3 = if_floating<T>>
@@ -210,21 +212,21 @@ namespace Pinakas { namespace Backend
   Matrix<T3> ceil(const Matrix<T>& A);
   template<typename T, typename T3 = if_floating<T>>
   Matrix<T3>&& ceil(Matrix<T>&& A) noexcept;
-// -------------------------------------------------------------------------------
+// --------------------------------------------------------------------------------------
   template<typename T1, typename T2>
   Matrix<double> mul(const Matrix<T1>& A, const Matrix<T2>& B);
   Matrix<double> div(const Matrix<double>& A, Matrix<double> B);
-// -------------------------------------------------------------------------------
+// --------------------------------------------------------------------------------------
   Matrix<double> linspace(const double x1, const double x2, const size_t N);
   Matrix<size_t> iota(const size_t n);
   template<typename T>
   Matrix<size_t> iota(const Matrix<T>& A);
-// -------------------------------------------------------------------------------
+// --------------------------------------------------------------------------------------
   template<typename T>
   Matrix<T> transpose(const Matrix<T>& A);
   template<typename T>
   Matrix<T> reshape(const Matrix<T>& A, const size_t M, const size_t N);
-// -------------------------------------------------------------------------------
+// --------------------------------------------------------------------------------------
   template<typename T>
   T min(const Matrix<T>& matrix) noexcept;
   template<typename T>
@@ -243,19 +245,19 @@ namespace Pinakas { namespace Backend
   double rms(const Matrix<T>& A) noexcept;
   template<typename T>
   double geo(const Matrix<T>& A) noexcept;
-// -------------------------------------------------------------------------------
+// --------------------------------------------------------------------------------------
   Matrix<double> orthogonalize(Matrix<double> A);
   std::unique_ptr<Matrix<double>[]> QR(Matrix<double> A);
-// -------------------------------------------------------------------------------
+// --------------------------------------------------------------------------------------
   std::unique_ptr<Matrix<double>[]> linearize(const Matrix<double>& data_x, const Matrix<double>& data_y);
-// -------------------------------------------------------------------------------
+// --------------------------------------------------------------------------------------
   template<typename T>
   Matrix<T> reverse(const Matrix<T>& A);
   template<typename T>
   Matrix<T>&& reverse(Matrix<T>&& A) noexcept;
-// -------------------------------------------------------------------------------
+// --------------------------------------------------------------------------------------
   Matrix<double> diff(const Matrix<double>& A, size_t n = 1);
-// -------------------------------------------------------------------------------
+// --------------------------------------------------------------------------------------
   template<typename T1, typename T2, typename T3 = appropriate_type<T1, T2>>
   Matrix<T3> conv(const Matrix<T1>& A, const Matrix<T2>& B);
   template<typename T1, typename T2, typename T3 = appropriate_type<T1, T2>>
@@ -267,7 +269,7 @@ namespace Pinakas { namespace Backend
   Matrix<double> lpc(const Matrix<double>& A, const size_t p);
   Matrix<double> toeplitz(const Matrix<double>& A);
   double newton(const std::function<double(double)> function, const double tol, const size_t max_iteration, const double seed) noexcept;
-// -------------------------------------------------------------------------------
+// --------------------------------------------------------------------------------------
   template<typename T>
   Matrix<double> cos(Matrix<T>& A);
   Matrix<double> cos(Matrix<double>&& A) noexcept;
@@ -277,7 +279,7 @@ namespace Pinakas { namespace Backend
   template<typename T>
   Matrix<double> sinc(Matrix<T>& A);
   Matrix<double> sinc(Matrix<double>&& A) noexcept;
-// -------------------------------------------------------------------------------
+// --------------------------------------------------------------------------------------
   Matrix<double> blackman(const size_t N);
   Matrix<double> blackman(const Matrix<double>& signal);
   Matrix<double> blackman(Matrix<double>&& signal) noexcept;
@@ -287,12 +289,12 @@ namespace Pinakas { namespace Backend
   Matrix<double> hann(const size_t N);
   Matrix<double> hann(const Matrix<double>& signal);
   Matrix<double> hann(Matrix<double>&& signal) noexcept;
-// -------------------------------------------------------------------------------
+// --------------------------------------------------------------------------------------
   Matrix<double> sinc_impulse(const size_t length, const double frequency);
   Matrix<double> resample(const Matrix<double>& data, const size_t L, const size_t keep=2, const double alpha=3.5, const bool tail=false);
-// -------------------------------------------------------------------------------
+// --------------------------------------------------------------------------------------
   void plot(List<std::string> titles, List<DataSet> data_sets, bool persistent = true, bool remove = true, bool pause = false, bool lines = true);
-// -------------------------------------------------------------------------------
+// --------------------------------------------------------------------------------------
   template<typename T>
   Matrix<double> abs(const Matrix<T>& A);
   Matrix<double> abs(Matrix<double>&& A) noexcept;
@@ -300,31 +302,32 @@ namespace Pinakas { namespace Backend
   Matrix<double> imag(const Matrix<complex>& A);
   Matrix<complex> conj(const Matrix<complex>& A);
   Matrix<complex> conj(Matrix<complex>&& A) noexcept;
-// -------------------------------------------------------------------------------
+// --------------------------------------------------------------------------------------
   Matrix<complex> fft(Matrix<complex>&& signal);
   Matrix<complex> ifft(const Matrix<complex>& spectrum);
   Matrix<complex> ifft(Matrix<complex>&& spectrum);
 }}
-// --Pinakas library: frontend forward declarations-------------------------------
+// --Pinakas library: frontend forward declarations--------------------------------------
 namespace Pinakas { inline namespace Frontend
 {
   using Backend::Matrix;
   using Backend::Random;
   namespace Keyword = Backend::Keyword;
   using Backend::complex;
-// -------------------------------------------------------------------------------
+  using Backend::Range;
+// --------------------------------------------------------------------------------------
   using Backend::floor;
   using Backend::round;
   using Backend::ceil;
-// -------------------------------------------------------------------------------
+// --------------------------------------------------------------------------------------
   using Backend::mul;
-// -------------------------------------------------------------------------------
+// --------------------------------------------------------------------------------------
   using Backend::transpose;
   using Backend::reshape;
-// -------------------------------------------------------------------------------
+// --------------------------------------------------------------------------------------
   using Backend::min;
   using Backend::max;
-// -------------------------------------------------------------------------------
+// --------------------------------------------------------------------------------------
   using Backend::sum;
   using Backend::prod;
   using Backend::avg;
@@ -353,7 +356,7 @@ namespace Pinakas { inline namespace Frontend
   using Backend::fft;
   using Backend::abs;
 }}
-// --Pinakas library: backend struct and class definitions------------------------
+// --Pinakas library: backend struct and class definitions-------------------------------
 namespace Pinakas { namespace Backend
 {
   struct Size {
@@ -449,8 +452,33 @@ namespace Pinakas { namespace Backend
   };
 
   struct Random {
-    Random(double min, double max) noexcept;
-    double min_, max_;
+    Random(const double min, const double max) noexcept;
+    const double min_;
+    const double max_;
+  };
+
+  class Range {
+    public:
+      inline explicit Range(const size_t stop) noexcept;
+      inline explicit Range(const int start, const int stop) noexcept;
+      inline explicit Range(const int start, const int stop, const size_t step) noexcept;
+      const int start;
+      const int stop;
+    private:
+      const int step_;
+      class Iterator {
+        private:
+          int current_;
+          const int step_;
+        public:
+          inline explicit Iterator(const int value, const int step) noexcept;
+          inline int operator*() const noexcept;
+          inline void operator++() noexcept;
+          inline bool operator!=(const Iterator& other) const noexcept;
+      };
+    public:
+      inline Iterator begin() const noexcept;
+      inline Iterator end() const noexcept;
   };
 
   template<typename T>
@@ -479,14 +507,14 @@ namespace Pinakas { namespace Backend
       size_t index;
   };
 }}
-// --Pinakas library: operator overloads forward declarations----------------------
+// --Pinakas library: operator overloads forward declarations----------------------------
 namespace Pinakas { namespace Backend
 {
   template<typename T>
   std::ostream& operator<<(std::ostream& ostream, const Matrix<T>& A);
   std::ostream& operator<<(std::ostream& ostream, const Size size);
   std::ostream& operator<<(std::ostream& ostream, const Slice<double>& A);
-// -------------------------------------------------------------------------------
+// --------------------------------------------------------------------------------------
   template<typename T1, typename T2>
   Matrix<T1>& operator+=(Matrix<T1>& A, const Matrix<T2>& B);
   template<typename T>
@@ -525,7 +553,7 @@ namespace Pinakas { namespace Backend
   Matrix<T3>&& operator+(Matrix<T1>&& A, const T2 B) noexcept;
   template<typename T>
   Matrix<T>&& operator+(Matrix<T>&& A) noexcept;
-// -------------------------------------------------------------------------------
+// --------------------------------------------------------------------------------------
   template<typename T1, typename T2>
   Matrix<T1>& operator-=(Matrix<T1>& A, const Matrix<T2>& B);
   template<typename T>
@@ -564,7 +592,7 @@ namespace Pinakas { namespace Backend
   Matrix<T>& operator-(const Matrix<T>& A);
   template<typename T>
   Matrix<T>&& operator-(Matrix<T>&& A) noexcept;
-// -------------------------------------------------------------------------------
+// --------------------------------------------------------------------------------------
   template<typename T1, typename T2>
   Matrix<T1>& operator*=(Matrix<T1>& A, const Matrix<T2>& B);
   template<typename T>
@@ -599,7 +627,7 @@ namespace Pinakas { namespace Backend
   Matrix<T3>&& operator*(const T1 A, Matrix<T2>&& B) noexcept;
   template<typename T1, typename T2, typename T3 = if_no_loss<T1, T2>>
   Matrix<T3>&& operator*(Matrix<T1>&& A, const T2 B) noexcept;
-// -------------------------------------------------------------------------------
+// --------------------------------------------------------------------------------------
   template<typename T1, typename T2>
   Matrix<T1>& operator/=(Matrix<T1>& A, const Matrix<T2>& B);
   template<typename T>
@@ -634,7 +662,7 @@ namespace Pinakas { namespace Backend
   Matrix<T3>&& operator/(const T1 A, Matrix<T2>&& B) noexcept;
   template<typename T1, typename T2, typename T3 = if_no_loss<T1, T2>>
   Matrix<T3>&& operator/(Matrix<T1>&& A, const T2 B) noexcept;
-// -------------------------------------------------------------------------------
+// --------------------------------------------------------------------------------------
   template<typename T1, typename T2>
   Matrix<T1>& operator^=(Matrix<T1>& A, const Matrix<T2>& B);
   template<typename T1, typename T2>
