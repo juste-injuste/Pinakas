@@ -2773,21 +2773,6 @@ int main()
   using namespace Pinakas;
   using namespace Keyword;
 
-  //*
-  //*/
-
-
-  Matrix<int> x(1, 10, {0, 10});
-  Matrix<int> y(1, 10, {0, 10});
-
-
-  for (auto i : Range(10)) {
-    CHRONOMETRO_EXECUTION_TIME(Backend::add_mat_inplace, 10000000, x, y);
-    CHRONOMETRO_EXECUTION_TIME(Backend::add_mat_inplace2, 10000000, x, y);
-    puts("------");
-  }
-
-
   /*
   Matrix<int> x = iota(10);
   Matrix<double> y = iota(10);
@@ -2826,28 +2811,21 @@ int main()
   puts("----------------");
   //*/
 
-  /*
-  size_t N = 1<<4;
-  size_t L = 1<<2;
-  auto   f = [](const Matrix<double>& x) {return (x ^ 2) + sin(x * 20) / 10 - 2;};
+  //*
+  size_t N = 100;
+  size_t L = 100;
+  auto   f = [](const Matrix<double>& x) {return (x ^ 2) + sin(x * 20) / 10 - 2 + Random(0, 0.2);};
 
   auto x_lo = linspace(0, 1, N);
   auto y_lo = f(x_lo);
 
-  auto y_hi = resample(y_lo, L, 2, 3.5, true);
+  auto y_hi = resample(y_lo, L);
   auto x_hi = linspace(0, 1, y_hi.numel());
 
   std::cout << x_lo.numel() << '\n';
   std::cout << x_hi.numel() << '\n';
 
-  auto h_lo = abs(fft(y_lo));
-  auto f_lo = iota(h_lo);
-
-  auto h_hi = abs(fft(y_hi));
-  auto f_hi = iota(h_hi);
-
   plot({"original", "resampled"}, {{x_lo, y_lo}, {x_hi, y_hi}}, true, false);
-  plot({"original spectrum", "resampled spectrum"}, {{f_lo, h_lo}, {f_hi, h_hi}}, true, false);
   //*/
 
 

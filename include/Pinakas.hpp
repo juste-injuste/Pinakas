@@ -112,8 +112,6 @@ namespace Pinakas { namespace Backend
   template<typename T1, typename T2>
   Matrix<T1>& add_mat_inplace(Matrix<T1>& A, const Matrix<T2>& B);
   template<typename T1, typename T2>
-  Matrix<T1>& add_mat_inplace2(Matrix<T1>& A, const Matrix<T2>& B);
-  template<typename T1, typename T2>
   Matrix<T1>& add_val_inplace(Matrix<T1>& A, const T2 B) noexcept;
   template<typename T>
   Matrix<T>& add_rng_inplace(Matrix<T>& A, const Random B) noexcept;
