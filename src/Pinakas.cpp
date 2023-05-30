@@ -357,91 +357,91 @@ namespace Pinakas { namespace Backend
   }
 // --------------------------------------------------------------------------------------
   template <typename T>
-  Iterator<T>::Iterator(Matrix<T>& matrix, const size_t index) noexcept
+  Matrix<T>::Iterator::Iterator(Matrix<T>& matrix, const size_t index) noexcept
     : // member initialization list
     matrix(matrix),
     index(index)
   {}
 
   template <typename T>
-  bool Iterator<T>::operator==(const Iterator<T>& other) const noexcept
+  bool Matrix<T>::Iterator::operator==(const Matrix<T>::Iterator& other) const noexcept
   {
     return index == other.index;
   }
 
   template <typename T>
-  bool Iterator<T>::operator!=(const Iterator<T>& other) const noexcept
+  bool Matrix<T>::Iterator::operator!=(const Matrix<T>::Iterator& other) const noexcept
   {
     return this->index != other.index;
   }
 
   template <typename T>
-  Iterator<T>& Iterator<T>::operator++(void) noexcept
+  typename Matrix<T>::Iterator& Matrix<T>::Iterator::operator++(void) noexcept
   {
     ++index;
     return *this;
   }
 
   template <typename T>
-  T& Iterator<T>::operator*(void) const noexcept
+  T& Matrix<T>::Iterator::operator*(void) const noexcept
   {
     return matrix[0][index];
   }
 // --------------------------------------------------------------------------------------
   template <typename T>
-  ConstIterator<T>::ConstIterator(const T& matrix, const size_t index) noexcept
+  Matrix<T>::Const_Iterator::Const_Iterator(const Matrix<T>& matrix, const size_t index) noexcept
     : // member initialization list
     matrix(matrix),
     index(index)
   {}
 
   template <typename T>
-  bool ConstIterator<T>::operator==(const ConstIterator<T>& other) const noexcept
+  bool Matrix<T>::Const_Iterator::operator==(const Matrix<T>::Const_Iterator& other) const noexcept
   {
     return index == other.index;
   }
 
   template <typename T>
-  bool ConstIterator<T>::operator!=(const ConstIterator<T>& other) const noexcept
+  bool Matrix<T>::Const_Iterator::operator!=(const Matrix<T>::Const_Iterator& other) const noexcept
   {
     return this->index != other.index;
   }
 
   template <typename T>
-  ConstIterator<T>& ConstIterator<T>::operator++() noexcept
+  typename Matrix<T>::Const_Iterator& Matrix<T>::Const_Iterator::operator++() noexcept
   {
     ++index;
     return *this;
   }
 
   template <typename T>
-  const double& ConstIterator<T>::operator*(void) const noexcept
+  const T& Matrix<T>::Const_Iterator::operator*(void) const noexcept
   {
     return matrix[0][index];
   }
 // --------------------------------------------------------------------------------------
   template<typename T>
-  Iterator<Matrix<T>> Matrix<T>::begin(void) noexcept
+  typename Matrix<T>::Iterator Matrix<T>::begin(void) noexcept
   {
-    return Iterator<Matrix<T>>(*this, 0);
+    return Iterator(*this, 0);
   }
 
   template<typename T>
-  Iterator<Matrix<T>> Matrix<T>::end(void) noexcept
+  typename Matrix<T>::Iterator Matrix<T>::end(void) noexcept
   {
-    return Iterator<Matrix<T>>(*this, size_.numel);
+    return Iterator(*this, size_.numel);
   }
 
   template<typename T>
-  ConstIterator<Matrix<T>> Matrix<T>::begin(void) const noexcept
+  typename Matrix<T>::Const_Iterator Matrix<T>::begin(void) const noexcept
   {
-    return ConstIterator<Matrix<T>>(*this, 0);
+    return Const_Iterator(*this, 0);
   }
 
   template<typename T>
-  ConstIterator<Matrix<T>> Matrix<T>::end(void) const noexcept
+  typename Matrix<T>::Const_Iterator Matrix<T>::end(void) const noexcept
   {
-    return ConstIterator<Matrix<T>>(*this, size_.numel);
+    return Const_Iterator(*this, size_.numel);
   }
 // --------------------------------------------------------------------------------------
   template<typename T>
@@ -2773,31 +2773,21 @@ int main()
   using namespace Pinakas;
   using namespace Keyword;
 
-  /*
-  size_t N = 1 << 14;
-  //size_t L = 100;
-  //auto   f = [](const Matrix<double>& x) {return ((1-x)^ 2) + sin((x-0.5) * 5) / 5 - 2;};
-  //auto   f = [](const Matrix<double>& x) {return sin(6.28*x*100) + sin(6.28*x*50);};
-
-  Matrix<double> x_linear = linspace(0, 1, N);
-  Matrix<double> y_linear = sin(x_linear*1000) + sin(x_linear*300);//f(x_linear);
-
-  for (int i = 0; i < 50; ++i) {
-    Chronometro::execution_time(fft, 100, y_linear);
-  }
-  puts("-----macro-----");
-  for (int i = 0; i < 50; ++i) {
-    CHRONOMETRO_EXECUTION_TIME(fft, 100, y_linear);
-  }
-
-  auto y2 = fft(y_linear);
-  auto X2 = abs(y2);
-  plot({"spectrum2", "signal"}, {{iota(X2.numel()), X2}, {iota(N), y_linear}}, true, false);
+  //*
   //*/
 
-  for (auto test : Range(10, -10, 2))
-    std::cout << ' ' << test;
-    
+
+  Matrix<int> x(1, 10, {0, 10});
+  Matrix<int> y(1, 10, {0, 10});
+
+
+  for (auto i : Range(10)) {
+    CHRONOMETRO_EXECUTION_TIME(Backend::add_mat_inplace, 10000000, x, y);
+    CHRONOMETRO_EXECUTION_TIME(Backend::add_mat_inplace2, 10000000, x, y);
+    puts("------");
+  }
+
+
   /*
   Matrix<int> x = iota(10);
   Matrix<double> y = iota(10);
