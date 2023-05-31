@@ -72,7 +72,6 @@ namespace Pinakas { namespace Backend
   // keywords
   namespace Keyword
   {
-    const struct End {} end;
     const struct Column {} column;
     const struct Row {} row;
     const struct Entire {} entire;
@@ -303,7 +302,7 @@ namespace Pinakas { namespace Backend
   Matrix<complex> conj(const Matrix<complex>& A);
   Matrix<complex> conj(Matrix<complex>&& A) noexcept;
 // --------------------------------------------------------------------------------------
-  Matrix<complex> fft(Matrix<complex>&& signal);
+  Matrix<complex>&& fft(Matrix<complex>&& signal);
   Matrix<complex> ifft(const Matrix<complex>& spectrum);
   Matrix<complex> ifft(Matrix<complex>&& spectrum);
 }}
@@ -370,27 +369,32 @@ namespace Pinakas { namespace Backend
     public:
       // destructor
       ~Matrix() noexcept;
-      // empty matrix
+      // default constructor
       Matrix() noexcept;
       // copy constructor
-      Matrix(const Matrix<T>& matrix);
+      Matrix(const Matrix<T>& other);
       // move constructor
-      Matrix(Matrix<T>&& matrix) noexcept;
+      Matrix(Matrix<T>&& other) noexcept;
+      // converting constructor
+      template<typename T2>
+      Matrix(const Matrix<T2>& other);
       // create a matrix MxN
       Matrix(const size_t M, const size_t N);
-      //
+      // copy assignation
+      Matrix<T>& operator=(const Matrix<T>& other) &;
+      // move assignation
+      Matrix<T>& operator=(Matrix<T>&& other) & noexcept;
+      // convertion assignation
       template<typename T2>
       Matrix<T>& operator=(const Matrix<T2>& other) &;
-      template<typename T2>
-      Matrix<T>& operator=(Matrix<T2>&& other) & noexcept;
+      // fill assignation
       Matrix<T>& operator=(const T value) & noexcept;
       // indexing
-      inline T* operator[](const size_t y) const noexcept;
+      inline T* operator[](const size_t k) const noexcept;
       // bound-checked flat-indexing
-      T& operator()(const size_t index) const;
-      T& operator()(Keyword::End) const noexcept;
+      T& operator()(signed int k) const;
       // bound-checked indexing
-      T& operator()(const size_t y, const size_t x) const;
+      T& operator()(signed int y, signed int x) const;
       //
       Slice<T> operator()(Keyword::Entire, const size_t n) & noexcept;
       Slice<T> operator()(const size_t m, Keyword::Entire) & noexcept;
@@ -398,10 +402,7 @@ namespace Pinakas { namespace Backend
       inline Size size(void) const & noexcept;
       inline size_t numel(void) const & noexcept;
       inline size_t M(void) const & noexcept;
-      inline size_t N(void) const & noexcept;
-
-      template<typename T2>
-      operator Matrix<T2> () const;
+      inline size_t N(void) const & noexcept;      
     private:
       // information regarding matrix size
       Size size_;

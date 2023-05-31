@@ -1,5 +1,5 @@
 // --inclusion guard---------------------------------------------------------------------
-//#define LOGGING
+#define LOGGING
 #include "../include/Pinakas.hpp"
 #define M_PI 3.14159265358979323846
 // --Pinakas library: backend forward declaration----------------------------------------
@@ -60,6 +60,23 @@ namespace Pinakas { namespace Backend
 #ifdef LOGGING
     std::clog << "Matrix moved !\n";
 #endif
+  }
+
+  template<typename T> template<typename T2>
+  Matrix<T>::Matrix(const Matrix<T2>& other)
+  {
+#ifdef LOGGING
+    std::clog << "Matrix converted !\n";
+#endif
+
+    if (size_t(this) != size_t(&other)) {
+      // allocate memory
+      allocate(this, other.M(), other.N());
+
+      // store value
+      for (size_t k = 0; k < size_.numel; ++k)
+        data_[k] = other[0][k];
+    }
   }
 
   template<typename T>
@@ -208,7 +225,7 @@ namespace Pinakas { namespace Backend
       k += matrix.size_.N;
     }
   }
-
+// --------------------------------------------------------------------------------------
   template<typename T>
   void allocate(Matrix<T>* matrix, const size_t M, const size_t N)
   {
@@ -229,46 +246,48 @@ namespace Pinakas { namespace Backend
     // save size information
     matrix->size_ = {M, N, M * N};
   }
-
+// --------------------------------------------------------------------------------------
   template<typename T>
-  T* Matrix<T>::operator[](const size_t index) const noexcept
+  T* Matrix<T>::operator[](const size_t k) const noexcept
   {
-    return data_.get() + index * size_.N;
+    return data_.get() + k * size_.N;
   }
 
   template<typename T>
-  T& Matrix<T>::operator()(const size_t index) const
+  T& Matrix<T>::operator()(signed int k) const
   {
-    if (index >= size_.numel) {
-      std::stringstream error_message;
-      error_message << '(' << index << ") out of bound " << size_.numel - 1 << " (dimensions are " << size_ << ')';
-      throw std::out_of_range(error_message.str());
+    if ((k < -signed(size_.numel)) || (signed(size_.numel) <= k)) {
+      std::clog << "warning: Matrix: (" << k << ") out of bound " << size_.numel << ", wrapped around to (";
+      k %= signed(size_.numel);
+      std::clog << k << ")\n";
     }
-    return data_[index];
+
+    k += (k < 0) * size_.numel;
+
+    return data_[k];
   }
 
   template<typename T>
-  T& Matrix<T>::operator()(Keyword::End) const noexcept
+  T& Matrix<T>::operator()(signed int y, signed int x) const
   {
-    return data_[size_.numel - 1];
-  }
+    if ((y < -signed(size_.M)) || (signed(size_.M) <= y)) {
+      std::clog << "warning: Matrix: (" << y << ", _) out of bound " << size_.M << ", wrapped around to (";
+      y %= signed(size_.M);
+      std::clog << y << ", _)\n";
+    }
 
-  template<typename T>
-  T& Matrix<T>::operator()(const size_t y, const size_t x) const
-  {
-    if (y >= size_.M) {
-      std::stringstream error_message;
-      error_message << '(' << y << ",_) out of bound " << size_.M - 1 << " (dimensions are " << size_ << ')';
-      throw std::out_of_range(error_message.str());
+    if ((x < -signed(size_.N)) || (signed(size_.N) <= x)) {
+      std::clog << "warning: Matrix: (_, " << x << ") out of bound " << size_.N << ", wrapped around to (_, ";
+      x %= signed(size_.N);
+      std::clog << x << ")\n";
     }
-    if (x >= size_.N) {
-      std::stringstream error_message;
-      error_message << "(_," << x << ") out of bound " << size_.N << " (dimensions are " << size_ << ')';
-      throw std::out_of_range(error_message.str());
-    }
+
+    y += (y < 0) * size_.M;
+    x += (x < 0) * size_.N;
+
     return data_[x + y * size_.N];
   }
-
+// --------------------------------------------------------------------------------------
   template<typename T>
   Slice<T> Matrix<T>::operator()(Keyword::Entire, const size_t n) & noexcept
   {
@@ -280,7 +299,7 @@ namespace Pinakas { namespace Backend
   {
     return Slice<T>(*this, m, Keyword::row);
   }
-
+// --------------------------------------------------------------------------------------
   template<typename T>
   Size Matrix<T>::size(void) const & noexcept
   {
@@ -304,21 +323,12 @@ namespace Pinakas { namespace Backend
   {
     return size_.N;
   }
-
-  template<typename T> template<typename T2>
-  Matrix<T>::operator Matrix<T2> () const
-  {
-    Matrix<T2> punned(size_);
-    for (size_t k = 0; k < size_.numel; ++k)
-      punned[0][k] = data_[k];
-    return punned;
-  }
-
-  template<typename T> template<typename T2>
-  Matrix<T>& Matrix<T>::operator=(const Matrix<T2>& other) &
+// --------------------------------------------------------------------------------------
+  template<typename T>
+  Matrix<T>& Matrix<T>::operator=(const Matrix<T>& other) &
   {
 #ifdef LOGGING
-    std::clog << "assigned\n";
+    std::clog << "copy assigned\n";
 #endif
 
     // validate both matrices are not the same
@@ -333,9 +343,9 @@ namespace Pinakas { namespace Backend
     }
     return *this;
   }
-// --------------------------------------------------------------------------------------
-  template<typename T> template<typename T2>
-  Matrix<T>& Matrix<T>::operator=(Matrix<T2>&& other) & noexcept
+
+  template<typename T>
+  Matrix<T>& Matrix<T>::operator=(Matrix<T>&& other) & noexcept
   {
 #ifdef LOGGING
     std::clog << "move assigned\n";
@@ -347,12 +357,33 @@ namespace Pinakas { namespace Backend
     return *this;
   }
 
+  template<typename T> template<typename T2>
+  Matrix<T>& Matrix<T>::operator=(const Matrix<T2>& other) &
+  {
+#ifdef LOGGING
+    std::clog << "conversion assigned\n";
+#endif
+    // allocate memory if necessary
+    if ((size_ != other.size_) ||!data_.get())
+      allocate(this, other.size_.M, other.size_.N);
+
+    // store values
+    for (size_t k = 0; k < size_.numel; ++k)
+      data_[k] = other[0][k];
+
+    return *this;
+  }
+
   template<typename T>
   Matrix<T>& Matrix<T>::operator=(const T value) & noexcept
   {
+#ifdef LOGGING
+    std::clog << "fill assigned\n";
+#endif
     // store values
     for (size_t k = 0; k < size_.numel; ++k)
       data_[k] = value;
+
     return *this;
   }
 // --------------------------------------------------------------------------------------
@@ -2698,7 +2729,7 @@ namespace Pinakas { namespace Backend
     return A;
   }
 
-  Matrix<complex> fft(Matrix<complex>&& signal)
+  Matrix<complex>&& fft(Matrix<complex>&& signal)
   {
     const size_t N = signal.numel();
 
@@ -2747,7 +2778,7 @@ namespace Pinakas { namespace Backend
         std::swap(signal[0][a], signal[0][b]);
     }
 
-    return signal;
+    return std::move(signal);
   }
 
   Matrix<complex> ifft(const Matrix<complex>& spectrum)
@@ -2811,7 +2842,7 @@ int main()
   puts("----------------");
   //*/
 
-  //*
+  /*
   size_t N = 100;
   size_t L = 100;
   auto   f = [](const Matrix<double>& x) {return (x ^ 2) + sin(x * 20) / 10 - 2 + Random(0, 0.2);};
@@ -2828,12 +2859,9 @@ int main()
   plot({"original", "resampled"}, {{x_lo, y_lo}, {x_hi, y_hi}}, true, false);
   //*/
 
-
   /*
-  const Matrix<double> signal = {1, 2, 3, 4};
-
-  Matrix<complex> spectrum = fft(signal);
-  std::cout << signal;
-  std::cout << spectrum;
+  Matrix<double> x = {{1, 2, 3},
+                      {4, 5, 6},
+                      {7, 8, 9}};
   //*/
 }
