@@ -2772,14 +2772,14 @@ namespace Pinakas { namespace Backend
     double thetaT = M_PI / N; // Angle for twiddle factor
     complex phiT = complex(std::cos(thetaT), -std::sin(thetaT)); // Twiddle factor for the first stage
 
-    // Perform the FFT computation
+    // radix-2 decimation-in-frequency variation of the Cooley-Tukey fft algorithm
     while (k > 1) {
       n = k;
-      k >>= 1; // Halve the stage size
+      k *= 0.5; // halve stage size
       phiT *= phiT; // Square the twiddle factor for the next stage
       complex twiddle_factor = 1; // Initialize the twiddle factor for the current stage
 
-      // Perform butterfly operations
+      // butterfly operations
       for (size_t l = 0; l < k; ++l) {
         for (size_t a = l; a < N; a += n) {
           size_t b = a + k;
