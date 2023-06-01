@@ -101,9 +101,13 @@ namespace Pinakas { namespace Backend
   template<typename T1, typename T2>
   using if_no_loss = typename std::enable_if<std::is_same<appropriate_type<T1, T2>, T1>::value, T1>::type;
 
-  // enables an overload T is a floating type
+  // enables an overload if T is a floating type
   template<typename T>
   using if_floating = typename std::enable_if<std::is_floating_point<T>::value, T>::type;
+
+  // enables an overload if T can be converted to double
+  template<typename T>
+  using convert_to_double = typename std::enable_if<std::is_convertible<T, double>::value, T>::type;
 }}
 // --------------------------------------------------------------------------------------
 namespace Pinakas { namespace Backend
@@ -214,8 +218,8 @@ namespace Pinakas { namespace Backend
 // --------------------------------------------------------------------------------------
   template<typename T1, typename T2>
   Matrix<double> mul(const Matrix<T1>& A, const Matrix<T2>& B);
-  template<typename T1>
-  Matrix<double> div(const Matrix<T1>& A, Matrix<double> B);
+  template<typename T, typename T0 = convert_to_double<T>>
+  Matrix<double> div(const Matrix<T>& A, Matrix<double> B);
 // --------------------------------------------------------------------------------------
   Matrix<double> linspace(const double x1, const double x2, const size_t N);
   Matrix<size_t> iota(const size_t n);

@@ -6,7 +6,8 @@ x = div(b, A)
 This function performs matrix division using QR decomposition with back substitution.
 
 ```cpp
-Matrix<double> div(const Matrix<double>& b, Matrix<double> A);
+template<typename T>
+Matrix<double> div(const Matrix<T>& b, Matrix<double> A);
 ```
 
 ## Usage

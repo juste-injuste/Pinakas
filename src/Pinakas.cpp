@@ -639,11 +639,8 @@ namespace Pinakas { namespace Backend
   Matrix<T1>& add_mat_inplace(Matrix<T1>& A, const Matrix<T2>& B)
   {
     if (A.size() != B.size()) {
-      std::stringstream error_message;
-      error_message << "error: add_mat_inplace: nonconformant arguments (" << "A is ";
-      error_message << A.M() << 'x' << A.N() << ", B is ";
-      error_message << B.M() << 'x' << B.N() << ")\n";
-      throw std::invalid_argument(error_message.str());
+      std::cerr << "error: add_mat_inplace: nonconformant arguments (A is " << A.size() << ", B is " << B.size() << ")\n";
+      return A;
     }
 
     const size_t n = A.numel();
@@ -681,11 +678,8 @@ namespace Pinakas { namespace Backend
   Matrix<T3> add_mat(const Matrix<T1>& A, const Matrix<T2>& B)
   {
     if (A.size() != B.size()) {
-      std::stringstream error_message;
-      error_message << "error: add_mat: nonconformant arguments (" << "A is ";
-      error_message << A.M() << 'x' << A.N() << ", B is ";
-      error_message << B.M() << 'x' << B.N() << ")\n";
-      throw std::invalid_argument(error_message.str());
+      std::cerr << "error: add_mat: nonconformant arguments (A is " << A.size() << ", B is " << B.size() << ")\n";
+      return Matrix<T3>();
     }
 
     Matrix<T3> R(A.size());
@@ -843,11 +837,8 @@ namespace Pinakas { namespace Backend
   Matrix<T1>& mul_mat_inplace(Matrix<T1>& A, const Matrix<T2>& B)
   {
     if (A.size() != B.size()) {
-      std::stringstream error_message;
-      error_message << "error: mul_mat_inplace: nonconformant arguments (" << "A is ";
-      error_message << A.M() << 'x' << A.N() << ", B is ";
-      error_message << B.M() << 'x' << B.N() << ")\n";
-      throw std::invalid_argument(error_message.str());
+      std::cerr << "error: mul_mat_inplace: nonconformant arguments (A is " << A.size() << ", B is " << B.size() << ")\n";
+      return A;
     }
 
     const size_t n = A.numel();
@@ -885,11 +876,8 @@ namespace Pinakas { namespace Backend
   Matrix<T3> mul_mat(const Matrix<T1>& A, const Matrix<T2>& B)
   {
     if (A.size() != B.size()) {
-      std::stringstream error_message;
-      error_message << "error: mul_mat: nonconformant arguments (" << "A is ";
-      error_message << A.M() << 'x' << A.N() << ", B is ";
-      error_message << B.M() << 'x' << B.N() << ")\n";
-      throw std::invalid_argument(error_message.str());
+      std::cerr << "error: mul_mat: nonconformant arguments (A is " << A.size() << ", B is " << B.size() << ")\n";
+      return Matrix<T3>();
     }
 
     Matrix<T3> R(A.size());
@@ -1035,10 +1023,8 @@ namespace Pinakas { namespace Backend
   Matrix<T1>& sub_ll_mat_inplace(Matrix<T1>& A, const Matrix<T2>& B)
   {
     if (A.size() != B.size()) {
-      std::stringstream error_message;
-      error_message << "error: sub_ll_mat_inplace: nonconformant arguments (" << "A is ";
-      error_message << A.M() << 'x' << A.N() << ", B is " << B.M() << 'x' << B.N() << ")\n";
-      throw std::invalid_argument(error_message.str());
+      std::cerr << "error: sub_ll_mat_inplace: nonconformant arguments (A is " << A.size() << ", B is " << B.size() << ")\n";
+      return A;
     }
 
     const size_t n = A.numel();
@@ -1052,10 +1038,8 @@ namespace Pinakas { namespace Backend
   Matrix<T1>& sub_rl_mat_inplace(Matrix<T1>& B, const Matrix<T2>& A)
   {
     if (A.size() != B.size()) {
-      std::stringstream error_message;
-      error_message << "error: sub_rl_mat_inplace: nonconformant arguments (" << "A is ";
-      error_message << A.M() << 'x' << A.N() << ", B is " << B.M() << 'x' << B.N() << ")\n";
-      throw std::invalid_argument(error_message.str());
+      std::cerr << "error: sub_rl_mat_inplace: nonconformant arguments (A is " << A.size() << ", B is " << B.size() << ")\n";
+      return B;
     }
 
     const size_t n = B.numel();
@@ -1117,11 +1101,8 @@ namespace Pinakas { namespace Backend
   Matrix<T3> sub_mat(const Matrix<T1>& A, const Matrix<T2>& B)
   {
     if (A.size() != B.size()) {
-      std::stringstream error_message;
-      error_message << "error: sub_ll_mat: nonconformant arguments (" << "A is ";
-      error_message << A.M() << 'x' << A.N() << ", B is ";
-      error_message << B.M() << 'x' << B.N() << ")\n";
-      throw std::invalid_argument(error_message.str());
+      std::cerr << "error: sub_ll_mat: nonconformant arguments (A is " << A.size() << ", B is " << B.size() << ")\n";
+      return Matrix<T3>();
     }
 
     Matrix<T3> R(A.size());
@@ -1329,11 +1310,8 @@ namespace Pinakas { namespace Backend
   Matrix<T1>& div_ll_mat_inplace(Matrix<T1>& A, const Matrix<T2>& B)
   {
     if (A.size() != B.size()) {
-      std::stringstream error_message;
-      error_message << "error: div_ll_mat_inplace: nonconformant arguments (" << "A is ";
-      error_message << A.M() << 'x' << A.N() << ", B is ";
-      error_message << B.M() << 'x' << B.N() << ")\n";
-      throw std::invalid_argument(error_message.str());
+      std::cerr << "error: div_ll_mat_inplace: nonconformant arguments (A is " << A.size() << ", B is " << B.size() << ")\n";
+      return A;
     }
 
     const size_t n = A.numel();
@@ -1347,11 +1325,8 @@ namespace Pinakas { namespace Backend
   Matrix<T1>& div_rl_mat_inplace(Matrix<T1>& B, const Matrix<T2>& A)
   {
     if (A.size() != B.size()) {
-      std::stringstream error_message;
-      error_message << "error: div_ll_mat_inplace: nonconformant arguments (" << "A is ";
-      error_message << A.M() << 'x' << A.N() << ", B is ";
-      error_message << B.M() << 'x' << B.N() << ")\n";
-      throw std::invalid_argument(error_message.str());
+      std::cerr << "error: div_ll_mat_inplace: nonconformant arguments (A is " << A.size() << ", B is " << B.size() << ")\n";
+      return B;
     }
 
     const size_t n = B.numel();
@@ -1415,11 +1390,8 @@ namespace Pinakas { namespace Backend
   Matrix<T3> div_ll_mat(const Matrix<T1>& A, const Matrix<T2>& B)
   {
     if (A.size() != B.size()) {
-      std::stringstream error_message;
-      error_message << "error: div_ll_mat: nonconformant arguments (" << "A is ";
-      error_message << A.M() << 'x' << A.N() << ", B is ";
-      error_message << B.M() << 'x' << B.N() << ")\n";
-      throw std::invalid_argument(error_message.str());
+      std::cerr << "error: div_ll_mat: nonconformant arguments (A is " << A.size() << ", B is " << B.size() << ")\n";
+      return Matrix<T3>();
     }
 
     Matrix<T3> R(A.size());
@@ -1594,11 +1566,8 @@ namespace Pinakas { namespace Backend
   Matrix<T1>& pow_ll_mat_inplace(Matrix<T1>& A, const Matrix<T2>& B)
   {
     if (A.size() != B.size()) {
-      std::stringstream error_message;
-      error_message << "error: pow_ll_mat_inplace: nonconformant arguments (" << "A is ";
-      error_message << A.M() << 'x' << A.N() << ", B is ";
-      error_message << B.M() << 'x' << B.N() << ")\n";
-      throw std::invalid_argument(error_message.str());
+      std::cerr << "error: pow_ll_mat_inplace: nonconformant arguments (A is " << A.size() << ", B is " << B.size() << ")\n";
+      return A;
     }
 
     const size_t n = A.numel();
@@ -1612,11 +1581,8 @@ namespace Pinakas { namespace Backend
   Matrix<T1>& pow_rl_mat_inplace(Matrix<T1>& B, const Matrix<T2>& A)
   {
     if (A.size() != B.size()) {
-      std::stringstream error_message;
-      error_message << "error: pow_ll_mat_inplace: nonconformant arguments (" << "A is ";
-      error_message << A.M() << 'x' << A.N() << ", B is ";
-      error_message << B.M() << 'x' << B.N() << ")\n";
-      throw std::invalid_argument(error_message.str());
+      std::cerr << "error: pow_ll_mat_inplace: nonconformant arguments (A is " << A.size() << ", B is " << B.size() << ")\n";
+      return B;
     }
 
     const size_t n = B.numel();
@@ -1650,11 +1616,8 @@ namespace Pinakas { namespace Backend
   Matrix<T3> pow_mat(const Matrix<T1>& A, const Matrix<T2>& B)
   {
     if (A.size() != B.size()) {
-      std::stringstream error_message;
-      error_message << "error: pow_ll_mat: nonconformant arguments (" << "A is ";
-      error_message << A.M() << 'x' << A.N() << ", B is ";
-      error_message << B.M() << 'x' << B.N() << ")\n";
-      throw std::invalid_argument(error_message.str());
+      std::cerr << "error: pow_ll_mat: nonconformant arguments (A is " << A.size() << ", B is " << B.size() << ")\n";
+      return Matrix<T3>();
     }
 
     Matrix<T3> R(A.size());
@@ -1832,11 +1795,8 @@ namespace Pinakas { namespace Backend
   Matrix<double> mul(const Matrix<T1>& A, const Matrix<T2>& B)
   {
     if (A.N() != B.M()) {
-      std::stringstream error_message;
-      error_message << "error: mul: nonconformant arguments (";
-      error_message << "A is " << A.M() << 'x' << A.N();
-      error_message << ", B is " << B.M() << 'x' << B.N() << ")\n";
-      throw std::invalid_argument(error_message.str());
+      std::cerr << "error: mul: nonconformant arguments (A is " << A.size() << ", B is " << B.size() << ")\n";
+      return Matrix<double>();
     }
 
     Matrix<double> result(A.M(), B.N(), 0);
@@ -1849,30 +1809,26 @@ namespace Pinakas { namespace Backend
     return result;
   }
 
-  template<typename T1>
-  Matrix<double> div(const Matrix<T1>& b, Matrix<double> A)
+  template<typename T, typename T0 = convert_to_double<T>>
+  Matrix<double> div(const Matrix<T>& b, Matrix<double> A)
   {
     // verify vertical dimensions
     if (b.M() != A.M()) {
-      std::stringstream error_message;
-      error_message << "error: div: vertical dimensions mismatch (b is ";
-      error_message << b.M() << "x_, A is " << A.M() << "x_)\n";
-      throw std::invalid_argument(error_message.str());
+      std::cerr << "error: div: vertical dimensions mismatch (b is " << b.M() << "x_, A is " << A.M() << "x_)\n";
+      return Matrix<double>();
     }
 
     // verify that b is a column matrix
     if (b.N() != 1) {
-      std::stringstream error_message;
-      error_message << "error: div: horizontal dimension is not 1 (b is "
-                    << "_x" << A.N() << ")\n";
-      throw std::invalid_argument(error_message.str());
+      std::cerr << "error: div: b's horizontal dimension is not 1 (b is _x" << b.N() << ")\n";
+      return Matrix<double>();
     }
 
     // store the dimensions of A
     const size_t M = A.M();
     const size_t N = A.N();
 
-    // necessary matrices
+    // QR decomposition matrices and result matrix
     Matrix<double> Q(M, N), R(N, N), x(N, 1);
 
     // QR decomposition using the modified Gram-Schmidt process
@@ -1940,10 +1896,8 @@ namespace Pinakas { namespace Backend
   Matrix<T> reshape(const Matrix<T>& A, const size_t M, const size_t N)
   {
     if (A.numel() != M * N) {
-      std::stringstream error_message;
-      error_message << "error: reshape: can't reshape " << A.M() << 'x' << A.N();
-      error_message << " matrix to " << M << 'x' << N << " matrix";
-      throw std::invalid_argument(error_message.str());
+      std::cerr << "error: reshape: can't reshape " << A.size() << " matrix to " << M << 'x' << N << " matrix";
+      return Matrix<T>();
     }
 
     Matrix<T> R(M, N);
@@ -2137,13 +2091,13 @@ namespace Pinakas { namespace Backend
 
   std::unique_ptr<Matrix<double>[]> linearize(const Matrix<double>& data_x, const Matrix<double>& data_y)
   {
+    if (data_x.numel() != data_y.numel()) {
+      std::cerr << "error: linearize: 'data_x' and 'data_y' must have the same number of elements";
+      return std::unique_ptr<Matrix<double>[]>(new Matrix<double>[2]);
+    }
+
     if ((data_x.M() != 1) ||(data_y.M() != 1))
       std::clog << "warning: linearize: data is interpreted as a horizontal 1-dimensional matrix\n";
-    if (data_x.numel() != data_y.numel()) {
-      std::stringstream error_message;
-      error_message << "error: linearize: 'data_x' and 'data_y' must have the same number of elements";
-      throw std::invalid_argument(error_message.str());
-    }
 
     const size_t n = data_x.numel();
 
@@ -2316,10 +2270,13 @@ namespace Pinakas { namespace Backend
 
   Matrix<double> lpc(const Matrix<double>& A, const size_t p)
   {
+    if (p >= A.numel()) {
+      std::cerr << "error: lpc: p should be less than number of elements in A";
+      return Matrix<double>();
+    }
+
     if (A.M() != 1)
       std::clog << "warning: lpc: A should be a horizontal vector\n";
-    if (p >= A.numel())
-      throw std::invalid_argument("error: lpc: p should be smaller than the smaller of elements in A");
 
     Matrix<double> rxx = Rxx(A, p+1);
 
@@ -2517,8 +2474,10 @@ namespace Pinakas { namespace Backend
   Matrix<double> sinc_impulse(const size_t length, const double frequency)
   {
     // validate impulse length
-    if ((length % 2) == 0)
-      throw std::invalid_argument("error: sinc_impulse: 'length' must be odd");
+    if ((length % 2) == 0) {
+      std::cerr << "error: sinc_impulse: 'length' must be odd";
+      return Matrix<double>();
+    }
 
     // offset to the impulse center
     const signed offset = (length - 1) * 0.5;
@@ -2535,30 +2494,42 @@ namespace Pinakas { namespace Backend
 
   Matrix<double> resample(const Matrix<double>& data, const size_t L, const size_t keep, const double alpha, const bool tail)
   {
-    if (data.M() != 1)
-      std::clog << "warning: resample: 'data' is interpreted as a horizontal 1-dimensional matrix\n";
-    if (data.numel() == 0)
-      throw std::invalid_argument("error: resample: 'data' must contain atleast 1 element");
-    if (L <= 1)
-      throw std::invalid_argument("error: resample: 'L' must be 2 or greater");
-    if (keep >= data.numel())
-      throw std::invalid_argument("error: resample: 'keep' must be less than the number of elements in 'data'");
-    if (alpha < (1/L))
-      throw std::invalid_argument("error: resample: 'alpha' must be at least 1/L");
+    if (!data.numel()) {
+      std::cerr << "error: resample: 'data' must contain atleast 1 element";
+      return Matrix<double>();
+    }
     
-    const size_t N = data.numel();
+    if (L <= 1) {
+      std::cerr << "error: resample: 'L' must be 2 or greater";
+      return Matrix<double>();
+    }
+    
+    if (keep >= data.numel()) {
+      std::cerr << "error: resample: 'keep' must be less than the number of elements in 'data'";
+      return Matrix<double>();
+    }
+    
+    if (alpha < (1.0/L)) {
+      std::cerr << "error: resample: 'alpha' must be at least 1/L";
+      return Matrix<double>();
+    }
+
+    if (data.M() != 1)
+      std::clog << "warning: resample: 'data' is interpreted as a horizontal vector\n";
+    
+    const size_t n = data.numel();
 
     // offset to impulse center
     const size_t offset = L * alpha;
     // length of impulse
-    const size_t length = 2 * offset + 1;
+    const size_t filter_length = 2 * offset + 1;
 
     // indices to the first and last upsampled elements in the symetrically extended data
     const size_t first = L * keep;
-    const size_t last  = L * N + first - (tail ? 1 : L);
+    const size_t last  = L * n + first - (tail ? 1 : L);
 
     // symetrically extended data vector
-    Matrix<double> extended(1, N + 2 * keep, 0);
+    Matrix<double> extended(1, n + 2 * keep, 0);
 
     // store and upsample left symetrical data
     size_t k = 0;
@@ -2566,20 +2537,20 @@ namespace Pinakas { namespace Backend
       extended[0][k++] = 2 * data[0][0] - data[0][keep - i];
 
     // store and upsample data
-    for (size_t i = 0; i < N; ++i)
+    for (size_t i = 0; i < n; ++i)
       extended[0][k++] = data[0][i];
       
     // store and upsample right symetrical data
     for (size_t i = 0; i < keep; ++i)
-      extended[0][k++] = 2 * data[0][N - 1] - data[0][N - 2 - i];
+      extended[0][k++] = 2 * data[0][n - 1] - data[0][n - 2 - i];
       
     // design low-pass interpolation filter
-    const Matrix<double> filter = blackman(sinc_impulse(length, 1.0 / L));
+    const Matrix<double> filter = blackman(sinc_impulse(filter_length, 1.0 / L));
 
     // interpolate upsampled data using a cropped convolution
     Matrix<double> resampled(1, last - first + 1, 0);
     for (size_t i = 0; i < extended.numel(); ++i) {
-      for (size_t j = 0; j < filter.numel(); ++j) {
+      for (size_t j = 0; j < filter_length; ++j) {
         size_t k = i*L + j - offset;
         // skips if the index is not within the upsampled data range (cropping)
         if ((first <= k) && (k <= last))
@@ -2611,6 +2582,7 @@ namespace Pinakas { namespace Backend
         ostream << '\n';
       }
     }
+
     return ostream;
   }
 
@@ -2647,8 +2619,10 @@ namespace Pinakas { namespace Backend
   {
     // validate that gnuplot is in system path
     static bool gnuplot_on_system_path = false;
-    if ((!gnuplot_on_system_path) && std::system("gnuplot --version"))
-      throw std::runtime_error("error: plot: gnuplot could not be found in the system path");
+    if ((!gnuplot_on_system_path) && std::system("gnuplot --version")) {
+      std::cerr << "error: plot: gnuplot could not be found in the system path";
+      return;
+    }
     gnuplot_on_system_path = true;
 
     // validate that x and y have the same number of elements
@@ -2656,10 +2630,9 @@ namespace Pinakas { namespace Backend
       const Matrix<double>& xdata = data_set.first;
       const Matrix<double>& ydata = data_set.second;
       if (xdata.numel() != ydata.numel()) {
-        std::stringstream error_message;
-        error_message << "error: plot: number of element mismatch (x has " << xdata.numel();
-        error_message << " elements,  y has " << ydata.numel() << " elements)\n";
-        throw std::invalid_argument(error_message.str());
+        std::cerr << "error: plot: number of element mismatch (x has " << xdata.numel();
+        std::cerr << " elements,  y has " << ydata.numel() << " elements)\n";
+        return;
       }
     }
 
@@ -2670,8 +2643,10 @@ namespace Pinakas { namespace Backend
     std::ofstream file("gnuplot.data");
 
     // validate file opening
-    if (!file)
-      throw std::runtime_error("could not open gnuplot.data");
+    if (!file) {
+      std::cerr << "could not create/open gnuplot.data";
+      return;
+    }
 
     // write x and y data to file for each data set
     for (auto& data_set : data_sets) {
@@ -2787,9 +2762,10 @@ namespace Pinakas { namespace Backend
   {
     const size_t N = signal.numel();
 
-    // validate that the signal has a power of 2 number of elements
-    if (N & (N - 1))
-      throw std::invalid_argument("error: fft: signal must have a power of 2 number of elements");
+    if (N & (N - 1)) {
+      std::cerr << "error: fft: the number of elements in 'signal' must be a power of 2";
+      return std::move(Matrix<complex>());
+    }
     
     size_t k = N; // Current stage size
     size_t n; // Size of butterfly operations
@@ -2856,15 +2832,9 @@ void sleep_for_ms(int ms)
 int main()
 {
   using namespace Pinakas;
-  puts("-------");
-  Matrix<double> xdata = linspace(0, 1, 10).transpose();
-  puts("-------");
-  Matrix<double> b = 2*(xdata^2) - 0.5*xdata + 1.5;
-  puts("-------");
-  Matrix<double> A = {xdata^2, xdata^1, xdata^0};
-  puts("-------");
-  // solve Ax = b   ->   x = b/A
-  Matrix<double> x = div(b, A);
-  puts("-------");
-  std::cout << "x:\n" << x;
+  
+  Matrix<double> x = {1, 2, 3};
+  Matrix<double> y = {{1, 2, 3}, {4, 5, 6}, {7, 8, 9}};
+
+  std::cout << "mul:\n" << mul(x, y);
 }
