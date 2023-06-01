@@ -436,7 +436,11 @@ namespace Pinakas { namespace Backend
     return *this;
   }
 
-
+  template<typename T>
+  Matrix<T>::operator size_t (void)
+  {
+    return size_.numel;
+  }
 
 
 // --------------------------------------------------------------------------------------
@@ -2321,13 +2325,13 @@ namespace Pinakas { namespace Backend
     return windowed;
   }
 
-  Matrix<double> blackman(Matrix<double>&& signal) noexcept
+  Matrix<double>&& blackman(Matrix<double>&& signal) noexcept
   {
     const size_t N = signal.numel();
     for (size_t k = 0; k < N; ++k)
       signal[0][k] *= 0.42 - 0.5 * std::cos(2 * M_PI * k / (N - 1))
                           + 0.08 * std::cos(4 * M_PI * k / (N - 1));
-    return signal;
+    return std::move(signal);
   }
 // --------------------------------------------------------------------------------------
   Matrix<double> hamming(const size_t N)
@@ -2347,12 +2351,12 @@ namespace Pinakas { namespace Backend
     return windowed;
   }
 
-  Matrix<double> hamming(Matrix<double>&& signal) noexcept
+  Matrix<double>&& hamming(Matrix<double>&& signal) noexcept
   {
     const size_t N = signal.numel();
     for (size_t k = 0; k < N; ++k)
       signal[0][k] *= 0.54 - 0.46 * std::cos(2 * M_PI * k / (N - 1));
-    return signal;
+    return std::move(signal);
   }
 // --------------------------------------------------------------------------------------
   Matrix<double> hann(const size_t N)
@@ -2372,12 +2376,12 @@ namespace Pinakas { namespace Backend
     return windowed;
   }
 
-  Matrix<double> hann(Matrix<double>&& signal) noexcept
+  Matrix<double>&& hann(Matrix<double>&& signal) noexcept
   {
     const size_t N = signal.numel();
     for (size_t k = 0; k < N; ++k)
       signal[0][k] *= 0.5 - 0.5 * std::cos(2 * M_PI * k / (N - 1));
-    return signal;
+    return std::move(signal);
   }
 // --------------------------------------------------------------------------------------
   double newton(const std::function<double(double)> function,
@@ -2408,13 +2412,13 @@ namespace Pinakas { namespace Backend
     return R;
   }
 
-  Matrix<double> cos(Matrix<double>&& A) noexcept
+  Matrix<double>&& cos(Matrix<double>&& A) noexcept
   {
     const size_t n = A.numel();
     for (size_t k = 0; k < n; ++k)
       A[0][k] = std::cos(A[0][k]);
 
-    return A;
+    return std::move(A);
   }
 
   template<typename T>
@@ -2429,13 +2433,13 @@ namespace Pinakas { namespace Backend
     return R;
   }
 
-  Matrix<double> sin(Matrix<double>&& A) noexcept
+  Matrix<double>&& sin(Matrix<double>&& A) noexcept
   {
     const size_t n = A.numel();
     for (size_t k = 0; k < n; ++k)
       A[0][k] = std::sin(A[0][k]);
 
-    return A;
+    return std::move(A);
   }
 
   template<typename T>
@@ -2452,7 +2456,7 @@ namespace Pinakas { namespace Backend
     return R;
   }
 
-  Matrix<double> sinc(Matrix<double>&& A) noexcept
+  Matrix<double>&& sinc(Matrix<double>&& A) noexcept
   {
     const size_t n = A.numel();
     for (size_t k = 0; k < n; ++k) {
@@ -2460,7 +2464,7 @@ namespace Pinakas { namespace Backend
       A[0][k] = (temporary == 0) ? 1 : std::sin(temporary) / temporary;
     }
 
-    return A;
+    return std::move(A);
   }
 // --------------------------------------------------------------------------------------
   Matrix<double> upsample(const Matrix<double>& data, const size_t L)
@@ -2707,15 +2711,6 @@ namespace Pinakas { namespace Backend
     return R;
   }
   
-  Matrix<double> abs(Matrix<double>&& A) noexcept
-  {
-    const size_t n = A.numel();
-    for (size_t k = 0; k < n; ++k)
-      A[0][k] = std::abs(A[0][k]);
-
-    return A;
-  }
-  
   Matrix<double> real(const Matrix<complex>& A)
   {
     Matrix<double> R(A.size());
@@ -2749,13 +2744,13 @@ namespace Pinakas { namespace Backend
     return R;
   }
 
-  Matrix<complex> conj(Matrix<complex>&& A) noexcept
+  Matrix<complex>&& conj(Matrix<complex>&& A)
   {
     const size_t n = A.numel();
     for (size_t k = 0; k < n; ++k)
       A[0][k] = std::conj(A[0][k]);
 
-    return A;
+    return std::move(A);
   }
 
   Matrix<complex>&& fft(Matrix<complex>&& signal)
@@ -2764,7 +2759,7 @@ namespace Pinakas { namespace Backend
 
     if (N & (N - 1)) {
       std::cerr << "error: fft: the number of elements in 'signal' must be a power of 2";
-      return std::move(Matrix<complex>());
+      return std::move(signal);
     }
     
     size_t k = N; // Current stage size
@@ -2833,8 +2828,12 @@ int main()
 {
   using namespace Pinakas;
   
-  Matrix<double> x = {1, 2, 3};
-  Matrix<double> y = {{1, 2, 3}, {4, 5, 6}, {7, 8, 9}};
+  Matrix<double> x = linspace(0, 1, 128);
 
-  std::cout << "mul:\n" << mul(x, y);
+  puts("----");
+  sin(x * 10);
+  puts("----");
+  auto y = fft(x);
+  puts("----");
+  plot({"fft"}, {{x, abs(y)}});
 }

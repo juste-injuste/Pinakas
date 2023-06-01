@@ -223,8 +223,6 @@ namespace Pinakas { namespace Backend
 // --------------------------------------------------------------------------------------
   Matrix<double> linspace(const double x1, const double x2, const size_t N);
   Matrix<size_t> iota(const size_t n);
-  template<typename T>
-  Matrix<size_t> iota(const Matrix<T>& A);
 // --------------------------------------------------------------------------------------
   template<typename T>
   Matrix<T> transpose(const Matrix<T>& A);
@@ -276,23 +274,23 @@ namespace Pinakas { namespace Backend
 // --------------------------------------------------------------------------------------
   template<typename T>
   Matrix<double> cos(Matrix<T>& A);
-  Matrix<double> cos(Matrix<double>&& A) noexcept;
+  Matrix<double>&& cos(Matrix<double>&& A) noexcept;
   template<typename T>
   Matrix<double> sin(Matrix<T>& A);
-  Matrix<double> sin(Matrix<double>&& A) noexcept;
+  Matrix<double>&& sin(Matrix<double>&& A) noexcept;
   template<typename T>
   Matrix<double> sinc(Matrix<T>& A);
-  Matrix<double> sinc(Matrix<double>&& A) noexcept;
+  Matrix<double>&& sinc(Matrix<double>&& A) noexcept;
 // --------------------------------------------------------------------------------------
   Matrix<double> blackman(const size_t N);
   Matrix<double> blackman(const Matrix<double>& signal);
-  Matrix<double> blackman(Matrix<double>&& signal) noexcept;
+  Matrix<double>&& blackman(Matrix<double>&& signal) noexcept;
   Matrix<double> hamming(const size_t N);
   Matrix<double> hamming(const Matrix<double>& signal);
-  Matrix<double> hamming(Matrix<double>&& signal) noexcept;
+  Matrix<double>&& hamming(Matrix<double>&& signal) noexcept;
   Matrix<double> hann(const size_t N);
   Matrix<double> hann(const Matrix<double>& signal);
-  Matrix<double> hann(Matrix<double>&& signal) noexcept;
+  Matrix<double>&& hann(Matrix<double>&& signal) noexcept;
 // --------------------------------------------------------------------------------------
   Matrix<double> sinc_impulse(const size_t length, const double frequency);
   Matrix<double> resample(const Matrix<double>& data, const size_t L, const size_t keep=2, const double alpha=3.5, const bool tail=false);
@@ -301,11 +299,10 @@ namespace Pinakas { namespace Backend
 // --------------------------------------------------------------------------------------
   template<typename T>
   Matrix<double> abs(const Matrix<T>& A);
-  Matrix<double> abs(Matrix<double>&& A) noexcept;
   Matrix<double> real(const Matrix<complex>& A);
   Matrix<double> imag(const Matrix<complex>& A);
   Matrix<complex> conj(const Matrix<complex>& A);
-  Matrix<complex> conj(Matrix<complex>&& A) noexcept;
+  Matrix<complex>&& conj(Matrix<complex>&& A);
 // --------------------------------------------------------------------------------------
   Matrix<complex>&& fft(Matrix<complex>&& signal);
   Matrix<complex> ifft(const Matrix<complex>& spectrum);
@@ -436,6 +433,7 @@ namespace Pinakas { namespace Backend
     public:
       Matrix<T>& transpose(void) &;
       Matrix<T>&& transpose(void) &&;
+      operator size_t (void);
     private:
       class Iterator final {
         public:
