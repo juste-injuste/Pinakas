@@ -248,44 +248,52 @@ namespace Pinakas { namespace Backend
   }
 // --------------------------------------------------------------------------------------
   template<typename T>
-  T* Matrix<T>::operator[](const size_t k) const noexcept
+  T* Matrix<T>::operator[](const size_t j) const noexcept
   {
-    return data_.get() + k * size_.N;
+    return data_.get() + j * size_.N;
   }
 
   template<typename T>
   T& Matrix<T>::operator()(signed int k) const
   {
+    // positive and negative bound checking
     if ((k < -signed(size_.numel)) || (signed(size_.numel) <= k)) {
       std::clog << "warning: Matrix: (" << k << ") out of bound " << size_.numel << ", wrapped around to (";
+      // wrap around to avoid undefined behavior
       k %= signed(size_.numel);
       std::clog << k << ")\n";
     }
 
+    // convert negative indices
     k += (k < 0) * size_.numel;
 
     return data_[k];
   }
 
   template<typename T>
-  T& Matrix<T>::operator()(signed int y, signed int x) const
+  T& Matrix<T>::operator()(signed int j, signed int i) const
   {
-    if ((y < -signed(size_.M)) || (signed(size_.M) <= y)) {
-      std::clog << "warning: Matrix: (" << y << ", _) out of bound " << size_.M << ", wrapped around to (";
-      y %= signed(size_.M);
-      std::clog << y << ", _)\n";
+    // positive and negative bound checking
+    if ((j < -signed(size_.M)) || (signed(size_.M) <= j)) {
+      std::clog << "warning: Matrix: (" << j << ", _) out of bound " << size_.M << ", wrapped around to (";
+      // convert negative indices
+      j %= signed(size_.M);
+      std::clog << j << ", _)\n";
     }
 
-    if ((x < -signed(size_.N)) || (signed(size_.N) <= x)) {
-      std::clog << "warning: Matrix: (_, " << x << ") out of bound " << size_.N << ", wrapped around to (_, ";
-      x %= signed(size_.N);
-      std::clog << x << ")\n";
+    // positive and negative bound checking
+    if ((i < -signed(size_.N)) || (signed(size_.N) <= i)) {
+      std::clog << "warning: Matrix: (_, " << i << ") out of bound " << size_.N << ", wrapped around to (_, ";
+      // convert negative indices
+      i %= signed(size_.N);
+      std::clog << i << ")\n";
     }
 
-    y += (y < 0) * size_.M;
-    x += (x < 0) * size_.N;
+    // convert negative indices
+    j += (j < 0) * size_.M;
+    i += (i < 0) * size_.N;
 
-    return data_[x + y * size_.N];
+    return data_[i + j * size_.N];
   }
 // --------------------------------------------------------------------------------------
   template<typename T>
@@ -386,6 +394,51 @@ namespace Pinakas { namespace Backend
 
     return *this;
   }
+
+
+  template<typename T>
+  Matrix<T>&& Matrix<T>::transpose(void) &&
+  {
+    if ((size_.M != 1) && (size_.N != 1)) {
+      // transpose using new matrix
+      Matrix<T> transposed(size_.N, size_.M);
+      for (size_t j = 0; j < size_.M; ++j)
+        for (size_t i = 0; i < size_.N; ++i)
+          transposed[i][j] = data_[i + j * size_.N];
+
+      // take over ressources transposed other matrix
+      data_.reset(transposed.data_.release());
+    }
+
+    // transpose dimensions
+    std::swap(size_.M, size_.N);
+
+    return std::move(*this);
+  }
+
+  template<typename T>
+  Matrix<T>& Matrix<T>::transpose(void) &
+  {
+    if ((size_.M != 1) && (size_.N != 1)) {
+      // transpose using new matrix
+      Matrix<T> transposed(size_.N, size_.M);
+      for (size_t j = 0; j < size_.M; ++j)
+        for (size_t i = 0; i < size_.N; ++i)
+          transposed[i][j] = data_[i + j * size_.N];
+
+      // take over ressources transposed other matrix
+      data_.reset(transposed.data_.release());
+    }
+
+    // transpose dimensions
+    std::swap(size_.M, size_.N);
+
+    return *this;
+  }
+
+
+
+
 // --------------------------------------------------------------------------------------
   template <typename T>
   Matrix<T>::Iterator::Iterator(Matrix<T>& matrix, const size_t index) noexcept
@@ -1796,7 +1849,8 @@ namespace Pinakas { namespace Backend
     return result;
   }
 
-  Matrix<double> div(const Matrix<double>& b, Matrix<double> A)
+  template<typename T1>
+  Matrix<double> div(const Matrix<T1>& b, Matrix<double> A)
   {
     // verify vertical dimensions
     if (b.M() != A.M()) {
@@ -2802,66 +2856,15 @@ void sleep_for_ms(int ms)
 int main()
 {
   using namespace Pinakas;
-  using namespace Keyword;
-
-  /*
-  Matrix<int> x = iota(10);
-  Matrix<double> y = iota(10);
-  puts("----------------");
-  auto t1 =  x + y;
-  puts("----------------");
-  auto t2 =  x + (y + 1.0);
-  puts("----------------");
-  auto t3 =  (x + 1) + y;
-  puts("----------------");
-  auto t4 =  (x + 1) + (y + 1.0);
-  puts("----------------");
-  //(x + 1) += 1;
-  puts("----------------");
-  x += 1;
-  puts("----------------");
-  x += 1;
-  puts("----------------");
-  x += 1.0;
-  puts("----------------");
-  x += Random(0, 1);
-  puts("----------------");
-  x += x;
-  puts("----------------");
-  x += y;
-  puts("----------------");
-  y += 1;
-  puts("----------------");
-  y += 1.0;
-  puts("----------------");
-  y += Random(0, 1);
-  puts("----------------");
-  y += y;
-  puts("----------------");
-  y += x;
-  puts("----------------");
-  //*/
-
-  /*
-  size_t N = 100;
-  size_t L = 100;
-  auto   f = [](const Matrix<double>& x) {return (x ^ 2) + sin(x * 20) / 10 - 2 + Random(0, 0.2);};
-
-  auto x_lo = linspace(0, 1, N);
-  auto y_lo = f(x_lo);
-
-  auto y_hi = resample(y_lo, L);
-  auto x_hi = linspace(0, 1, y_hi.numel());
-
-  std::cout << x_lo.numel() << '\n';
-  std::cout << x_hi.numel() << '\n';
-
-  plot({"original", "resampled"}, {{x_lo, y_lo}, {x_hi, y_hi}}, true, false);
-  //*/
-
-  /*
-  Matrix<double> x = {{1, 2, 3},
-                      {4, 5, 6},
-                      {7, 8, 9}};
-  //*/
+  puts("-------");
+  Matrix<double> xdata = linspace(0, 1, 10).transpose();
+  puts("-------");
+  Matrix<double> b = 2*(xdata^2) - 0.5*xdata + 1.5;
+  puts("-------");
+  Matrix<double> A = {xdata^2, xdata^1, xdata^0};
+  puts("-------");
+  // solve Ax = b   ->   x = b/A
+  Matrix<double> x = div(b, A);
+  puts("-------");
+  std::cout << "x:\n" << x;
 }

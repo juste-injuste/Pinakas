@@ -214,7 +214,8 @@ namespace Pinakas { namespace Backend
 // --------------------------------------------------------------------------------------
   template<typename T1, typename T2>
   Matrix<double> mul(const Matrix<T1>& A, const Matrix<T2>& B);
-  Matrix<double> div(const Matrix<double>& A, Matrix<double> B);
+  template<typename T1>
+  Matrix<double> div(const Matrix<T1>& A, Matrix<double> B);
 // --------------------------------------------------------------------------------------
   Matrix<double> linspace(const double x1, const double x2, const size_t N);
   Matrix<size_t> iota(const size_t n);
@@ -358,14 +359,14 @@ namespace Pinakas { inline namespace Frontend
 // --Pinakas library: backend struct and class definitions-------------------------------
 namespace Pinakas { namespace Backend
 {
-  struct Size {
+  struct Size final {
     size_t M, N, numel;
     inline bool operator==(const Size B) const noexcept;
     inline bool operator!=(const Size B) const noexcept;
   };
 
   template<typename T>
-  class Matrix {
+  class Matrix final {
     public:
       // destructor
       ~Matrix() noexcept;
@@ -390,11 +391,11 @@ namespace Pinakas { namespace Backend
       // fill assignation
       Matrix<T>& operator=(const T value) & noexcept;
       // indexing
-      inline T* operator[](const size_t k) const noexcept;
+      inline T* operator[](const size_t j) const noexcept;
       // bound-checked flat-indexing
       T& operator()(signed int k) const;
       // bound-checked indexing
-      T& operator()(signed int y, signed int x) const;
+      T& operator()(signed int j, signed int i) const;
       //
       Slice<T> operator()(Keyword::Entire, const size_t n) & noexcept;
       Slice<T> operator()(const size_t m, Keyword::Entire) & noexcept;
@@ -428,8 +429,11 @@ namespace Pinakas { namespace Backend
       Matrix(const List<const List<const T>> values);
       // join matrix (side-wise)
       Matrix(const List<const Matrix<T>> list);
+    public:
+      Matrix<T>& transpose(void) &;
+      Matrix<T>&& transpose(void) &&;
     private:
-      class Iterator {
+      class Iterator final {
         public:
           Iterator(Matrix<T>& matrix, const size_t index) noexcept;
           inline bool operator==(const Matrix<T>::Iterator& other) const noexcept;
@@ -440,7 +444,7 @@ namespace Pinakas { namespace Backend
           Matrix<T>& matrix;
           size_t index;
       };
-      class Const_Iterator {
+      class Const_Iterator final {
         public:
           Const_Iterator(const Matrix<T>& matrix, const size_t index) noexcept;
           inline bool operator==(const Matrix<T>::Const_Iterator& other) const noexcept;
@@ -459,7 +463,7 @@ namespace Pinakas { namespace Backend
   };
 
   template<typename T>
-  class Slice {
+  class Slice final {
     friend class Matrix<T>;
     public:
       inline T& operator[](size_t index) const & noexcept;
@@ -475,13 +479,13 @@ namespace Pinakas { namespace Backend
       Matrix<T>& matrix_;
   };
 
-  struct Random {
+  struct Random final {
     Random(const double min, const double max) noexcept;
     const double min_;
     const double max_;
   };
 
-  class Range {
+  class Range final {
     public:
       inline explicit Range(const size_t stop) noexcept;
       inline explicit Range(const int start, const int stop) noexcept;

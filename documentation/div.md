@@ -1,17 +1,23 @@
-### Matrix Division
+# Matrix Division
+```text
+x = div(b, A)
+```
 
 This function performs matrix division using QR decomposition with back substitution.
-
-## Usage
 
 ```cpp
 Matrix<double> div(const Matrix<double>& b, Matrix<double> A);
 ```
 
+## Usage
+
 The function takes two parameters:
 
-b: A column matrix (Matrix<double>) representing the right-hand side of the equation.
-A: A matrix (Matrix<double>) representing the left-hand side of the equation.
+`b` column matrix corresponding to `b` in `Ax = b`
+`A` matrix corresponding to `A` in `Ax = b`
+
+
+representing the left-hand side of the equation.
 The function returns a column matrix (Matrix<double>) x, which is the solution to the linear system Rx = Qt*b, where R is an upper triangular matrix obtained from QR decomposition, Q is the orthogonal matrix obtained from QR decomposition, and t denotes the transpose operation.
 
 ## Error Handling
@@ -49,10 +55,10 @@ int main()
 {
     using namespace Pinakas;
 
-    Matrix<double> xdata = transpose(linspace(0, 1, 10));
+    Matrix<double> xdata = linspace(0, 1, 10).transpose();
 
     Matrix<double> b = 2*(xdata^2) - 0.5*xdata + 1.5;
-    Matrix<double> A = {xdata^2, x^1, xdata^0};
+    Matrix<double> A = {xdata^2, xdata^1, xdata^0};
 
     // solve Ax = b   ->   x = b/A
     Matrix<double> x = div(b, A);
