@@ -226,8 +226,12 @@ namespace Pinakas { namespace Backend
 // --------------------------------------------------------------------------------------
   template<typename T>
   Matrix<T> transpose(const Matrix<T>& A);
+  template<typename T1>
+  Matrix<T1>&& transpose(Matrix<T1>&& A);
   template<typename T>
   Matrix<T> reshape(const Matrix<T>& A, const size_t M, const size_t N);
+  template<typename T1>
+  Matrix<T1>&& reshape(Matrix<T1>&& A, const size_t M, const size_t N);
 // --------------------------------------------------------------------------------------
   template<typename T>
   T min(const Matrix<T>& matrix) noexcept;
@@ -372,7 +376,7 @@ namespace Pinakas { namespace Backend
       // destructor
       ~Matrix() noexcept;
       // default constructor
-      Matrix() noexcept;
+      explicit Matrix() noexcept;
       // copy constructor
       Matrix(const Matrix<T>& other);
       // move constructor
@@ -381,7 +385,7 @@ namespace Pinakas { namespace Backend
       template<typename T2>
       Matrix(const Matrix<T2>& other);
       // create a matrix MxN
-      Matrix(const size_t M, const size_t N);
+      explicit Matrix(const size_t M, const size_t N);
       // copy assignation
       Matrix<T>& operator=(const Matrix<T>& other) &;
       // move assignation
@@ -391,15 +395,20 @@ namespace Pinakas { namespace Backend
       Matrix<T>& operator=(const Matrix<T2>& other) &;
       // fill assignation
       Matrix<T>& operator=(const T value) & noexcept;
+    public:
       // indexing
-      inline T* operator[](const size_t j) const noexcept;
+      inline T* operator[](const size_t j) noexcept;
+      inline const T* operator[](const size_t j) const noexcept;
       // bound-checked flat-indexing
-      T& operator()(signed int k) const;
+      T& operator()(signed int k);
+      const T& operator()(signed int k) const;
       // bound-checked indexing
-      T& operator()(signed int j, signed int i) const;
+      T& operator()(signed int j, signed int i);
+      const T& operator()(signed int j, signed int i) const;
       //
       Slice<T> operator()(Keyword::Entire, const size_t n) & noexcept;
       Slice<T> operator()(const size_t m, Keyword::Entire) & noexcept;
+    public:
       // return matrix dimensions
       inline Size size(void) const & noexcept;
       inline size_t numel(void) const & noexcept;
@@ -410,29 +419,31 @@ namespace Pinakas { namespace Backend
       Size size_;
       // data is a T[M][N] array
       std::unique_ptr<T[]> data_;
+    private:
       // allocate data_
       template<typename T1>
       friend void allocate(Matrix<T1>* matrix, const size_t M, const size_t N);
+      template<typename T1>
+      friend Matrix<T1>&& transpose(Matrix<T1>&& A);
+      template<typename T1>
+      friend Matrix<T1>&& reshape(Matrix<T1>&& A);
     public:
       // create a matrix with the same dimensions as 'matrix'
-      inline Matrix(const Size size);
+      inline explicit Matrix(const Size size);
       // create a matrix MxN with a specific value
-      Matrix(const size_t M, const size_t N, const T value);
+      explicit Matrix(const size_t M, const size_t N, const T value);
       // create a matrix with the same dimensions as 'matrix' with a specific value
-      inline Matrix(const Size size, T value);
+      inline explicit Matrix(const Size size, T value);
       // create a matrix MxN random values from a range
-      Matrix(const size_t M, const size_t N, Random range);
+      explicit Matrix(const size_t M, const size_t N, Random range);
       // create a matrix with the same dimensions as 'matrix' with random values from a range
-      inline Matrix(const Size size, const Random range);
+      inline explicit Matrix(const Size size, const Random range);
       // create a matrix from specific values
       Matrix(const List<T> values);
       // create a matrix from specific values
       Matrix(const List<const List<const T>> values);
       // join matrix (side-wise)
       Matrix(const List<const Matrix<T>> list);
-    public:
-      Matrix<T>& transpose(void) &;
-      Matrix<T>&& transpose(void) &&;
       operator size_t (void);
     private:
       class Iterator final {

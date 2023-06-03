@@ -248,13 +248,13 @@ namespace Pinakas { namespace Backend
   }
 // --------------------------------------------------------------------------------------
   template<typename T>
-  T* Matrix<T>::operator[](const size_t j) const noexcept
+  T* Matrix<T>::operator[](const size_t j) noexcept
   {
     return data_.get() + j * size_.N;
   }
 
   template<typename T>
-  T& Matrix<T>::operator()(signed int k) const
+  T& Matrix<T>::operator()(signed int k)
   {
     // positive and negative bound checking
     if ((k < -signed(size_.numel)) || (signed(size_.numel) <= k)) {
@@ -271,7 +271,56 @@ namespace Pinakas { namespace Backend
   }
 
   template<typename T>
-  T& Matrix<T>::operator()(signed int j, signed int i) const
+  T& Matrix<T>::operator()(signed int j, signed int i)
+  {
+    // positive and negative bound checking
+    if ((j < -signed(size_.M)) || (signed(size_.M) <= j)) {
+      std::clog << "warning: Matrix: (" << j << ", _) out of bound " << size_.M << ", wrapped around to (";
+      // convert negative indices
+      j %= signed(size_.M);
+      std::clog << j << ", _)\n";
+    }
+
+    // positive and negative bound checking
+    if ((i < -signed(size_.N)) || (signed(size_.N) <= i)) {
+      std::clog << "warning: Matrix: (_, " << i << ") out of bound " << size_.N << ", wrapped around to (_, ";
+      // convert negative indices
+      i %= signed(size_.N);
+      std::clog << i << ")\n";
+    }
+
+    // convert negative indices
+    j += (j < 0) * size_.M;
+    i += (i < 0) * size_.N;
+
+    return data_[i + j * size_.N];
+  }
+
+  template<typename T>
+  const T* Matrix<T>::operator[](const size_t j) const noexcept
+  {
+    return data_.get() + j * size_.N;
+  }
+
+  template<typename T>
+  const T& Matrix<T>::operator()(signed int k) const
+  {
+    // positive and negative bound checking
+    if ((k < -signed(size_.numel)) || (signed(size_.numel) <= k)) {
+      std::clog << "warning: Matrix: (" << k << ") out of bound " << size_.numel << ", wrapped around to (";
+      // wrap around to avoid undefined behavior
+      k %= signed(size_.numel);
+      std::clog << k << ")\n";
+    }
+
+    // convert negative indices
+    k += (k < 0) * size_.numel;
+
+    return data_[k];
+  }
+
+  template<typename T>
+  const T& Matrix<T>::operator()(signed int j, signed int i) const
   {
     // positive and negative bound checking
     if ((j < -signed(size_.M)) || (signed(size_.M) <= j)) {
@@ -391,47 +440,6 @@ namespace Pinakas { namespace Backend
     // store values
     for (size_t k = 0; k < size_.numel; ++k)
       data_[k] = value;
-
-    return *this;
-  }
-
-
-  template<typename T>
-  Matrix<T>&& Matrix<T>::transpose(void) &&
-  {
-    if ((size_.M != 1) && (size_.N != 1)) {
-      // transpose using new matrix
-      Matrix<T> transposed(size_.N, size_.M);
-      for (size_t j = 0; j < size_.M; ++j)
-        for (size_t i = 0; i < size_.N; ++i)
-          transposed[i][j] = data_[i + j * size_.N];
-
-      // take over ressources transposed other matrix
-      data_.reset(transposed.data_.release());
-    }
-
-    // transpose dimensions
-    std::swap(size_.M, size_.N);
-
-    return std::move(*this);
-  }
-
-  template<typename T>
-  Matrix<T>& Matrix<T>::transpose(void) &
-  {
-    if ((size_.M != 1) && (size_.N != 1)) {
-      // transpose using new matrix
-      Matrix<T> transposed(size_.N, size_.M);
-      for (size_t j = 0; j < size_.M; ++j)
-        for (size_t i = 0; i < size_.N; ++i)
-          transposed[i][j] = data_[i + j * size_.N];
-
-      // take over ressources transposed other matrix
-      data_.reset(transposed.data_.release());
-    }
-
-    // transpose dimensions
-    std::swap(size_.M, size_.N);
 
     return *this;
   }
@@ -1886,14 +1894,22 @@ namespace Pinakas { namespace Backend
     return x;
   }
 // --------------------------------------------------------------------------------------
-  template<typename T>
-  Matrix<T> transpose(const Matrix<T>& A)
+  template<typename T1>
+  Matrix<T1> transpose(const Matrix<T1>& A)
   {
-    Matrix<T> result(A.N(), A.M());
+    Matrix<T1> R(A.N(), A.M());
     for (size_t y = 0; y < A.M(); ++y)
       for (size_t x = 0; x < A.N(); ++x)
-        result[x][y] = A[y][x];
-    return result;
+        R[x][y] = A[y][x];
+    return R;
+  }
+
+  template<typename T1>
+  Matrix<T1>&& transpose(Matrix<T1>&& A)
+  {
+    std::swap(A.size_.M, A.size_.N);
+
+    return std::move(A);
   }
 
   template<typename T>
@@ -1911,6 +1927,20 @@ namespace Pinakas { namespace Backend
       R[0][k] = A[0][k];
 
     return R;
+  }
+
+  template<typename T1>
+  Matrix<T1>&& reshape(Matrix<T1>&& A, const size_t M, const size_t N)
+  {
+    if (A.size_.numel != M * N) {
+      std::cerr << "error: reshape: can't reshape " << A.size() << " matrix to " << M << 'x' << N << " matrix";
+      return std::move(A);
+    }
+
+    A.size_.M = M;
+    A.size_.N = N;
+
+    return std::move(A);
   }
 // --------------------------------------------------------------------------------------
   template<typename T>
@@ -2151,18 +2181,6 @@ namespace Pinakas { namespace Backend
   {
     Matrix<size_t> indices(1, n);
 
-    for (size_t k = 0; k < n; ++k)
-      indices[0][k] = k;
-
-    return indices;
-  }
-
-  template<typename T>
-  Matrix<size_t> iota(const Matrix<T>& A)
-  {
-    const size_t n = A.numel();
-
-    Matrix<size_t> indices(1, n);
     for (size_t k = 0; k < n; ++k)
       indices[0][k] = k;
 
@@ -2827,13 +2845,9 @@ void sleep_for_ms(int ms)
 int main()
 {
   using namespace Pinakas;
+  auto x = linspace(0, 1, 256);
+  auto y = sin(x*10);
+  auto H = abs(fft(x));
   
-  Matrix<double> x = linspace(0, 1, 128);
-
-  puts("----");
-  sin(x * 10);
-  puts("----");
-  auto y = fft(x);
-  puts("----");
-  plot({"fft"}, {{x, abs(y)}});
+  plot({"ok"}, {{x, H}});
 }
