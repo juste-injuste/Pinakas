@@ -66,9 +66,6 @@ namespace Pinakas { namespace Backend
   //
   template<typename T>
   class Matrix;
-  //
-  template<typename T>
-  class Slice;
   // keywords
   namespace Keyword
   {
@@ -234,13 +231,9 @@ namespace Pinakas { namespace Backend
   Matrix<T1>&& reshape(Matrix<T1>&& A, const size_t M, const size_t N);
 // --------------------------------------------------------------------------------------
   template<typename T>
-  T min(const Matrix<T>& matrix) noexcept;
+  T min(const Matrix<T>& A) noexcept;
   template<typename T>
-  T min(const Slice<T>& slice) noexcept;
-  template<typename T>
-  T max(const Matrix<T>& matrix) noexcept;
-  template<typename T>
-  T max(const Slice<T>& slice) noexcept;
+  T max(const Matrix<T>& A) noexcept;
   template<typename T>
   T sum(const Matrix<T>& A) noexcept;
   template<typename T>
@@ -297,7 +290,8 @@ namespace Pinakas { namespace Backend
   Matrix<double>&& hann(Matrix<double>&& signal) noexcept;
 // --------------------------------------------------------------------------------------
   Matrix<double> sinc_impulse(const size_t length, const double frequency);
-  Matrix<double> resample(const Matrix<double>& data, const size_t L, const size_t keep=2, const double alpha=3.5, const bool tail=false);
+  template<typename T, typename T0 = convert_to_double<T>>
+  Matrix<double> resample(const Matrix<T>& data, const size_t L, const size_t keep=2, const double alpha=3.5, const bool tail=false);
 // --------------------------------------------------------------------------------------
   void plot(List<std::string> titles, List<DataSet> data_sets, bool persistent = true, bool remove = true, bool pause = false, bool lines = true);
 // --------------------------------------------------------------------------------------
@@ -308,6 +302,7 @@ namespace Pinakas { namespace Backend
   Matrix<complex> conj(const Matrix<complex>& A);
   Matrix<complex>&& conj(Matrix<complex>&& A);
 // --------------------------------------------------------------------------------------
+  Matrix<complex> fft(const Matrix<complex>& signal);
   Matrix<complex>&& fft(Matrix<complex>&& signal);
   Matrix<complex> ifft(const Matrix<complex>& spectrum);
   Matrix<complex> ifft(Matrix<complex>&& spectrum);
@@ -405,9 +400,6 @@ namespace Pinakas { namespace Backend
       // bound-checked indexing
       T& operator()(signed int j, signed int i);
       const T& operator()(signed int j, signed int i) const;
-      //
-      Slice<T> operator()(Keyword::Entire, const size_t n) & noexcept;
-      Slice<T> operator()(const size_t m, Keyword::Entire) & noexcept;
     public:
       // return matrix dimensions
       inline Size size(void) const & noexcept;
@@ -475,23 +467,6 @@ namespace Pinakas { namespace Backend
       Const_Iterator end(void) const noexcept;
   };
 
-  template<typename T>
-  class Slice final {
-    friend class Matrix<T>;
-    public:
-      inline T& operator[](size_t index) const & noexcept;
-      T& operator()(size_t index) const &;
-      inline Size size(void) const & noexcept;
-      inline size_t numel(void) const & noexcept;
-    private:
-      Slice(Matrix<T>& matrix, const size_t n, Keyword::Column) noexcept;
-      Slice(Matrix<T>& matrix, const size_t n, Keyword::Row) noexcept;
-      const Size size_;
-      const size_t fixed_;
-      const bool col_row_;
-      Matrix<T>& matrix_;
-  };
-
   struct Random final {
     Random(const double min, const double max) noexcept;
     const double min_;
@@ -528,7 +503,6 @@ namespace Pinakas { namespace Backend
   template<typename T>
   std::ostream& operator<<(std::ostream& ostream, const Matrix<T>& A);
   std::ostream& operator<<(std::ostream& ostream, const Size size);
-  std::ostream& operator<<(std::ostream& ostream, const Slice<double>& A);
 // --------------------------------------------------------------------------------------
   template<typename T1, typename T2>
   Matrix<T1>& operator+=(Matrix<T1>& A, const Matrix<T2>& B);

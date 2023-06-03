@@ -230,14 +230,14 @@ namespace Pinakas { namespace Backend
   void allocate(Matrix<T>* matrix, const size_t M, const size_t N)
   {
     // validate sizes
-    if ((M == 0) ||(N == 0)) {
+    if (!(M && N)) {
       std::stringstream error_message;
       error_message << "error: allocate: dimensions are " << M << 'x' << N;
       throw std::invalid_argument(error_message.str());
     }
 
     // allocate memory
-    matrix->data_.reset((T *)new char[sizeof(T[M][N])]);
+    matrix->data_.reset(new T[M*N]);
 
     // validate memory allocation
     if (!matrix->data_.get())
@@ -343,18 +343,6 @@ namespace Pinakas { namespace Backend
     i += (i < 0) * size_.N;
 
     return data_[i + j * size_.N];
-  }
-// --------------------------------------------------------------------------------------
-  template<typename T>
-  Slice<T> Matrix<T>::operator()(Keyword::Entire, const size_t n) & noexcept
-  {
-    return Slice<T>(*this, n, Keyword::column);
-  }
-
-  template<typename T>
-  Slice<T> Matrix<T>::operator()(const size_t m, Keyword::Entire) & noexcept
-  {
-    return Slice<T>(*this, m, Keyword::row);
   }
 // --------------------------------------------------------------------------------------
   template<typename T>
@@ -540,54 +528,7 @@ namespace Pinakas { namespace Backend
     return Const_Iterator(*this, size_.numel);
   }
 // --------------------------------------------------------------------------------------
-  template<typename T>
-  Slice<T>::Slice(Matrix<T>& matrix, const size_t n, Keyword::Column) noexcept
-    : // member initialization list
-    size_{matrix.M(), 1, matrix.M()},
-    fixed_(n),
-    col_row_(false),
-    matrix_(matrix)
-  {}
 
-  template<typename T>
-  Slice<T>::Slice(Matrix<T>& matrix, const size_t m, Keyword::Row) noexcept
-    : // member initialization list
-    size_{1, matrix.N(), matrix.N()},
-    fixed_(m),
-    col_row_(true),
-    matrix_(matrix)
-  {}
-
-  template<typename T>
-  T& Slice<T>::operator[](const size_t index) const & noexcept
-  {
-    return col_row_ ? matrix_[fixed_][index] : matrix_[index][fixed_];
-  }
-
-  template<typename T>
-  T& Slice<T>::operator()(const size_t index) const &
-  {
-    // validate index
-    if (index >= numel()) {
-      std::stringstream error_message;
-      error_message << '(' << index << ") out of bound " << numel() - 1 << " (dimensions are ";
-      error_message << (col_row_ ? 1 : numel()) << 'x' << (col_row_ ? numel() : 1) << " )";
-      throw std::out_of_range(error_message.str());
-    }
-    return col_row_ ? matrix_[fixed_][index] : matrix_[index][fixed_];
-  }
-
-  template<typename T>
-  Size Slice<T>::size(void) const & noexcept
-  {
-    return size_;
-  }
-
-  template<typename T>
-  size_t Slice<T>::numel(void) const & noexcept
-  {
-    return size_.numel;
-  }
 // --------------------------------------------------------------------------------------
   Random::Random(const double min, const double max) noexcept
     : // member initialization list
@@ -1944,45 +1885,23 @@ namespace Pinakas { namespace Backend
   }
 // --------------------------------------------------------------------------------------
   template<typename T>
-  T min(const Matrix<T>& matrix) noexcept
+  T min(const Matrix<T>& A) noexcept
   {
     T minimum = std::numeric_limits<T>::max();
-    for (size_t k = 0; k < matrix.numel(); ++k)
-      if (matrix[0][k] < minimum)
-        minimum = matrix[0][k];
+    for (size_t k = 0; k < A.numel(); ++k)
+      if (A[0][k] < minimum)
+        minimum = A[0][k];
         
-    return minimum;
-  }
-
-  template<typename T>
-  T min(const Slice<T>& slice) noexcept
-  {
-    T minimum = std::numeric_limits<T>::max();
-    for (size_t k = 0; k < slice.numel(); ++k)
-      if (slice[k] < minimum)
-        minimum = slice[k];
-
     return minimum;
   }
   
   template<typename T>
-  T max(const Matrix<T>& matrix) noexcept
+  T max(const Matrix<T>& A) noexcept
   {
     T maximum = std::numeric_limits<T>::min();
-    for (size_t k = 0; k < matrix.numel(); ++k)
-      if (matrix[0][k] > maximum)
-        maximum = matrix[0][k];
-
-    return maximum;
-  }
-
-  template<typename T>
-  T max(const Slice<T>& slice) noexcept
-  {
-    T maximum = std::numeric_limits<T>::min();
-    for (size_t k = 0; k < slice.numel(); ++k)
-      if (slice[k] > maximum)
-        maximum = slice[k];
+    for (size_t k = 0; k < A.numel(); ++k)
+      if (A[0][k] > maximum)
+        maximum = A[0][k];
 
     return maximum;
   }
@@ -2328,8 +2247,8 @@ namespace Pinakas { namespace Backend
   {
     Matrix<double> window(1, N);
     for (size_t k = 0; k < N; ++k)
-      window[0][k] = 0.42 - 0.5 * std::cos(2 * M_PI * k / (N - 1))
-                         + 0.08 * std::cos(4 * M_PI * k / (N - 1));
+      window[0][k] = 0.42 - 0.50 * std::cos(2 * M_PI * k / (N - 1))
+                          + 0.08 * std::cos(4 * M_PI * k / (N - 1));
     return window;
   }
 
@@ -2338,8 +2257,8 @@ namespace Pinakas { namespace Backend
     const size_t N = signal.numel();
     Matrix<double> windowed(1, N);
     for (size_t k = 0; k < N; ++k)
-      windowed[0][k] = signal[0][k] * (0.42 - 0.5 * std::cos(2 * M_PI * k / (N - 1))
-                                           + 0.08 * std::cos(4 * M_PI * k / (N - 1)));
+      windowed[0][k] = signal[0][k] * (0.42 - 0.50 * std::cos(2 * M_PI * k / (N - 1))
+                                            + 0.08 * std::cos(4 * M_PI * k / (N - 1)));
     return windowed;
   }
 
@@ -2347,8 +2266,8 @@ namespace Pinakas { namespace Backend
   {
     const size_t N = signal.numel();
     for (size_t k = 0; k < N; ++k)
-      signal[0][k] *= 0.42 - 0.5 * std::cos(2 * M_PI * k / (N - 1))
-                          + 0.08 * std::cos(4 * M_PI * k / (N - 1));
+      signal[0][k] *= 0.42 - 0.50 * std::cos(2 * M_PI * k / (N - 1))
+                           + 0.08 * std::cos(4 * M_PI * k / (N - 1));
     return std::move(signal);
   }
 // --------------------------------------------------------------------------------------
@@ -2371,9 +2290,9 @@ namespace Pinakas { namespace Backend
 
   Matrix<double>&& hamming(Matrix<double>&& signal) noexcept
   {
-    const size_t N = signal.numel();
-    for (size_t k = 0; k < N; ++k)
-      signal[0][k] *= 0.54 - 0.46 * std::cos(2 * M_PI * k / (N - 1));
+    const size_t n = signal.numel();
+    for (size_t k = 0; k < n; ++k)
+      signal[0][k] *= 0.54 - 0.46 * std::cos(2 * M_PI * k / (n - 1));
     return std::move(signal);
   }
 // --------------------------------------------------------------------------------------
@@ -2514,15 +2433,16 @@ namespace Pinakas { namespace Backend
     return impulse;
   }
 
-  Matrix<double> resample(const Matrix<double>& data, const size_t L, const size_t keep, const double alpha, const bool tail)
+  template<typename T>
+  Matrix<double> resample(const Matrix<T>& data, const size_t L, const size_t keep, const double alpha, const bool tail)
   {
     if (!data.numel()) {
-      std::cerr << "error: resample: 'data' must contain atleast 1 element";
+      std::cerr << "error: resample: 'data' must contain at least 1 element";
       return Matrix<double>();
     }
     
     if (L <= 1) {
-      std::cerr << "error: resample: 'L' must be 2 or greater";
+      std::cerr << "error: resample: 'L' must be at least 2";
       return Matrix<double>();
     }
     
@@ -2536,47 +2456,49 @@ namespace Pinakas { namespace Backend
       return Matrix<double>();
     }
 
-    if (data.M() != 1)
-      std::clog << "warning: resample: 'data' is interpreted as a horizontal vector\n";
-    
-    const size_t n = data.numel();
-
     // offset to impulse center
     const size_t offset = L * alpha;
-    // length of impulse
-    const size_t filter_length = 2 * offset + 1;
-
-    // indices to the first and last upsampled elements in the symetrically extended data
-    const size_t first = L * keep;
-    const size_t last  = L * n + first - (tail ? 1 : L);
-
-    // symetrically extended data vector
-    Matrix<double> extended(1, n + 2 * keep, 0);
-
-    // store and upsample left symetrical data
-    size_t k = 0;
-    for (size_t i = 0; i < keep; ++i)
-      extended[0][k++] = 2 * data[0][0] - data[0][keep - i];
-
-    // store and upsample data
-    for (size_t i = 0; i < n; ++i)
-      extended[0][k++] = data[0][i];
-      
-    // store and upsample right symetrical data
-    for (size_t i = 0; i < keep; ++i)
-      extended[0][k++] = 2 * data[0][n - 1] - data[0][n - 2 - i];
-      
     // design low-pass interpolation filter
+    const size_t filter_length = 2 * offset + 1;
     const Matrix<double> filter = blackman(sinc_impulse(filter_length, 1.0 / L));
 
-    // interpolate upsampled data using a cropped convolution
-    Matrix<double> resampled(1, last - first + 1, 0);
-    for (size_t i = 0; i < extended.numel(); ++i) {
-      for (size_t j = 0; j < filter_length; ++j) {
-        size_t k = i*L + j - offset;
-        // skips if the index is not within the upsampled data range (cropping)
-        if ((first <= k) && (k <= last))
-          resampled[0][k - first] += extended[0][i] * filter[0][j];
+    const size_t N = data.N();
+    const size_t M = data.M();
+
+    // indices to the first and last upsampled elements in the symetrically extended data
+    const size_t first = L*keep;
+    const size_t last  = L*N + first - (tail ? 1 : L);
+
+    // symetrically extended data
+    const size_t extended_length = N + 2 * keep;
+    Matrix<double> extended(M, extended_length, 0);
+
+    // resampled data
+    Matrix<double> resampled(M, last - first + 1, 0);
+
+    // resample every row separately
+    for (size_t m = 0; m < M; ++m) {
+      // store and upsample left symetrical data
+      size_t k = 0;
+      for (size_t i = 0; i < keep; ++i)
+        extended[m][k++] = 2*data[m][0] - data[m][keep - i];
+
+      // store and upsample data
+      for (size_t i = 0; i < N; ++i)
+        extended[m][k++] = data[m][i];
+        
+      // store and upsample right symetrical data
+      for (size_t i = 0; i < keep; ++i)
+        extended[m][k++] = 2*data[m][N-1] - data[m][N-2 - i];
+
+      // interpolate upsampled data using a cropped convolution
+      for (size_t i = 0; i < extended_length; ++i) {
+        for (size_t j = 0; j < filter_length; ++j) {
+          size_t k = i*L + j - offset;
+          // skips if the index is not within the upsampled data range (cropping)
+          if ((first <= k) && (k <= last))
+            resampled[m][k - first] += extended[m][i] * filter[m][j];
+        }
       }
     }
 
@@ -2605,30 +2527,6 @@ namespace Pinakas { namespace Backend
       }
     }
 
-    return ostream;
-  }
-
-  std::ostream& operator<<(std::ostream& ostream, const Slice<double>& A)
-  {
-    if (A.numel()) {
-      std::size_t max_len = 0;
-      for (size_t y = 0; y < A.numel(); ++y) {
-        std::stringstream ss;
-        ss.copyfmt(ostream);
-        ss << A[y];
-        max_len = std::max(max_len, ss.str().length());
-      }
-      if (A.size().M == 1) {
-        ostream << std::setw(max_len) << A[0];
-        for (size_t x = 1; x < A.numel(); ++x)
-          ostream << ' ' << std::setw(max_len) << A[x];
-        ostream << '\n';
-      }
-      else {
-        for (size_t y = 0; y < A.numel(); ++y)
-          ostream << std::setw(max_len) << A[y] << '\n';
-      }
-    }
     return ostream;
   }
 
@@ -2771,6 +2669,11 @@ namespace Pinakas { namespace Backend
     return std::move(A);
   }
 
+  Matrix<complex> fft(const Matrix<complex>& signal)
+  {
+    return fft(Matrix<complex>(signal));
+  }
+
   Matrix<complex>&& fft(Matrix<complex>&& signal)
   {
     const size_t N = signal.numel();
@@ -2834,20 +2737,13 @@ namespace Pinakas { namespace Backend
     return conj(fft(conj(std::move(spectrum)))) / spectrum.numel();
   }
 }}
-//
-
-void sleep_for_ms(int ms)
-{
-  auto start = std::chrono::high_resolution_clock::now();
-  while(std::chrono::duration_cast<std::chrono::microseconds>(std::chrono::high_resolution_clock::now()-start).count() < ms*1000);
-}
 
 int main()
 {
   using namespace Pinakas;
   auto x = linspace(0, 1, 256);
-  auto y = sin(x*10);
-  auto H = abs(fft(x));
+  auto y = sin(2*M_PI*100*x);
+  auto H = abs(fft(y));
   
   plot({"ok"}, {{x, H}});
 }
