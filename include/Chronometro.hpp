@@ -29,7 +29,15 @@
 // SOFTWARE.
 //  
 // --versions----------------------------------------------------------------------------
+//
 // version 1.0 initial release
+//
+// --description-------------------------------------------------------------------------
+//
+// Chronometro is a simple and lightweight C++11 (and newer) library that allows you to
+// measure the execution time of functions or code blocks. See the included README.MD file
+// for more information
+//
 // --inclusion guard---------------------------------------------------------------------
 #ifndef CHRONOMETRO_HPP
 #define CHRONOMETRO_HPP
@@ -67,13 +75,13 @@ namespace Chronometro { namespace Backend {
   class Stopwatch {
     public:
       inline explicit Stopwatch(const Unit unit = Unit::automatic) noexcept;
-      // start time measurement
+      // start measuring time
       inline void start(void) noexcept;
       // pause time measurement
       void pause(void) noexcept;
       // stop time measurement and display elapsed time
       std::chrono::high_resolution_clock::duration stop(void) noexcept;
-      // reset measured time and start time measurement
+      // reset measured time and start measuring time
       inline void restart(void);
     private:
       // units that will be displayed on stop
@@ -128,22 +136,22 @@ namespace Chronometro { namespace Backend {
     // if unit_ == automatic, deduce the appropriate unit
     switch((unit_ == Unit::automatic) ? appropriate_unit(nanoseconds) : unit_) {
       case Unit::ns:
-        std::cout << "time elapsed: " << nanoseconds << " ns\n";
+        std::cout << "elapsed time: " << nanoseconds << " ns\n";
         break;
       case Unit::us:
-        std::cout << "time elapsed: " << nanoseconds / 1000 << " us\n";
+        std::cout << "elapsed time: " << nanoseconds / 1000 << " us\n";
         break;
       case Unit::ms:
-        std::cout << "time elapsed: " << nanoseconds / 1000000 << " ms\n";
+        std::cout << "elapsed time: " << nanoseconds / 1000000 << " ms\n";
         break;
       case Unit::s:
-        std::cout << "time elapsed: " << nanoseconds / 1000000000 << " s\n";
+        std::cout << "elapsed time: " << nanoseconds / 1000000000 << " s\n";
         break;
       case Unit::min:
-        std::cout << "time elapsed: " << nanoseconds / 60000000000 << " min\n";
+        std::cout << "elapsed time: " << nanoseconds / 60000000000 << " min\n";
         break;
       case Unit::h:
-        std::cout << "time elapsed: " << nanoseconds / 3600000000000 << " h\n";
+        std::cout << "elapsed time: " << nanoseconds / 3600000000000 << " h\n";
         break;
       default: std::cerr << "error: Stopwatch: invalid time unit\n";
     }
@@ -154,9 +162,9 @@ namespace Chronometro { namespace Backend {
   void Stopwatch::restart(void)
   {
     // reset measured duration
-    duration_ = std::chrono::high_resolution_clock::duration();
+    duration_ = std::chrono::high_resolution_clock::duration(0);
     
-    // start time measurement
+    // start measuring time
     start();
   }
 
@@ -181,7 +189,7 @@ namespace Chronometro { namespace Backend {
     // 10 us < duration <= 10 ms
     if (nanoseconds > 10000)
       return Unit::us;
-
+      
     // duration <= 10 us
     return Unit::ns;
   }

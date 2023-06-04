@@ -1857,7 +1857,7 @@ namespace Pinakas { namespace Backend
   Matrix<T> reshape(const Matrix<T>& A, const size_t M, const size_t N)
   {
     if (A.numel() != M * N) {
-      std::cerr << "error: reshape: can't reshape " << A.size() << " matrix to " << M << 'x' << N << " matrix";
+      std::cerr << "error: reshape: can't reshape " << A.size() << " matrix to " << M << 'x' << N << " matrix\n";
       return Matrix<T>();
     }
 
@@ -1874,7 +1874,7 @@ namespace Pinakas { namespace Backend
   Matrix<T1>&& reshape(Matrix<T1>&& A, const size_t M, const size_t N)
   {
     if (A.size_.numel != M * N) {
-      std::cerr << "error: reshape: can't reshape " << A.size() << " matrix to " << M << 'x' << N << " matrix";
+      std::cerr << "error: reshape: can't reshape " << A.size() << " matrix to " << M << 'x' << N << " matrix\n";
       return std::move(A);
     }
 
@@ -2045,7 +2045,7 @@ namespace Pinakas { namespace Backend
   std::unique_ptr<Matrix<double>[]> linearize(const Matrix<double>& data_x, const Matrix<double>& data_y)
   {
     if (data_x.numel() != data_y.numel()) {
-      std::cerr << "error: linearize: 'data_x' and 'data_y' must have the same number of elements";
+      std::cerr << "error: linearize: 'data_x' and 'data_y' must have the same number of elements\n";
       return std::unique_ptr<Matrix<double>[]>(new Matrix<double>[2]);
     }
 
@@ -2212,7 +2212,7 @@ namespace Pinakas { namespace Backend
   Matrix<double> lpc(const Matrix<double>& A, const size_t p)
   {
     if (p >= A.numel()) {
-      std::cerr << "error: lpc: p should be less than number of elements in A";
+      std::cerr << "error: lpc: p should be less than number of elements in A\n";
       return Matrix<double>();
     }
 
@@ -2416,16 +2416,16 @@ namespace Pinakas { namespace Backend
   {
     // validate impulse length
     if ((length % 2) == 0) {
-      std::cerr << "error: sinc_impulse: 'length' must be odd";
+      std::cerr << "error: sinc_impulse: 'length' must be odd\n";
       return Matrix<double>();
     }
 
     // offset to the impulse center
-    const signed offset = (length - 1) * 0.5;
+    const signed int offset = (length - 1) * 0.5;
 
     // compute impulse
     Matrix<double> impulse(1, length);
-    for (signed k = 0; k < signed(length); ++k) {
+    for (signed int k = 0; k < signed(length); ++k) {
       double temporary = M_PI * (k - offset) * frequency;
       impulse[0][k] = (temporary == 0) ? 1 : std::sin(temporary) / temporary;
     }
@@ -2437,22 +2437,22 @@ namespace Pinakas { namespace Backend
   Matrix<double> resample(const Matrix<T>& data, const size_t L, const size_t keep, const double alpha, const bool tail)
   {
     if (!data.numel()) {
-      std::cerr << "error: resample: 'data' must contain at least 1 element";
+      std::cerr << "error: resample: 'data' must contain at least 1 element\n";
       return Matrix<double>();
     }
     
     if (L <= 1) {
-      std::cerr << "error: resample: 'L' must be at least 2";
+      std::cerr << "error: resample: 'L' must be at least 2\n";
       return Matrix<double>();
     }
     
     if (keep >= data.numel()) {
-      std::cerr << "error: resample: 'keep' must be less than the number of elements in 'data'";
+      std::cerr << "error: resample: 'keep' must be less than the number of elements in 'data'\n";
       return Matrix<double>();
     }
     
     if (alpha < (1.0/L)) {
-      std::cerr << "error: resample: 'alpha' must be at least 1/L";
+      std::cerr << "error: resample: 'alpha' must be at least 1/L\n";
       return Matrix<double>();
     }
 
@@ -2540,7 +2540,7 @@ namespace Pinakas { namespace Backend
     // validate that gnuplot is in system path
     static bool gnuplot_on_system_path = false;
     if ((!gnuplot_on_system_path) && std::system("gnuplot --version")) {
-      std::cerr << "error: plot: gnuplot could not be found in the system path";
+      std::cerr << "error: plot: gnuplot could not be found in the system path\n";
       return;
     }
     gnuplot_on_system_path = true;
@@ -2564,7 +2564,7 @@ namespace Pinakas { namespace Backend
 
     // validate file opening
     if (!file) {
-      std::cerr << "could not create/open gnuplot.data";
+      std::cerr << "could not create/open gnuplot.data\n";
       return;
     }
 
@@ -2679,7 +2679,7 @@ namespace Pinakas { namespace Backend
     const size_t N = signal.numel();
 
     if (N & (N - 1)) {
-      std::cerr << "error: fft: the number of elements in 'signal' must be a power of 2";
+      std::cerr << "error: fft: the number of elements in 'signal' must be a power of 2\n";
       return std::move(signal);
     }
     
@@ -2741,9 +2741,12 @@ namespace Pinakas { namespace Backend
 int main()
 {
   using namespace Pinakas;
+  using namespace Chronometro;
   auto x = linspace(0, 1, 256);
   auto y = sin(2*M_PI*100*x);
   auto H = abs(fft(y));
   
+sinc_impulse(10, 2);
+
   plot({"ok"}, {{x, H}});
 }
