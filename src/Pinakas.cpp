@@ -607,7 +607,7 @@ namespace Pinakas { namespace Backend
   }
 // --------------------------------------------------------------------------------------
   template<typename T>
-  Slice<T>::Slice(T* matrix_data, const Size matrix_size, const Range rows, const Range cols)
+  Slice<T>::Slice(T* matrix_data, const Size matrix_size, const Range rows, const Range cols) noexcept
     : // member initialization list
     matrix_data_(matrix_data),
     matrix_M(matrix_size.M),

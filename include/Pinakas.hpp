@@ -393,26 +393,32 @@ namespace Pinakas { namespace Backend
       using Type = T;
       // destructor
       ~Matrix() noexcept;
-      // default constructor
+      // empty constructor
       explicit Matrix() noexcept;
+      // empty MxN constructor 
+      explicit Matrix(const size_t M, const size_t N);
+
+      // fill constructor
+      explicit Matrix(const size_t M, const size_t N, const T value);
+      // fill assignation
+      Matrix<T>& operator=(const T value) & noexcept;
+
       // copy constructor
       Matrix(const Matrix<T>& other);
+      // copy assignation
+      Matrix<T>& operator=(const Matrix<T>& other) &;
+
       // move constructor
       Matrix(Matrix<T>&& other) noexcept;
+      // move assignation
+      Matrix<T>& operator=(Matrix<T>&& other) & noexcept;
+
       // converting constructor
       template<typename T2>
       Matrix(const Matrix<T2>& other);
-      // create a matrix MxN
-      explicit Matrix(const size_t M, const size_t N);
-      // copy assignation
-      Matrix<T>& operator=(const Matrix<T>& other) &;
-      // move assignation
-      Matrix<T>& operator=(Matrix<T>&& other) & noexcept;
-      // convertion assignation
+      // converting assignation
       template<typename T2>
       Matrix<T>& operator=(const Matrix<T2>& other) &;
-      // fill assignation
-      Matrix<T>& operator=(const T value) & noexcept;
     public:
       // indexing
       inline T* operator[](const size_t j) noexcept;
@@ -423,19 +429,13 @@ namespace Pinakas { namespace Backend
       // bound-checked indexing
       T& operator()(signed int j, signed int i);
       const T& operator()(signed int j, signed int i) const;
-      //
-      Slice<T> operator()(Range rows, Range cols) noexcept;
-      Slice<T> operator()(Range rows, signed int col) noexcept;
-      Slice<T> operator()(signed int row, Range cols) noexcept;
-      Slice<const T> operator()(Range rows, Range cols) const noexcept;
-      Slice<const T> operator()(Range rows, signed int col) const noexcept;
-      Slice<const T> operator()(signed int row, Range cols) const noexcept;
     public:
       // return matrix dimensions
       inline Size size(void) const & noexcept;
       inline size_t numel(void) const & noexcept;
       inline size_t M(void) const & noexcept;
-      inline size_t N(void) const & noexcept;      
+      inline size_t N(void) const & noexcept;
+      operator size_t (void);     
     private:
       // information regarding matrix size
       Size size_;
@@ -445,8 +445,6 @@ namespace Pinakas { namespace Backend
     public:
       // create a matrix with the same dimensions as 'matrix'
       inline explicit Matrix(const Size size);
-      // create a matrix MxN with a specific value
-      explicit Matrix(const size_t M, const size_t N, const T value);
       // create a matrix with the same dimensions as 'matrix' with a specific value
       inline explicit Matrix(const Size size, T value);
       // create a matrix MxN random values from a range
@@ -459,7 +457,13 @@ namespace Pinakas { namespace Backend
       Matrix(const List<const List<const T>> values);
       // join matrix (side-wise)
       Matrix(const List<const Matrix<T>> list);
-      operator size_t (void);
+    public:
+      Slice<T> operator()(Range rows, Range cols) noexcept;
+      Slice<T> operator()(Range rows, signed int col) noexcept;
+      Slice<T> operator()(signed int row, Range cols) noexcept;
+      Slice<const T> operator()(Range rows, Range cols) const noexcept;
+      Slice<const T> operator()(Range rows, signed int col) const noexcept;
+      Slice<const T> operator()(signed int row, Range cols) const noexcept;
     public:
       Iterator<T> begin(void) noexcept;
       Iterator<T> end(void) noexcept;
@@ -487,7 +491,7 @@ namespace Pinakas { namespace Backend
   template<typename T>
   class Slice final {
     public:
-      inline explicit Slice(T* matrix_data, const Size matrix_size, const Range rows, const Range cols);
+      inline explicit Slice(T* matrix_data, const Size matrix_size, const Range rows, const Range cols) noexcept;
     public:
       using Type = T;
       inline Size size(void) const & noexcept;
