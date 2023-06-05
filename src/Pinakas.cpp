@@ -5,14 +5,14 @@
 // --Pinakas library: backend forward declaration----------------------------------------
 namespace Pinakas { namespace Backend
 {
-  bool Size::operator==(const Size B) const noexcept
+  bool Size::operator==(const Size other) const noexcept
   {
-    return (M == B.M) && (N == B.N) && (numel == B.numel);
+    return (numel == other.numel) && (N == other.N) && (M == other.M);
   }
 
-  bool Size::operator!=(const Size B) const noexcept
+  bool Size::operator!=(const Size other) const noexcept
   {
-    return (M != B.M) ||(N != B.N) ||(numel != B.numel);
+    return (numel != other.numel) || (N != other.N) || (M != other.M);
   }
 
   template<typename T>

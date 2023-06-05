@@ -353,8 +353,8 @@ namespace Pinakas { namespace Backend
 {
   struct Size final {
     size_t M, N, numel;
-    inline bool operator==(const Size B) const noexcept;
-    inline bool operator!=(const Size B) const noexcept;
+    inline bool operator==(const Size other) const noexcept;
+    inline bool operator!=(const Size other) const noexcept;
   };
 
   struct Random final {
@@ -397,6 +397,8 @@ namespace Pinakas { namespace Backend
       explicit Matrix() noexcept;
       // empty MxN constructor 
       explicit Matrix(const size_t M, const size_t N);
+      // random MxN constructor 
+      explicit Matrix(const size_t M, const size_t N, Random range);
 
       // fill constructor
       explicit Matrix(const size_t M, const size_t N, const T value);
@@ -423,9 +425,11 @@ namespace Pinakas { namespace Backend
       // indexing
       inline T* operator[](const size_t j) noexcept;
       inline const T* operator[](const size_t j) const noexcept;
+
       // bound-checked flat-indexing
       T& operator()(signed int k);
       const T& operator()(signed int k) const;
+
       // bound-checked indexing
       T& operator()(signed int j, signed int i);
       const T& operator()(signed int j, signed int i) const;
@@ -437,25 +441,24 @@ namespace Pinakas { namespace Backend
       inline size_t N(void) const & noexcept;
       operator size_t (void);     
     private:
-      // information regarding matrix size
+      // matrix size information
       Size size_;
-      // data is a T[M * N] array
+      // T[M * N] array
       std::unique_ptr<T[]> data_;
+      // allocates memory to data_
       void allocate(const size_t M, const size_t N);
     public:
-      // create a matrix with the same dimensions as 'matrix'
+      // size-based constructor
       inline explicit Matrix(const Size size);
-      // create a matrix with the same dimensions as 'matrix' with a specific value
+      // size-based constructor with specific value
       inline explicit Matrix(const Size size, T value);
-      // create a matrix MxN random values from a range
-      explicit Matrix(const size_t M, const size_t N, Random range);
-      // create a matrix with the same dimensions as 'matrix' with random values from a range
+      // size-based constructor with random values from a range
       inline explicit Matrix(const Size size, const Random range);
-      // create a matrix from specific values
+      // list-based constructor
       Matrix(const List<T> values);
-      // create a matrix from specific values
+      // 2D list-based constructor
       Matrix(const List<const List<const T>> values);
-      // join matrix (side-wise)
+      // join matrix sideways constructor
       Matrix(const List<const Matrix<T>> list);
     public:
       Slice<T> operator()(Range rows, Range cols) noexcept;
