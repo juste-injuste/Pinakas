@@ -618,6 +618,21 @@ namespace Pinakas { namespace Backend
   {}
 
   template<typename T>
+  Slice<T>& Slice<T>::operator=(const Slice<T>& other)
+  {
+    if (size_ != other.size()) {
+      std::cerr << "error: Slice: incompatible sizes (" << size_ << " vs " << other.size() << ")\n";
+      return *this;
+    }
+    
+    for (size_t j = 0; j < size_.M; ++j)
+      for (size_t i = 0; i < size_.N; ++i)
+        matrix_data_[i + j*matrix_M + offset_] = other[j][i];
+
+    return *this;
+  }
+
+  template<typename T>
   Size Slice<T>::size(void) const & noexcept
   {
     return size_;
@@ -648,7 +663,13 @@ namespace Pinakas { namespace Backend
   }
 
   template<typename T>
-  T& Slice<T>::operator()(signed int k)
+  const T* Slice<T>::operator[](const size_t j) const noexcept
+  {
+    return matrix_data_ + (j*matrix_M + offset_);
+  }
+
+  template<typename T>
+  T& Slice<T>::operator()(signed int k) noexcept
   {
     // positive and negative bound checking
     if ((k < -signed(size_.numel)) || (signed(size_.numel) <= k)) {
@@ -669,7 +690,54 @@ namespace Pinakas { namespace Backend
   }
 
   template<typename T>
-  T& Slice<T>::operator()(signed int j, signed int i)
+  const T& Slice<T>::operator()(signed int k) const noexcept
+  {
+    // positive and negative bound checking
+    if ((k < -signed(size_.numel)) || (signed(size_.numel) <= k)) {
+      std::clog << "warning: Slice: (" << k << ") out of bound " << size_.numel << ", wrapped around to (";
+      // wrap around to avoid undefined behavior
+      k %= signed(size_.numel);
+      std::clog << k << ")\n";
+    }
+
+    // convert negative indices
+    k += (k < 0) * size_.numel;
+
+    // compute 2D indices
+    const size_t i = k % size_.N;
+    const size_t j = k / size_.N;
+
+    return matrix_data_[i + j*matrix_M + offset_];
+  }
+
+  template<typename T>
+  T& Slice<T>::operator()(signed int j, signed int i) noexcept
+  {
+    // positive and negative bound checking
+    if ((j < -signed(size_.M)) || (signed(size_.M) <= j)) {
+      std::clog << "warning: Slice: (" << j << ", _) out of bound " << size_.M << ", wrapped around to (";
+      // convert negative indices
+      j %= signed(size_.M);
+      std::clog << j << ", _)\n";
+    }
+
+    // positive and negative bound checking
+    if ((i < -signed(size_.N)) || (signed(size_.N) <= i)) {
+      std::clog << "warning: Slice: (_, " << i << ") out of bound " << size_.N << ", wrapped around to (_, ";
+      // convert negative indices
+      i %= signed(size_.N);
+      std::clog << i << ")\n";
+    }
+
+    // convert negative indices
+    j += (j < 0) * size_.M;
+    i += (i < 0) * size_.N;
+
+    return matrix_data_[i + j*matrix_M + offset_];
+  }
+
+  template<typename T>
+  const T& Slice<T>::operator()(signed int j, signed int i) const noexcept
   {
     // positive and negative bound checking
     if ((j < -signed(size_.M)) || (signed(size_.M) <= j)) {
@@ -2052,7 +2120,6 @@ namespace Pinakas { namespace Backend
   T min(const MatrixLike& A) noexcept
   {
     T minimum = std::numeric_limits<T>::max();
-    
     for (size_t k = 0; k < A.numel(); ++k)
       if (A[0][k] < minimum)
         minimum = A[0][k];
@@ -2060,8 +2127,8 @@ namespace Pinakas { namespace Backend
     return minimum;
   }
   
-  template<typename T>
-  T max(const Matrix<T>& A) noexcept
+  template<class MatrixLike, typename T = typename MatrixLike::Type>
+  T max(const MatrixLike& A) noexcept
   {
     T maximum = std::numeric_limits<T>::min();
     for (size_t k = 0; k < A.numel(); ++k)
@@ -2071,8 +2138,8 @@ namespace Pinakas { namespace Backend
     return maximum;
   }
   
-  template<typename T>
-  T sum(const Matrix<T>& A) noexcept
+  template<class MatrixLike, typename T = typename MatrixLike::Type>
+  T sum(const MatrixLike& A) noexcept
   {
     T summation = 0;
     for (size_t k = 0; k < A.numel(); ++k)
@@ -2081,8 +2148,8 @@ namespace Pinakas { namespace Backend
     return summation;
   }
 
-  template<typename T>
-  double prod(const Matrix<T>& A) noexcept
+  template<class MatrixLike, typename T = typename MatrixLike::Type>
+  double prod(const MatrixLike& A) noexcept
   {
     double temporary = 0;
     for (size_t k = 0; k < A.numel(); ++k)
@@ -2091,8 +2158,8 @@ namespace Pinakas { namespace Backend
     return std::exp(temporary);
   }
 
-  template<typename T>
-  double avg(const Matrix<T>& A) noexcept
+  template<class MatrixLike, typename T = typename MatrixLike::Type>
+  double avg(const MatrixLike& A) noexcept
   {
     double average = 0;
     for (size_t k = 0; k < A.numel(); ++k)
@@ -2101,8 +2168,8 @@ namespace Pinakas { namespace Backend
     return average/A.numel();
   }
 
-  template<typename T>
-  double rms(const Matrix<T>& A) noexcept
+  template<class MatrixLike, typename T = typename MatrixLike::Type>
+  double rms(const MatrixLike& A) noexcept
   {
     const size_t n = A.numel();
     double temporary = 0;
@@ -2112,8 +2179,8 @@ namespace Pinakas { namespace Backend
     return std::sqrt(temporary);
   }
 
-  template<typename T>
-  double geo(const Matrix<T>& A) noexcept
+  template<class MatrixLike, typename T = typename MatrixLike::Type>
+  double geo(const MatrixLike& A) noexcept
   {
     double temporary = 0;
     for (size_t k = 0; k < A.numel(); ++k)
@@ -2296,8 +2363,8 @@ namespace Pinakas { namespace Backend
     return R;
   }
 
-  template<typename T>
-  Matrix<T>&& reverse(Matrix<T>&& A) noexcept
+  template<class MatrixLike, typename T = typename MatrixLike::Type>
+  MatrixLike&& reverse(MatrixLike&& A) noexcept
   {
     const size_t n   = A.numel();
     const size_t n_2 = n >> 1;
@@ -2906,7 +2973,17 @@ int main()
 {
   using namespace Pinakas;
 
-  std::cout << iota(5) << '\n';
-  std::cout << transpose(iota(5)) << '\n';
+  Matrix<int> x = {{1, 2, 3},
+                   {4, 5, 6},
+                   {7, 8, 9}};
+  std::cout << "x:\n" << x << '\n';
+
+  auto c1 = x({0, -1}, 1);
+  auto c2 = x({0, -1}, 2);
+  
+  c1 = c2;
+  c1(1) = 2;
+
+  std::cout << "x:\n" << x << '\n';
 
 }
