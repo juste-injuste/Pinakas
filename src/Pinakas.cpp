@@ -386,7 +386,7 @@ namespace Pinakas { namespace Backend
     cols.start += (cols.start < 0) * size_.N;
     cols.stop  += (cols.stop < 0)  * size_.N;
 
-    return Slice<T>(*this, rows, cols);
+    return Slice<T>(data_.get(), size_, rows, cols);
   }
   
   template<typename T>
@@ -442,7 +442,7 @@ namespace Pinakas { namespace Backend
     cols.start += (cols.start < 0) * size_.N;
     cols.stop  += (cols.stop < 0)  * size_.N;
 
-    return Slice<const T>(*this, rows, cols);
+    return Slice<const T>(data_.get(), size_, rows, cols);
   }
   
   template<typename T>
@@ -549,140 +549,106 @@ namespace Pinakas { namespace Backend
   {
     return size_.numel;
   }
-
-
 // --------------------------------------------------------------------------------------
-  template <typename T>
-  Matrix<T>::Iterator::Iterator(Matrix<T>& matrix, const size_t index) noexcept
+  template<typename T>
+  Iterator<T>::Iterator(T* matrix_data, const size_t index) noexcept
     : // member initialization list
-    matrix(matrix),
+    matrix_data_(matrix_data),
     index(index)
   {}
 
-  template <typename T>
-  bool Matrix<T>::Iterator::operator==(const Matrix<T>::Iterator& other) const noexcept
+  template<typename T>
+  bool Iterator<T>::operator==(const Iterator<T>& other) const noexcept
   {
     return index == other.index;
   }
 
-  template <typename T>
-  bool Matrix<T>::Iterator::operator!=(const Matrix<T>::Iterator& other) const noexcept
+  template<typename T>
+  bool Iterator<T>::operator!=(const Iterator<T>& other) const noexcept
   {
-    return this->index != other.index;
+    return index != other.index;
   }
 
-  template <typename T>
-  typename Matrix<T>::Iterator& Matrix<T>::Iterator::operator++(void) noexcept
+  template<typename T>
+  Iterator<T>& Iterator<T>::operator++(void) noexcept
   {
     ++index;
     return *this;
   }
 
-  template <typename T>
-  T& Matrix<T>::Iterator::operator*(void) const noexcept
+  template<typename T>
+  T& Iterator<T>::operator*(void) const noexcept
   {
-    return matrix[0][index];
+    return matrix_data_[index];
   }
 // --------------------------------------------------------------------------------------
-  template <typename T>
-  Matrix<T>::Const_Iterator::Const_Iterator(const Matrix<T>& matrix, const size_t index) noexcept
+  template<typename T>
+  Iterator<T> Matrix<T>::begin(void) noexcept
+  {
+    return Iterator<T>(data_.get(), 0);
+  }
+
+  template<typename T>
+  Iterator<T> Matrix<T>::end(void) noexcept
+  {
+    return Iterator<T>(data_.get(), size_.numel);
+  }
+
+  template<typename T>
+  Iterator<const T> Matrix<T>::begin(void) const noexcept
+  {
+    return Iterator<const T>(data_.get(), 0);
+  }
+
+  template<typename T>
+  Iterator<const T> Matrix<T>::end(void) const noexcept
+  {
+    return Iterator<const T>(data_.get(), size_.numel);
+  }
+// --------------------------------------------------------------------------------------
+  template<typename T>
+  Slice<T>::Slice(T* matrix_data, const Size matrix_size, const Range rows, const Range cols)
     : // member initialization list
-    matrix(matrix),
-    index(index)
-  {}
-
-  template <typename T>
-  bool Matrix<T>::Const_Iterator::operator==(const Matrix<T>::Const_Iterator& other) const noexcept
-  {
-    return index == other.index;
-  }
-
-  template <typename T>
-  bool Matrix<T>::Const_Iterator::operator!=(const Matrix<T>::Const_Iterator& other) const noexcept
-  {
-    return this->index != other.index;
-  }
-
-  template <typename T>
-  typename Matrix<T>::Const_Iterator& Matrix<T>::Const_Iterator::operator++() noexcept
-  {
-    ++index;
-    return *this;
-  }
-
-  template <typename T>
-  const T& Matrix<T>::Const_Iterator::operator*(void) const noexcept
-  {
-    return matrix[0][index];
-  }
-// --------------------------------------------------------------------------------------
-  template<typename T>
-  typename Matrix<T>::Iterator Matrix<T>::begin(void) noexcept
-  {
-    return Iterator(*this, 0);
-  }
-
-  template<typename T>
-  typename Matrix<T>::Iterator Matrix<T>::end(void) noexcept
-  {
-    return Iterator(*this, size_.numel);
-  }
-
-  template<typename T>
-  typename Matrix<T>::Const_Iterator Matrix<T>::begin(void) const noexcept
-  {
-    return Const_Iterator(*this, 0);
-  }
-
-  template<typename T>
-  typename Matrix<T>::Const_Iterator Matrix<T>::end(void) const noexcept
-  {
-    return Const_Iterator(*this, size_.numel);
-  }
-// --------------------------------------------------------------------------------------
-  template<typename T1>
-  Slice<T1>::Slice(const Matrix<T1>& matrix, const Range rows, const Range cols)
-    : // member initialization list
-    matrix_data_(matrix.data_.get()),
-    matrix_M(matrix.M()),
-    offset_(rows.start * matrix.N() + cols.start),
+    matrix_data_(matrix_data),
+    matrix_M(matrix_size.M),
+    offset_(rows.start * matrix_size.N + cols.start),
     size_{size_t(rows.stop - rows.start + 1)
         , size_t(cols.stop - cols.start + 1)
         , size_t((rows.stop - rows.start + 1) * (cols.stop - cols.start + 1))}
   {}
 
-  template<typename T1>
-  Size Slice<T1>::size(void) const & noexcept
+  template<typename T>
+  Size Slice<T>::size(void) const & noexcept
   {
     return size_;
   }
 
-  template<typename T1>
-  size_t Slice<T1>::M(void) const & noexcept
+  template<typename T>
+  size_t Slice<T>::M(void) const & noexcept
   {
     return size_.M;
   }
 
-  template<typename T1>
-  size_t Slice<T1>::N(void) const & noexcept
+  template<typename T>
+  size_t Slice<T>::N(void) const & noexcept
   {
     return size_.N;
   }
 
-  template<typename T1>
-  size_t Slice<T1>::numel(void) const & noexcept
+  template<typename T>
+  size_t Slice<T>::numel(void) const & noexcept
   {
     return size_.numel;
   }
 
-  template<typename T1>
-  T1* Slice<T1>::operator[](const size_t j) noexcept
+  template<typename T>
+  T* Slice<T>::operator[](const size_t j) noexcept
   {
     return matrix_data_ + (j*matrix_M + offset_);
   }
 
-  template<typename T1>
-  T1& Slice<T1>::operator()(signed int k)
+  template<typename T>
+  T& Slice<T>::operator()(signed int k)
   {
     // positive and negative bound checking
     if ((k < -signed(size_.numel)) || (signed(size_.numel) <= k)) {
@@ -702,8 +668,8 @@ namespace Pinakas { namespace Backend
     return matrix_data_[i + j*matrix_M + offset_];
   }
 
-  template<typename T1>
-  T1& Slice<T1>::operator()(signed int j, signed int i)
+  template<typename T>
+  T& Slice<T>::operator()(signed int j, signed int i)
   {
     // positive and negative bound checking
     if ((j < -signed(size_.M)) || (signed(size_.M) <= j)) {
@@ -2941,25 +2907,14 @@ int main()
   using namespace Pinakas;
 
   Matrix<int> x = {{1, 2, 3},
-                   {4, 5, 6},
-                   {7, 8, 9}};
-
-  auto y = x({1, 2}, {0, 1});
-  std::cout << "x:\n" << x;
-  puts("----[y][x]----");
-  std::cout << "y:\n" << y;
-  puts("----(y, x)----");
-  for (size_t j = 0; j < y.M(); ++j) {
-    for (size_t x = 0; x < y.N(); ++x)
-      std::cout << ' ' << y(j, x);
-    std::cout << '\n';
+                         {4, 5, 6},
+                         {7, 8, 9}};
+                   
+  for (auto& val : x) {
+    val = 1;
+    std::cout << val << ' ';
   }
-  puts("-----(k)------");
-  for (size_t i = 0; i < y.numel(); ++i)
-    std::cout << ' ' << y(i);
   std::cout << '\n';
+  std::cout << x;
 
-  y[0][0] = 1;
-  y(0, 0) = 1;
-  y(0) = 1;
 }

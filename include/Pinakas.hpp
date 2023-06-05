@@ -71,10 +71,11 @@ namespace Pinakas { namespace Backend
   template<typename T>
   class Matrix;
   //
-  template<typename T1>
+  template<typename T>
+  class Iterator;
+  //
+  template<typename T>
   class Slice;
-  //template<typename T>
-  //class ConstSlice;
   //
   typedef std::pair<const Matrix<double>, const Matrix<double>> DataSet;
   typedef std::complex<double> complex;
@@ -448,8 +449,8 @@ namespace Pinakas { namespace Backend
       friend Matrix<T1>&& transpose(Matrix<T1>&& A);
       template<typename T1>
       friend Matrix<T1>&& reshape(Matrix<T1>&& A, const size_t M, const size_t N);
-      template<typename T1>
-      friend class Slice;
+      friend class Iterator<T>;
+      friend class Slice<T>;
     public:
       // create a matrix with the same dimensions as 'matrix'
       inline explicit Matrix(const Size size);
@@ -468,54 +469,44 @@ namespace Pinakas { namespace Backend
       // join matrix (side-wise)
       Matrix(const List<const Matrix<T>> list);
       operator size_t (void);
-    private:
-      class Iterator final {
-        public:
-          Iterator(Matrix<T>& matrix, const size_t index) noexcept;
-          inline bool operator==(const Matrix<T>::Iterator& other) const noexcept;
-          inline bool operator!=(const Matrix<T>::Iterator& other) const noexcept;
-          Iterator& operator++(void) noexcept;
-          inline T& operator*(void) const noexcept;
-        private:
-          Matrix<T>& matrix;
-          size_t index;
-      };
-      class Const_Iterator final {
-        public:
-          Const_Iterator(const Matrix<T>& matrix, const size_t index) noexcept;
-          inline bool operator==(const Matrix<T>::Const_Iterator& other) const noexcept;
-          inline bool operator!=(const Matrix<T>::Const_Iterator& other) const noexcept;
-          Const_Iterator& operator++() noexcept;
-          inline const T& operator*() const noexcept;
-        private:
-          const T& matrix;
-          size_t index;
-      };
     public:
-      Iterator begin(void) noexcept;
-      Iterator end(void) noexcept;
-      Const_Iterator begin(void) const noexcept;
-      Const_Iterator end(void) const noexcept;
+      Iterator<T> begin(void) noexcept;
+      Iterator<T> end(void) noexcept;
+      Iterator<const T> begin(void) const noexcept;
+      Iterator<const T> end(void) const noexcept;
   };
 
-  template<typename T1>
+  template<typename T>
+  class Iterator final {
+    public:
+      inline explicit Iterator(T* matrix_data, const size_t index) noexcept;
+      inline bool operator==(const Iterator<T>& other) const noexcept;
+      inline bool operator!=(const Iterator<T>& other) const noexcept;
+      Iterator& operator++(void) noexcept;
+      inline T& operator*(void) const noexcept;
+    private:
+      T* matrix_data_;
+      size_t index;
+  };
+
+  template<typename T>
   class Slice final {
     public:
-      inline explicit Slice(const Matrix<T1>& matrix, const Range rows, const Range cols);
+      inline explicit Slice(T* matrix_data, const Size matrix_size, const Range rows, const Range cols);
     public:
-      using Type = T1;
+      using Type = T;
       inline Size size(void) const & noexcept;
       inline size_t numel(void) const & noexcept;
       inline size_t M(void) const & noexcept;
       inline size_t N(void) const & noexcept;
       // indexing
-      inline T1* operator[](const size_t j) noexcept;
+      inline T* operator[](const size_t j) noexcept;
       // bound-checked flat-indexing
-      T1& operator()(signed int k);
+      T& operator()(signed int k);
       // bound-checked indexing
-      T1& operator()(signed int j, signed int i);
+      T& operator()(signed int j, signed int i);
     private:
-      T1* matrix_data_;
+      T* matrix_data_;
       const size_t matrix_M;
       const size_t offset_;
       const Size size_;
