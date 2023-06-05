@@ -216,8 +216,8 @@ namespace Pinakas { namespace Backend
 // --------------------------------------------------------------------------------------
   template<typename T>
   Matrix<T> transpose(const Matrix<T>& A);
-  template<typename T1>
-  Matrix<T1>&& transpose(Matrix<T1>&& A);
+  template<typename T>
+  Matrix<T>&& transpose(Matrix<T>&& A);
   template<typename T>
   Matrix<T> reshape(const Matrix<T>& A, const size_t M, const size_t N);
   template<typename T1>
@@ -441,16 +441,7 @@ namespace Pinakas { namespace Backend
       Size size_;
       // data is a T[M * N] array
       std::unique_ptr<T[]> data_;
-    private:
-      // allocate data_
-      template<typename T1>
-      friend void allocate(Matrix<T1>* matrix, const size_t M, const size_t N);
-      template<typename T1>
-      friend Matrix<T1>&& transpose(Matrix<T1>&& A);
-      template<typename T1>
-      friend Matrix<T1>&& reshape(Matrix<T1>&& A, const size_t M, const size_t N);
-      friend class Iterator<T>;
-      friend class Slice<T>;
+      void allocate(const size_t M, const size_t N);
     public:
       // create a matrix with the same dimensions as 'matrix'
       inline explicit Matrix(const Size size);
@@ -474,6 +465,10 @@ namespace Pinakas { namespace Backend
       Iterator<T> end(void) noexcept;
       Iterator<const T> begin(void) const noexcept;
       Iterator<const T> end(void) const noexcept;
+    friend class Slice<T>;
+    friend class Iterator<T>;
+    friend Matrix<T>&& transpose<T>(Matrix<T>&& A);
+    friend Matrix<T>&& reshape<T>(Matrix<T>&& A, const size_t M, const size_t N);
   };
 
   template<typename T>
@@ -516,7 +511,7 @@ namespace Pinakas { namespace Backend
 namespace Pinakas { namespace Backend
 {
   template<typename MatrixLike, typename T = typename MatrixLike::Type>
-  std::ostream& operator<<(std::ostream& ostream, MatrixLike& A);
+  std::ostream& operator<<(std::ostream& ostream, const MatrixLike& A);
   std::ostream& operator<<(std::ostream& ostream, const Size size);
 // --------------------------------------------------------------------------------------
   template<typename T1, typename T2>

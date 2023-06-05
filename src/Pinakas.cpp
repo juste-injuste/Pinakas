@@ -43,7 +43,7 @@ namespace Pinakas { namespace Backend
 
     if (this != &other) {
       // allocate memory
-      allocate(this, other.size_.M, other.size_.N);
+      allocate(other.size_.M, other.size_.N);
 
       // store value
       for (size_t k = 0; k < size_.numel; ++k)
@@ -71,7 +71,7 @@ namespace Pinakas { namespace Backend
 
     if (size_t(this) != size_t(&other)) {
       // allocate memory
-      allocate(this, other.M(), other.N());
+      allocate(other.M(), other.N());
 
       // store value
       for (size_t k = 0; k < size_.numel; ++k)
@@ -87,7 +87,7 @@ namespace Pinakas { namespace Backend
 #endif
 
     // allocate memory
-    allocate(this, M, N);
+    allocate(M, N);
   }
 
   template<typename T>
@@ -104,7 +104,7 @@ namespace Pinakas { namespace Backend
 #endif
 
     // allocate memory
-    allocate(this, M, N);
+    allocate(M, N);
 
     // store values
     for (size_t k = 0; k < size_.numel; ++k)
@@ -124,7 +124,7 @@ namespace Pinakas { namespace Backend
 #endif
 
     // allocate memory
-    allocate(this, M, N);
+    allocate(M, N);
 
     // random number generator
     std::random_device device;
@@ -150,7 +150,7 @@ namespace Pinakas { namespace Backend
 #endif
 
     // allocate memory
-    allocate(this, 1, list.size());
+    allocate(1, list.size());
 
     // store values
     size_t x = 0;
@@ -178,7 +178,7 @@ namespace Pinakas { namespace Backend
     }
 
     // allocate memory
-    allocate(this, values.size(), temp_N);
+    allocate(values.size(), temp_N);
 
     // store values
     size_t y = 0;
@@ -214,7 +214,7 @@ namespace Pinakas { namespace Backend
     }
 
     // allocate memory
-    allocate(this, temp_M, temp_N);
+    allocate(temp_M, temp_N);
 
     // store values
     size_t k = 0;
@@ -227,7 +227,7 @@ namespace Pinakas { namespace Backend
   }
 // --------------------------------------------------------------------------------------
   template<typename T>
-  void allocate(Matrix<T>* matrix, const size_t M, const size_t N)
+  void Matrix<T>::allocate(const size_t M, const size_t N)
   {
     // validate sizes
     if (!(M && N)) {
@@ -237,14 +237,14 @@ namespace Pinakas { namespace Backend
     }
 
     // allocate memory
-    matrix->data_.reset(new T[M*N]);
+    data_.reset(new T[M*N]);
 
     // validate memory allocation
-    if (!matrix->data_.get())
+    if (!data_.get())
       throw std::bad_alloc();
 
     // save size information
-    matrix->size_ = {M, N, M * N};
+    size_ = {M, N, M * N};
   }
 // --------------------------------------------------------------------------------------
   template<typename T>
@@ -492,7 +492,7 @@ namespace Pinakas { namespace Backend
     if (this != &other) {
       // allocate memory if necessary
       if ((size_ != other.size_) ||!data_.get())
-        allocate(this, other.size_.M, other.size_.N);
+        allocate(other.size_.M, other.size_.N);
 
       // store values
       for (size_t k = 0; k < size_.numel; ++k)
@@ -522,7 +522,7 @@ namespace Pinakas { namespace Backend
 #endif
     // allocate memory if necessary
     if ((size_ != other.size_) ||!data_.get())
-      allocate(this, other.size_.M, other.size_.N);
+      allocate(other.size_.M, other.size_.N);
 
     // store values
     for (size_t k = 0; k < size_.numel; ++k)
@@ -2009,8 +2009,8 @@ namespace Pinakas { namespace Backend
     return R;
   }
 
-  template<typename T1>
-  Matrix<T1>&& transpose(Matrix<T1>&& A)
+  template<typename T>
+  Matrix<T>&& transpose(Matrix<T>&& A)
   {
     std::swap(A.size_.M, A.size_.N);
 
@@ -2034,8 +2034,8 @@ namespace Pinakas { namespace Backend
     return R;
   }
 
-  template<typename T1>
-  Matrix<T1>&& reshape(Matrix<T1>&& A, const size_t M, const size_t N)
+  template<typename T>
+  Matrix<T>&& reshape(Matrix<T>&& A, const size_t M, const size_t N)
   {
     if (A.size_.numel != M * N) {
       std::cerr << "error: reshape: can't reshape " << A.size() << " matrix to " << M << 'x' << N << " matrix\n";
@@ -2671,7 +2671,7 @@ namespace Pinakas { namespace Backend
   }
 
   template<typename MatrixLike, typename T = typename MatrixLike::Type>
-  std::ostream& operator<<(std::ostream& ostream, MatrixLike& A)
+  std::ostream& operator<<(std::ostream& ostream, const MatrixLike& A)
   {
     if (A.numel()) {
       std::size_t max_len = 0;
@@ -2683,7 +2683,7 @@ namespace Pinakas { namespace Backend
           max_len = std::max(max_len, ss.str().length());
         }
       }
-
+      
       for (size_t y = 0; y < A.M(); ++y) {
         for (size_t x = 0; x < A.N(); ++x)
           ostream << std::setw(max_len + 1) << A[y][x];
@@ -2906,15 +2906,7 @@ int main()
 {
   using namespace Pinakas;
 
-  Matrix<int> x = {{1, 2, 3},
-                         {4, 5, 6},
-                         {7, 8, 9}};
-                   
-  for (auto& val : x) {
-    val = 1;
-    std::cout << val << ' ';
-  }
-  std::cout << '\n';
-  std::cout << x;
+  std::cout << iota(5) << '\n';
+  std::cout << transpose(iota(5)) << '\n';
 
 }
