@@ -64,25 +64,17 @@ namespace Pinakas { namespace Backend
   //
   struct Size;
   //
-  template<typename T>
-  class Matrix;
-  // keywords
-  namespace Keyword
-  {
-    const struct Column {} column;
-    const struct Row {} row;
-    const struct Entire {} entire;
-  }
-  //
   struct Random;
   //
   class Range;
-
-  template<typename T>
-  class Iterator;
   //
   template<typename T>
-  class Const_Iterator;
+  class Matrix;
+  //
+  template<typename T1>
+  class Slice;
+  //template<typename T>
+  //class ConstSlice;
   //
   typedef std::pair<const Matrix<double>, const Matrix<double>> DataSet;
   typedef std::complex<double> complex;
@@ -230,8 +222,8 @@ namespace Pinakas { namespace Backend
   template<typename T1>
   Matrix<T1>&& reshape(Matrix<T1>&& A, const size_t M, const size_t N);
 // --------------------------------------------------------------------------------------
-  template<typename T>
-  T min(const Matrix<T>& A) noexcept;
+  template<class MatrixLike, typename T = typename MatrixLike::Type>
+  T min(const MatrixLike& A) noexcept;
   template<typename T>
   T max(const Matrix<T>& A) noexcept;
   template<typename T>
@@ -246,7 +238,7 @@ namespace Pinakas { namespace Backend
   double geo(const Matrix<T>& A) noexcept;
 // --------------------------------------------------------------------------------------
   Matrix<double> orthogonalize(Matrix<double> A);
-  std::unique_ptr<Matrix<double>[]> QR(Matrix<double> A);
+  std::unique_ptr<Matrix<double>[]> qr(Matrix<double> A);
 // --------------------------------------------------------------------------------------
   std::unique_ptr<Matrix<double>[]> linearize(const Matrix<double>& data_x, const Matrix<double>& data_y);
 // --------------------------------------------------------------------------------------
@@ -263,8 +255,8 @@ namespace Pinakas { namespace Backend
   Matrix<T3> corr(const Matrix<T1>& A, const Matrix<T2>& B);
   template<typename T>
   Matrix<T> corr(const Matrix<T>& A);
-  Matrix<double> Rxx(const Matrix<double>& A);
-  Matrix<double> Rxx(const Matrix<double>& A, const size_t K);
+  Matrix<double> rxx(const Matrix<double>& A);
+  Matrix<double> rxx(const Matrix<double>& A, const size_t K);
   Matrix<double> lpc(const Matrix<double>& A, const size_t p);
   Matrix<double> toeplitz(const Matrix<double>& A);
   double newton(const std::function<double(double)> function, const double tol, const size_t max_iteration, const double seed) noexcept;
@@ -312,7 +304,6 @@ namespace Pinakas { inline namespace Frontend
 {
   using Backend::Matrix;
   using Backend::Random;
-  namespace Keyword = Backend::Keyword;
   using Backend::complex;
   using Backend::Range;
 // --------------------------------------------------------------------------------------
@@ -334,7 +325,7 @@ namespace Pinakas { inline namespace Frontend
   using Backend::rms;
   using Backend::geo;
   using Backend::orthogonalize;
-  using Backend::QR;
+  using Backend::qr;
   using Backend::div;
   using Backend::linearize;
   using Backend::linspace;
@@ -342,7 +333,7 @@ namespace Pinakas { inline namespace Frontend
   using Backend::diff;
   using Backend::conv;
   using Backend::corr;
-  using Backend::Rxx;
+  using Backend::rxx;
   using Backend::lpc;
   using Backend::toeplitz;
   using Backend::blackman;
@@ -365,9 +356,40 @@ namespace Pinakas { namespace Backend
     inline bool operator!=(const Size B) const noexcept;
   };
 
+  struct Random final {
+    Random(const double min, const double max) noexcept;
+    const double min_;
+    const double max_;
+  };
+
+  class Range final {
+    public:
+      inline explicit Range(const size_t stop) noexcept;
+      inline Range(const int start, const int stop) noexcept;
+      inline explicit Range(const int start, const int stop, const size_t step) noexcept;
+      int start;
+      int stop;
+    private:
+      const int step_;
+      class Iterator {
+        private:
+          int current_;
+          const int step_;
+        public:
+          inline explicit Iterator(const int value, const int step) noexcept;
+          inline int operator*() const noexcept;
+          inline void operator++() noexcept;
+          inline bool operator!=(const Iterator& other) const noexcept;
+      };
+    public:
+      inline Iterator begin() const noexcept;
+      inline Iterator end() const noexcept;
+  };
+
   template<typename T>
   class Matrix final {
     public:
+      using Type = T;
       // destructor
       ~Matrix() noexcept;
       // default constructor
@@ -400,6 +422,13 @@ namespace Pinakas { namespace Backend
       // bound-checked indexing
       T& operator()(signed int j, signed int i);
       const T& operator()(signed int j, signed int i) const;
+      //
+      Slice<T> operator()(Range rows, Range cols) noexcept;
+      Slice<T> operator()(Range rows, signed int col) noexcept;
+      Slice<T> operator()(signed int row, Range cols) noexcept;
+      Slice<const T> operator()(Range rows, Range cols) const noexcept;
+      Slice<const T> operator()(Range rows, signed int col) const noexcept;
+      Slice<const T> operator()(signed int row, Range cols) const noexcept;
     public:
       // return matrix dimensions
       inline Size size(void) const & noexcept;
@@ -409,7 +438,7 @@ namespace Pinakas { namespace Backend
     private:
       // information regarding matrix size
       Size size_;
-      // data is a T[M][N] array
+      // data is a T[M * N] array
       std::unique_ptr<T[]> data_;
     private:
       // allocate data_
@@ -418,7 +447,9 @@ namespace Pinakas { namespace Backend
       template<typename T1>
       friend Matrix<T1>&& transpose(Matrix<T1>&& A);
       template<typename T1>
-      friend Matrix<T1>&& reshape(Matrix<T1>&& A);
+      friend Matrix<T1>&& reshape(Matrix<T1>&& A, const size_t M, const size_t N);
+      template<typename T1>
+      friend class Slice;
     public:
       // create a matrix with the same dimensions as 'matrix'
       inline explicit Matrix(const Size size);
@@ -467,41 +498,34 @@ namespace Pinakas { namespace Backend
       Const_Iterator end(void) const noexcept;
   };
 
-  struct Random final {
-    Random(const double min, const double max) noexcept;
-    const double min_;
-    const double max_;
-  };
-
-  class Range final {
+  template<typename T1>
+  class Slice final {
     public:
-      inline explicit Range(const size_t stop) noexcept;
-      inline explicit Range(const int start, const int stop) noexcept;
-      inline explicit Range(const int start, const int stop, const size_t step) noexcept;
-      const int start;
-      const int stop;
+      inline explicit Slice(const Matrix<T1>& matrix, const Range rows, const Range cols);
+    public:
+      using Type = T1;
+      inline Size size(void) const & noexcept;
+      inline size_t numel(void) const & noexcept;
+      inline size_t M(void) const & noexcept;
+      inline size_t N(void) const & noexcept;
+      // indexing
+      inline T1* operator[](const size_t j) noexcept;
+      // bound-checked flat-indexing
+      T1& operator()(signed int k);
+      // bound-checked indexing
+      T1& operator()(signed int j, signed int i);
     private:
-      const int step_;
-      class Iterator {
-        private:
-          int current_;
-          const int step_;
-        public:
-          inline explicit Iterator(const int value, const int step) noexcept;
-          inline int operator*() const noexcept;
-          inline void operator++() noexcept;
-          inline bool operator!=(const Iterator& other) const noexcept;
-      };
-    public:
-      inline Iterator begin() const noexcept;
-      inline Iterator end() const noexcept;
+      T1* matrix_data_;
+      const size_t matrix_M;
+      const size_t offset_;
+      const Size size_;
   };
 }}
 // --Pinakas library: operator overloads forward declarations----------------------------
 namespace Pinakas { namespace Backend
 {
-  template<typename T>
-  std::ostream& operator<<(std::ostream& ostream, const Matrix<T>& A);
+  template<typename MatrixLike, typename T = typename MatrixLike::Type>
+  std::ostream& operator<<(std::ostream& ostream, MatrixLike& A);
   std::ostream& operator<<(std::ostream& ostream, const Size size);
 // --------------------------------------------------------------------------------------
   template<typename T1, typename T2>

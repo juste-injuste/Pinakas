@@ -250,11 +250,34 @@ namespace Pinakas { namespace Backend
   template<typename T>
   T* Matrix<T>::operator[](const size_t j) noexcept
   {
-    return data_.get() + j * size_.N;
+    return data_.get() + (j * size_.N);
+  }
+
+  template<typename T>
+  const T* Matrix<T>::operator[](const size_t j) const noexcept
+  {
+    return data_.get() + (j * size_.N);
   }
 
   template<typename T>
   T& Matrix<T>::operator()(signed int k)
+  {
+    // positive and negative bound checking
+    if ((k < -signed(size_.numel)) || (signed(size_.numel) <= k)) {
+      std::clog << "warning: Matrix: (" << k << ") out of bound " << size_.numel << ", wrapped around to (";
+      // wrap around to avoid undefined behavior
+      k %= signed(size_.numel);
+      std::clog << k << ")\n";
+    }
+
+    // convert negative indices
+    k += (k < 0) * size_.numel;
+
+    return data_[k];
+  }
+
+  template<typename T>
+  const T& Matrix<T>::operator()(signed int k) const
   {
     // positive and negative bound checking
     if ((k < -signed(size_.numel)) || (signed(size_.numel) <= k)) {
@@ -297,29 +320,6 @@ namespace Pinakas { namespace Backend
   }
 
   template<typename T>
-  const T* Matrix<T>::operator[](const size_t j) const noexcept
-  {
-    return data_.get() + j * size_.N;
-  }
-
-  template<typename T>
-  const T& Matrix<T>::operator()(signed int k) const
-  {
-    // positive and negative bound checking
-    if ((k < -signed(size_.numel)) || (signed(size_.numel) <= k)) {
-      std::clog << "warning: Matrix: (" << k << ") out of bound " << size_.numel << ", wrapped around to (";
-      // wrap around to avoid undefined behavior
-      k %= signed(size_.numel);
-      std::clog << k << ")\n";
-    }
-
-    // convert negative indices
-    k += (k < 0) * size_.numel;
-
-    return data_[k];
-  }
-
-  template<typename T>
   const T& Matrix<T>::operator()(signed int j, signed int i) const
   {
     // positive and negative bound checking
@@ -343,6 +343,118 @@ namespace Pinakas { namespace Backend
     i += (i < 0) * size_.N;
 
     return data_[i + j * size_.N];
+  }
+  
+  template<typename T>
+  Slice<T> Matrix<T>::operator()(Range rows, Range cols) noexcept
+  {
+    // positive and negative bound checking
+    if ((rows.start < -signed(size_.M)) || (signed(size_.M) <= rows.start)) {
+      std::clog << "warning: Matrix: (" << rows.start << ", _) out of bound " << size_.M << ", wrapped around to (";
+      // convert negative indices
+      rows.start %= signed(size_.M);
+      std::clog << rows.start << ", _)\n";
+    }
+
+    // positive and negative bound checking
+    if ((rows.stop < -signed(size_.M)) || (signed(size_.M) <= rows.stop)) {
+      std::clog << "warning: Matrix: (" << rows.stop << ", _) out of bound " << size_.M << ", wrapped around to (";
+      // convert negative indices
+      rows.stop %= signed(size_.M);
+      std::clog << rows.stop << ", _)\n";
+    }
+
+    // positive and negative bound checking
+    if ((cols.start < -signed(size_.N)) || (signed(size_.N) <= cols.start)) {
+      std::clog << "warning: Matrix: (_, " << cols.start << ") out of bound " << size_.N << ", wrapped around to (_, ";
+      // convert negative indices
+      cols.start %= signed(size_.N);
+      std::clog << cols.start << ")\n";
+    }
+
+    // positive and negative bound checking
+    if ((cols.stop < -signed(size_.N)) || (signed(size_.N) <= cols.stop)) {
+      std::clog << "warning: Matrix: (_, " << cols.stop << ") out of bound " << size_.N << ", wrapped around to (_, ";
+      // convert negative indices
+      cols.stop %= signed(size_.N);
+      std::clog << cols.stop << ")\n";
+    }
+
+    // convert negative indices
+    rows.start += (rows.start < 0) * size_.M;
+    rows.stop  += (rows.stop < 0)  * size_.M;
+    cols.start += (cols.start < 0) * size_.N;
+    cols.stop  += (cols.stop < 0)  * size_.N;
+
+    return Slice<T>(*this, rows, cols);
+  }
+  
+  template<typename T>
+  Slice<T> Matrix<T>::operator()(Range rows, signed int col) noexcept
+  {
+    return operator()(rows, {col, col});
+  }
+  
+  template<typename T>
+  Slice<T> Matrix<T>::operator()(signed int row, Range cols) noexcept
+  {
+    return operator()({row, row}, cols);
+  }
+
+  template<typename T>
+  Slice<const T> Matrix<T>::operator()(Range rows, Range cols) const noexcept
+  {
+    // positive and negative bound checking
+    if ((rows.start < -signed(size_.M)) || (signed(size_.M) <= rows.start)) {
+      std::clog << "warning: Matrix: (" << rows.start << ", _) out of bound " << size_.M << ", wrapped around to (";
+      // convert negative indices
+      rows.start %= signed(size_.M);
+      std::clog << rows.start << ", _)\n";
+    }
+
+    // positive and negative bound checking
+    if ((rows.stop < -signed(size_.M)) || (signed(size_.M) <= rows.stop)) {
+      std::clog << "warning: Matrix: (" << rows.stop << ", _) out of bound " << size_.M << ", wrapped around to (";
+      // convert negative indices
+      rows.stop %= signed(size_.M);
+      std::clog << rows.stop << ", _)\n";
+    }
+
+    // positive and negative bound checking
+    if ((cols.start < -signed(size_.N)) || (signed(size_.N) <= cols.start)) {
+      std::clog << "warning: Matrix: (_, " << cols.start << ") out of bound " << size_.N << ", wrapped around to (_, ";
+      // convert negative indices
+      cols.start %= signed(size_.N);
+      std::clog << cols.start << ")\n";
+    }
+
+    // positive and negative bound checking
+    if ((cols.stop < -signed(size_.N)) || (signed(size_.N) <= cols.stop)) {
+      std::clog << "warning: Matrix: (_, " << cols.stop << ") out of bound " << size_.N << ", wrapped around to (_, ";
+      // convert negative indices
+      cols.stop %= signed(size_.N);
+      std::clog << cols.stop << ")\n";
+    }
+
+    // convert negative indices
+    rows.start += (rows.start < 0) * size_.M;
+    rows.stop  += (rows.stop < 0)  * size_.M;
+    cols.start += (cols.start < 0) * size_.N;
+    cols.stop  += (cols.stop < 0)  * size_.N;
+
+    return Slice<const T>(*this, rows, cols);
+  }
+  
+  template<typename T>
+  Slice<const T> Matrix<T>::operator()(Range rows, signed int col) const noexcept
+  {
+    return operator()(rows, {col, col});
+  }
+  
+  template<typename T>
+  Slice<const T> Matrix<T>::operator()(signed int row, Range cols) const noexcept
+  {
+    return operator()({row, row}, cols);
   }
 // --------------------------------------------------------------------------------------
   template<typename T>
@@ -528,7 +640,93 @@ namespace Pinakas { namespace Backend
     return Const_Iterator(*this, size_.numel);
   }
 // --------------------------------------------------------------------------------------
+  template<typename T1>
+  Slice<T1>::Slice(const Matrix<T1>& matrix, const Range rows, const Range cols)
+    : // member initialization list
+    matrix_data_(matrix.data_.get()),
+    matrix_M(matrix.M()),
+    offset_(rows.start * matrix.N() + cols.start),
+    size_{size_t(rows.stop - rows.start + 1)
+        , size_t(cols.stop - cols.start + 1)
+        , size_t((rows.stop - rows.start + 1) * (cols.stop - cols.start + 1))}
+  {}
 
+  template<typename T1>
+  Size Slice<T1>::size(void) const & noexcept
+  {
+    return size_;
+  }
+
+  template<typename T1>
+  size_t Slice<T1>::M(void) const & noexcept
+  {
+    return size_.M;
+  }
+
+  template<typename T1>
+  size_t Slice<T1>::N(void) const & noexcept
+  {
+    return size_.N;
+  }
+
+  template<typename T1>
+  size_t Slice<T1>::numel(void) const & noexcept
+  {
+    return size_.numel;
+  }
+
+  template<typename T1>
+  T1* Slice<T1>::operator[](const size_t j) noexcept
+  {
+    return matrix_data_ + (j*matrix_M + offset_);
+  }
+
+  template<typename T1>
+  T1& Slice<T1>::operator()(signed int k)
+  {
+    // positive and negative bound checking
+    if ((k < -signed(size_.numel)) || (signed(size_.numel) <= k)) {
+      std::clog << "warning: Slice: (" << k << ") out of bound " << size_.numel << ", wrapped around to (";
+      // wrap around to avoid undefined behavior
+      k %= signed(size_.numel);
+      std::clog << k << ")\n";
+    }
+
+    // convert negative indices
+    k += (k < 0) * size_.numel;
+
+    // compute 2D indices
+    const size_t i = k % size_.N;
+    const size_t j = k / size_.N;
+
+    return matrix_data_[i + j*matrix_M + offset_];
+  }
+
+  template<typename T1>
+  T1& Slice<T1>::operator()(signed int j, signed int i)
+  {
+    // positive and negative bound checking
+    if ((j < -signed(size_.M)) || (signed(size_.M) <= j)) {
+      std::clog << "warning: Slice: (" << j << ", _) out of bound " << size_.M << ", wrapped around to (";
+      // convert negative indices
+      j %= signed(size_.M);
+      std::clog << j << ", _)\n";
+    }
+
+    // positive and negative bound checking
+    if ((i < -signed(size_.N)) || (signed(size_.N) <= i)) {
+      std::clog << "warning: Slice: (_, " << i << ") out of bound " << size_.N << ", wrapped around to (_, ";
+      // convert negative indices
+      i %= signed(size_.N);
+      std::clog << i << ")\n";
+    }
+
+    // convert negative indices
+    j += (j < 0) * size_.M;
+    i += (i < 0) * size_.N;
+
+    return matrix_data_[i + j*matrix_M + offset_];
+  }
 // --------------------------------------------------------------------------------------
   Random::Random(const double min, const double max) noexcept
     : // member initialization list
@@ -1884,10 +2082,11 @@ namespace Pinakas { namespace Backend
     return std::move(A);
   }
 // --------------------------------------------------------------------------------------
-  template<typename T>
-  T min(const Matrix<T>& A) noexcept
+  template<class MatrixLike, typename T = typename MatrixLike::Type>
+  T min(const MatrixLike& A) noexcept
   {
     T minimum = std::numeric_limits<T>::max();
+    
     for (size_t k = 0; k < A.numel(); ++k)
       if (A[0][k] < minimum)
         minimum = A[0][k];
@@ -1997,7 +2196,7 @@ namespace Pinakas { namespace Backend
     return Q;
   }
 
-  std::unique_ptr<Matrix<double>[]> QR(Matrix<double> A)
+  std::unique_ptr<Matrix<double>[]> qr(Matrix<double> A)
   {
     const size_t M = A.M();
     const size_t N = A.N();
@@ -2183,30 +2382,30 @@ namespace Pinakas { namespace Backend
     return result;
   }
 
-  Matrix<double> Rxx(const Matrix<double>& A)
+  Matrix<double> rxx(const Matrix<double>& A)
   {
     const size_t n = A.numel();
 
-    Matrix<double> Rxx(1, n, 0);
+    Matrix<double> R(1, n, 0);
     for (size_t i = 0; i < n; ++i)
       for (size_t j = 0; j < n; ++j)
         if ((i+j - n+1) < n)
-          Rxx[0][i+j - n+1] += A[0][n-1 - i] * A[0][j];
+          R[0][i+j - n+1] += A[0][n-1 - i] * A[0][j];
 
-    return Rxx;
+    return R;
   }
 
-  Matrix<double> Rxx(const Matrix<double>& A, const size_t K)
+  Matrix<double> rxx(const Matrix<double>& A, const size_t K)
   {
     const size_t n = A.numel();
 
-    Matrix<double> Rxx(1, K, 0);
+    Matrix<double> R(1, K, 0);
     for (size_t i = 0; i < n; ++i)
       for (size_t j = 0; j < n; ++j)
         if ((i+j - n+1) < K)
-          Rxx[0][i+j - n+1] += A[0][n-1 - i] * A[0][j];
+          R[0][i+j - n+1] += A[0][n-1 - i] * A[0][j];
 
-    return Rxx;
+    return R;
   }
 
   Matrix<double> lpc(const Matrix<double>& A, const size_t p)
@@ -2219,14 +2418,14 @@ namespace Pinakas { namespace Backend
     if (A.M() != 1)
       std::clog << "warning: lpc: A should be a horizontal vector\n";
 
-    Matrix<double> rxx = Rxx(A, p+1);
+    Matrix<double> rxx_ = rxx(A, p+1);
 
     Matrix<double> autocorr(p, p);
     Matrix<double> autocorr_vec(p, 1);
     for (size_t i = 0; i < p; ++i) {
       for (size_t j = 0; j < p; ++j)
-        autocorr[j][i] = rxx[0][(j > i) ? (j - i) : (i - j)];
-      autocorr_vec[0][i] = rxx[0][i+1];
+        autocorr[j][i] = rxx_[0][(j > i) ? (j - i) : (i - j)];
+      autocorr_vec[0][i] = rxx_[0][i+1];
     }
 
     return div(autocorr_vec, autocorr);
@@ -2505,12 +2704,11 @@ namespace Pinakas { namespace Backend
     return resampled;
   }
 
-  template<typename T>
-  std::ostream& operator<<(std::ostream& ostream, const Matrix<T>& A)
+  template<typename MatrixLike, typename T = typename MatrixLike::Type>
+  std::ostream& operator<<(std::ostream& ostream, MatrixLike& A)
   {
     if (A.numel()) {
       std::size_t max_len = 0;
-
       for (size_t y = 0; y < A.M(); ++y) {
         for (size_t x = 0; x < A.N(); ++x) {
           std::stringstream ss;
@@ -2741,12 +2939,27 @@ namespace Pinakas { namespace Backend
 int main()
 {
   using namespace Pinakas;
-  using namespace Chronometro;
-  auto x = linspace(0, 1, 256);
-  auto y = sin(2*M_PI*100*x);
-  auto H = abs(fft(y));
-  
-sinc_impulse(10, 2);
 
-  plot({"ok"}, {{x, H}});
+  Matrix<int> x = {{1, 2, 3},
+                   {4, 5, 6},
+                   {7, 8, 9}};
+
+  auto y = x({1, 2}, {0, 1});
+  std::cout << "x:\n" << x;
+  puts("----[y][x]----");
+  std::cout << "y:\n" << y;
+  puts("----(y, x)----");
+  for (size_t j = 0; j < y.M(); ++j) {
+    for (size_t x = 0; x < y.N(); ++x)
+      std::cout << ' ' << y(j, x);
+    std::cout << '\n';
+  }
+  puts("-----(k)------");
+  for (size_t i = 0; i < y.numel(); ++i)
+    std::cout << ' ' << y(i);
+  std::cout << '\n';
+
+  y[0][0] = 1;
+  y(0, 0) = 1;
+  y(0) = 1;
 }
