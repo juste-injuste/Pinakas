@@ -488,7 +488,24 @@ namespace Pinakas { namespace Backend
       T* matrix_data_;
       const size_t matrix_M;
       const size_t offset_;
-      const Size size_;
+      const Size size_;     
+    private:
+      template<typename T0>
+      class Iterator {
+        private:
+          const Slice<T> slice_;
+          signed int current_;
+        public:
+          inline explicit Iterator(const Slice<T> slice, const int value) noexcept;
+          inline T0& operator*() const noexcept;
+          inline void operator++() noexcept;
+          inline bool operator!=(const Iterator& other) const noexcept;
+      };
+    public:
+      inline Iterator<T> begin() noexcept;
+      inline Iterator<T> end() noexcept;
+      inline Iterator<const T> begin() const noexcept;
+      inline Iterator<const T> end() const noexcept;
   };
 
   class Range final {
