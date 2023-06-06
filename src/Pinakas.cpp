@@ -550,58 +550,58 @@ namespace Pinakas { namespace Backend
     return size_.numel;
   }
 // --------------------------------------------------------------------------------------
-  template<typename T>
-  Iterator<T>::Iterator(T* matrix_data, const size_t index) noexcept
+  template<typename T> template<typename T0>
+  Matrix<T>::Iterator<T0>::Iterator(T0* matrix_data, const size_t index) noexcept
     : // member initialization list
     matrix_data_(matrix_data),
     index(index)
   {}
 
-  template<typename T>
-  bool Iterator<T>::operator==(const Iterator<T>& other) const noexcept
+  template<typename T> template<typename T0>
+  bool Matrix<T>::Iterator<T0>::operator==(const Iterator<T0> &other) const noexcept
   {
     return index == other.index;
   }
 
-  template<typename T>
-  bool Iterator<T>::operator!=(const Iterator<T>& other) const noexcept
+  template<typename T> template<typename T0>
+  bool Matrix<T>::Iterator<T0>::operator!=(const Iterator<T0>& other) const noexcept
   {
     return index != other.index;
   }
 
-  template<typename T>
-  Iterator<T>& Iterator<T>::operator++(void) noexcept
+  template<typename T> template<typename T0>
+  Matrix<T>::Iterator<T0>& Matrix<T>::Iterator<T0>::operator++(void) noexcept
   {
     ++index;
     return *this;
   }
 
-  template<typename T>
-  T& Iterator<T>::operator*(void) const noexcept
+  template<typename T> template<typename T0>
+  T0& Matrix<T>::Iterator<T0>::operator*(void) const noexcept
   {
     return matrix_data_[index];
   }
 // --------------------------------------------------------------------------------------
   template<typename T>
-  Iterator<T> Matrix<T>::begin(void) noexcept
+  Matrix<T>::Iterator<T> Matrix<T>::begin(void) noexcept
   {
     return Iterator<T>(data_.get(), 0);
   }
 
   template<typename T>
-  Iterator<T> Matrix<T>::end(void) noexcept
+  Matrix<T>::Iterator<T> Matrix<T>::end(void) noexcept
   {
     return Iterator<T>(data_.get(), size_.numel);
   }
 
   template<typename T>
-  Iterator<const T> Matrix<T>::begin(void) const noexcept
+  Matrix<T>::Iterator<const T> Matrix<T>::begin(void) const noexcept
   {
     return Iterator<const T>(data_.get(), 0);
   }
 
   template<typename T>
-  Iterator<const T> Matrix<T>::end(void) const noexcept
+  Matrix<T>::Iterator<const T> Matrix<T>::end(void) const noexcept
   {
     return Iterator<const T>(data_.get(), size_.numel);
   }
@@ -760,6 +760,58 @@ namespace Pinakas { namespace Backend
     i += (i < 0) * size_.N;
 
     return matrix_data_[i + j*matrix_M + offset_];
+  }
+  
+  template<typename T> template<typename T0>
+  Slice<T>::Iterator<T0>::Iterator(const Slice<T> slice, const int value) noexcept
+    : // member initialization list
+    slice_(slice),
+    current_(value)
+  {}
+  
+  template<typename T> template<typename T0>
+  T0& Slice<T>::Iterator<T0>::operator*() const noexcept
+  {
+    const size_t i = current_ % slice_.size_.N;
+    const size_t j = current_ / slice_.size_.N;
+
+    return slice_.matrix_data_[i + j*slice_.matrix_M + slice_.offset_];
+  }
+
+  template<typename T> template<typename T0>
+  void Slice<T>::Iterator<T0>::operator++() noexcept
+  {
+    ++current_;
+  }
+
+  template<typename T> template<typename T0>
+  bool Slice<T>::Iterator<T0>::operator!=(const Iterator& other) const noexcept
+  {           
+    return current_ != other.current_;
+  }
+  
+  template<typename T>
+  Slice<T>::Iterator<T> Slice<T>::begin() noexcept
+  {
+    return Iterator<T>(*this, 0);
+  }
+
+  template<typename T>
+  Slice<T>::Iterator<T> Slice<T>::end() noexcept
+  {
+      return Iterator<T>(*this, size_.numel);
+  }
+  
+  template<typename T>
+  Slice<T>::Iterator<const T> Slice<T>::begin() const noexcept
+  {
+    return Iterator<const T>(*this, 0);
+  }
+
+  template<typename T>
+  Slice<T>::Iterator<const T> Slice<T>::end() const noexcept
+  {
+      return Iterator<const T>(*this, size_.numel);
   }
 // --------------------------------------------------------------------------------------
   Random::Random(const double min, const double max) noexcept
@@ -2983,7 +3035,15 @@ int main()
   
   c1 = c2;
   c1(1) = 2;
-
+  
   std::cout << "x:\n" << x << '\n';
 
+
+  for (auto& t : c1) {
+    t = 99;
+    std::cout << t << ' ';
+  }
+  std::cout << '\n';
+
+  std::cout << "x:\n" << x << '\n';
 }

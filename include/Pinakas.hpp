@@ -66,16 +66,13 @@ namespace Pinakas { namespace Backend
   //
   struct Random;
   //
-  class Range;
-  //
   template<typename T>
   class Matrix;
   //
   template<typename T>
-  class Iterator;
-  //
-  template<typename T>
   class Slice;
+  //
+  class Range;
   //
   typedef std::pair<const Matrix<double>, const Matrix<double>> DataSet;
   typedef std::complex<double> complex;
@@ -363,30 +360,6 @@ namespace Pinakas { namespace Backend
     const double max_;
   };
 
-  class Range final {
-    public:
-      inline explicit Range(const size_t stop) noexcept;
-      inline Range(const int start, const int stop) noexcept;
-      inline explicit Range(const int start, const int stop, const size_t step) noexcept;
-      int start;
-      int stop;
-    private:
-      const int step_;
-      class Iterator {
-        private:
-          int current_;
-          const int step_;
-        public:
-          inline explicit Iterator(const int value, const int step) noexcept;
-          inline int operator*() const noexcept;
-          inline void operator++() noexcept;
-          inline bool operator!=(const Iterator& other) const noexcept;
-      };
-    public:
-      inline Iterator begin() const noexcept;
-      inline Iterator end() const noexcept;
-  };
-
   template<typename T>
   class Matrix final {
     public:
@@ -467,6 +440,19 @@ namespace Pinakas { namespace Backend
       Slice<const T> operator()(Range rows, Range cols) const noexcept;
       Slice<const T> operator()(Range rows, signed int col) const noexcept;
       Slice<const T> operator()(signed int row, Range cols) const noexcept;
+    private:
+      template<typename T0>
+      class Iterator final {
+        public:
+          inline explicit Iterator(T0* matrix_data, const size_t index) noexcept;
+          inline bool operator==(const Iterator<T0>& other) const noexcept;
+          inline bool operator!=(const Iterator<T0>& other) const noexcept;
+          Iterator& operator++(void) noexcept;
+          inline T0& operator*(void) const noexcept;
+        private:
+          T0* matrix_data_;
+          size_t index;
+      };
     public:
       Iterator<T> begin(void) noexcept;
       Iterator<T> end(void) noexcept;
@@ -502,20 +488,48 @@ namespace Pinakas { namespace Backend
       T* matrix_data_;
       const size_t matrix_M;
       const size_t offset_;
-      const Size size_;
+      const Size size_;     
+    private:
+      template<typename T0>
+      class Iterator {
+        private:
+          const Slice<T> slice_;
+          signed int current_;
+        public:
+          inline explicit Iterator(const Slice<T> slice, const int value) noexcept;
+          inline T0& operator*() const noexcept;
+          inline void operator++() noexcept;
+          inline bool operator!=(const Iterator& other) const noexcept;
+      };
+    public:
+      inline Iterator<T> begin() noexcept;
+      inline Iterator<T> end() noexcept;
+      inline Iterator<const T> begin() const noexcept;
+      inline Iterator<const T> end() const noexcept;
   };
 
-  template<typename T>
-  class Iterator final {
+  class Range final {
     public:
-      inline explicit Iterator(T* matrix_data, const size_t index) noexcept;
-      inline bool operator==(const Iterator<T>& other) const noexcept;
-      inline bool operator!=(const Iterator<T>& other) const noexcept;
-      Iterator& operator++(void) noexcept;
-      inline T& operator*(void) const noexcept;
+      inline explicit Range(const size_t stop) noexcept;
+      inline Range(const int start, const int stop) noexcept;
+      inline explicit Range(const int start, const int stop, const size_t step) noexcept;
+      int start;
+      int stop;
     private:
-      T* matrix_data_;
-      size_t index;
+      const int step_;
+      class Iterator {
+        private:
+          int current_;
+          const int step_;
+        public:
+          inline explicit Iterator(const int value, const int step) noexcept;
+          inline int operator*() const noexcept;
+          inline void operator++() noexcept;
+          inline bool operator!=(const Iterator& other) const noexcept;
+      };
+    public:
+      inline Iterator begin() const noexcept;
+      inline Iterator end() const noexcept;
   };
 }}
 // --Pinakas library: operator overloads forward declarations----------------------------
