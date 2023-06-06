@@ -2453,15 +2453,15 @@ namespace Pinakas { namespace Backend
 
     Matrix<double> rxx_ = rxx(A, p+1);
 
-    Matrix<double> autocorr(p, p);
+    Matrix<double> autocorr_mat(p, p);
     Matrix<double> autocorr_vec(p, 1);
     for (size_t i = 0; i < p; ++i) {
       for (size_t j = 0; j < p; ++j)
-        autocorr[j][i] = rxx_[0][(j > i) ? (j - i) : (i - j)];
+        autocorr_mat[j][i] = rxx_[0][(j > i) ? (j - i) : (i - j)];
       autocorr_vec[0][i] = rxx_[0][i+1];
     }
 
-    return div(autocorr_vec, autocorr);
+    return div(autocorr_vec, autocorr_mat);
   }
 
   Matrix<double> toeplitz(const Matrix<double>& A)
