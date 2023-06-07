@@ -105,8 +105,8 @@ namespace Pinakas { namespace Backend
   Matrix<T1>& add_val_inplace(Matrix<T1>& A, const T2 B) noexcept;
   template<typename T>
   Matrix<T>& add_rng_inplace(Matrix<T>& A, const Random B) noexcept;
-  template<typename T1, typename T2, typename T3 = appropriate_type<T1, T2>>
-  Matrix<T3> add_mat(const Matrix<T1>& A, const Matrix<T2>& B);
+  template<template<typename> class M1, template<typename> class M2, typename T1, typename T2, typename T3 = appropriate_type<T1, T2>>
+  Matrix<T3> add_mat(const M1<T1>& A, const M2<T2>& B);
   template<typename T1, typename T2, typename T3 = appropriate_type<T1, T2>>
   Matrix<T3> add_val(const Matrix<T1>& A, const T2 B) noexcept;
   template<typename T1, typename T3 = appropriate_type<T1, double>>
@@ -220,20 +220,20 @@ namespace Pinakas { namespace Backend
   template<typename T1>
   Matrix<T1>&& reshape(Matrix<T1>&& A, const size_t M, const size_t N);
 // --------------------------------------------------------------------------------------
-  template<class MatrixLike, typename T = typename MatrixLike::Type>
-  T min(const MatrixLike& A) noexcept;
-  template<class MatrixLike, typename T = typename MatrixLike::Type>
-  T max(const MatrixLike& A) noexcept;
-  template<class MatrixLike, typename T = typename MatrixLike::Type>
-  T sum(const MatrixLike& A) noexcept;
-  template<class MatrixLike, typename T = typename MatrixLike::Type>
-  double prod(const MatrixLike& A) noexcept;
-  template<class MatrixLike, typename T = typename MatrixLike::Type>
-  double avg(const MatrixLike& A) noexcept;
-  template<class MatrixLike, typename T = typename MatrixLike::Type>
-  double rms(const MatrixLike& A) noexcept;
-  template<class MatrixLike, typename T = typename MatrixLike::Type>
-  double geo(const MatrixLike& A) noexcept;
+  template<template<typename> class M, typename T>
+  T min(const M<T>& A) noexcept;
+  template<template<typename> class M, typename T>
+  T max(const M<T>& A) noexcept;
+  template<template<typename> class M, typename T>
+  T sum(const M<T>& A) noexcept;
+  template<template<typename> class M, typename T>
+  double prod(const M<T>& A) noexcept;
+  template<template<typename> class M, typename T>
+  double avg(const M<T>& A) noexcept;
+  template<template<typename> class M, typename T>
+  double rms(const M<T>& A) noexcept;
+  template<template<typename> class M, typename T>
+  double geo(const M<T>& A) noexcept;
 // --------------------------------------------------------------------------------------
   Matrix<double> orthogonalize(Matrix<double> A);
   std::unique_ptr<Matrix<double>[]> qr(Matrix<double> A);
@@ -242,8 +242,8 @@ namespace Pinakas { namespace Backend
 // --------------------------------------------------------------------------------------
   template<typename T>
   Matrix<T> reverse(const Matrix<T>& A);
-  template<class MatrixLike, typename T = typename MatrixLike::Type>
-  MatrixLike&& reverse(MatrixLike&& A) noexcept;
+  template<template<typename> class M, typename T>
+  M<T>&& reverse(M<T>&& A) noexcept;
 // --------------------------------------------------------------------------------------
   Matrix<double> diff(const Matrix<double>& A, size_t n = 1);
 // --------------------------------------------------------------------------------------
@@ -469,6 +469,7 @@ namespace Pinakas { namespace Backend
     public:
       inline explicit Slice(T* matrix_data, const Size matrix_size, const Range rows, const Range cols) noexcept;
       Slice<T>& operator=(const Slice<T>& other);
+      Slice<T>& operator=(const Matrix<T>& other);
     public:
       using Type = T;
       inline Size size(void) const & noexcept;
@@ -493,10 +494,10 @@ namespace Pinakas { namespace Backend
       template<typename T0>
       class Iterator {
         private:
-          const Slice<T> slice_;
+          Slice<T>& slice_;
           signed int current_;
         public:
-          inline explicit Iterator(const Slice<T> slice, const int value) noexcept;
+          inline explicit Iterator(Slice<T>& slice, const int value) noexcept;
           inline T0& operator*() const noexcept;
           inline void operator++() noexcept;
           inline bool operator!=(const Iterator& other) const noexcept;
@@ -515,8 +516,8 @@ namespace Pinakas { namespace Backend
       inline explicit Range(const int start, const int stop, const size_t step) noexcept;
       int start;
       int stop;
+      int step;
     private:
-      const int step_;
       class Iterator {
         private:
           int current_;
@@ -535,8 +536,8 @@ namespace Pinakas { namespace Backend
 // --Pinakas library: operator overloads forward declarations----------------------------
 namespace Pinakas { namespace Backend
 {
-  template<class MatrixLike, typename T = typename MatrixLike::Type>
-  std::ostream& operator<<(std::ostream& ostream, const MatrixLike& A);
+  template<template<typename> class M, typename T>
+  std::ostream& operator<<(std::ostream& ostream, const M<T>& A);
   std::ostream& operator<<(std::ostream& ostream, const Size size);
 // --------------------------------------------------------------------------------------
   template<typename T1, typename T2>

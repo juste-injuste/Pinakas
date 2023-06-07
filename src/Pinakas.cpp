@@ -348,6 +348,12 @@ namespace Pinakas { namespace Backend
   template<typename T>
   Slice<T> Matrix<T>::operator()(Range rows, Range cols) noexcept
   {
+    if ((rows.step != 1) || (cols.step != 1)) {
+      std::clog << "warning: Matrix: Range step not equal to 1 not implemented yet, step = 1 used instead\n";
+      rows.step = 1;
+      cols.step = 1;
+    }
+
     // positive and negative bound checking
     if ((rows.start < -signed(size_.M)) || (signed(size_.M) <= rows.start)) {
       std::clog << "warning: Matrix: (" << rows.start << ", _) out of bound " << size_.M << ", wrapped around to (";
@@ -633,6 +639,21 @@ namespace Pinakas { namespace Backend
   }
 
   template<typename T>
+  Slice<T>& Slice<T>::operator=(const Matrix<T>& other)
+  {
+    if (size_ != other.size()) {
+      std::cerr << "error: Slice: incompatible sizes (" << size_ << " vs " << other.size() << ")\n";
+      return *this;
+    }
+    
+    for (size_t j = 0; j < size_.M; ++j)
+      for (size_t i = 0; i < size_.N; ++i)
+        matrix_data_[i + j*matrix_M + offset_] = other[j][i];
+
+    return *this;
+  }
+
+  template<typename T>
   Size Slice<T>::size(void) const & noexcept
   {
     return size_;
@@ -763,7 +784,7 @@ namespace Pinakas { namespace Backend
   }
   
   template<typename T> template<typename T0>
-  Slice<T>::Iterator<T0>::Iterator(const Slice<T> slice, const int value) noexcept
+  Slice<T>::Iterator<T0>::Iterator(Slice<T>& slice, const int value) noexcept
     : // member initialization list
     slice_(slice),
     current_(value)
@@ -824,21 +845,21 @@ namespace Pinakas { namespace Backend
     : // member initialization list
     start(0),
     stop(high-1),
-    step_(1)
+    step(1)
   {}
 
   Range::Range(const int start, const int stop) noexcept
     : // member initialization list
     start(start),
     stop(stop),
-    step_(((stop-start) >= 0) ? 1 : -1)
+    step(((stop-start) >= 0) ? 1 : -1)
   {}
 
   Range::Range(const int start, const int stop, const size_t step) noexcept
     : // member initialization list
     start(start),
     stop(stop),
-    step_(((stop-start) >= 0) ? step : -signed(step))
+    step(((stop-start) >= 0) ? step : -signed(step))
   {}
   
   Range::Iterator::Iterator(const int value, const int step) noexcept
@@ -864,12 +885,12 @@ namespace Pinakas { namespace Backend
   
   Range::Iterator Range::begin() const noexcept
   {
-    return Iterator(start, step_);
+    return Iterator(start, step);
   }
 
   Range::Iterator Range::end() const noexcept
   {
-      return Iterator(stop, step_);
+      return Iterator(stop, step);
   }
 // --------------------------------------------------------------------------------------
   template<typename T1, typename T2>
@@ -911,8 +932,8 @@ namespace Pinakas { namespace Backend
     return A;
   }
 
-  template<typename T1, typename T2, typename T3 = appropriate_type<T1, T2>>
-  Matrix<T3> add_mat(const Matrix<T1>& A, const Matrix<T2>& B)
+  template<template<typename> class M1, template<typename> class M2, typename T1, typename T2, typename T3 = appropriate_type<T1, T2>>
+  Matrix<T3> add_mat(const M1<T1>& A, const M2<T2>& B)
   {
     if (A.size() != B.size()) {
       std::cerr << "error: add_mat: nonconformant arguments (A is " << A.size() << ", B is " << B.size() << ")\n";
@@ -974,8 +995,8 @@ namespace Pinakas { namespace Backend
     return add_val_inplace(A, B);
   }
   
-  template<typename T1, typename T2, typename T3 = appropriate_type<T1, T2>>
-  Matrix<T3> operator+(const Matrix<T1>& A, const Matrix<T2>& B)
+  template<template<typename> class M1, template<typename> class M2, typename T1, typename T2, typename T3 = appropriate_type<T1, T2>>
+  Matrix<T3> operator+(const M1<T1>& A, const M2<T2>& B)
   {
     return add_mat(A, B);
   }
@@ -2168,30 +2189,32 @@ namespace Pinakas { namespace Backend
     return std::move(A);
   }
 // --------------------------------------------------------------------------------------
-  template<class MatrixLike, typename T = typename MatrixLike::Type>
-  T min(const MatrixLike& A) noexcept
+  template<template<typename> class M, typename T>
+  T min(const M<T>& A) noexcept
   {
-    T minimum = std::numeric_limits<T>::max();
-    for (size_t k = 0; k < A.numel(); ++k)
-      if (A[0][k] < minimum)
+    static_assert(std::is_same<M<T>, Slice<T>>::value || std::is_same<M<T>, Matrix<T>>::value, "M must be either Slice or Matrix");
+    
+    T minimum = A[0][0];
+    for (size_t k = 1; k < A.numel(); ++k)
+      if (A[0][k] < minimum)s
         minimum = A[0][k];
         
     return minimum;
   }
   
-  template<class MatrixLike, typename T = typename MatrixLike::Type>
-  T max(const MatrixLike& A) noexcept
+  template<template<typename> class M, typename T>
+  T max(const M<T>& A) noexcept
   {
-    T maximum = std::numeric_limits<T>::min();
-    for (size_t k = 0; k < A.numel(); ++k)
+    T maximum = A[0][0];
+    for (size_t k = 1; k < A.numel(); ++k)
       if (A[0][k] > maximum)
         maximum = A[0][k];
 
     return maximum;
   }
   
-  template<class MatrixLike, typename T = typename MatrixLike::Type>
-  T sum(const MatrixLike& A) noexcept
+  template<template<typename> class M, typename T>
+  T sum(const M<T>& A) noexcept
   {
     T summation = 0;
     for (size_t k = 0; k < A.numel(); ++k)
@@ -2200,8 +2223,8 @@ namespace Pinakas { namespace Backend
     return summation;
   }
 
-  template<class MatrixLike, typename T = typename MatrixLike::Type>
-  double prod(const MatrixLike& A) noexcept
+  template<template<typename> class M, typename T>
+  double prod(const M<T>& A) noexcept
   {
     double temporary = 0;
     for (size_t k = 0; k < A.numel(); ++k)
@@ -2210,8 +2233,8 @@ namespace Pinakas { namespace Backend
     return std::exp(temporary);
   }
 
-  template<class MatrixLike, typename T = typename MatrixLike::Type>
-  double avg(const MatrixLike& A) noexcept
+  template<template<typename> class M, typename T>
+  double avg(const M<T>& A) noexcept
   {
     double average = 0;
     for (size_t k = 0; k < A.numel(); ++k)
@@ -2220,8 +2243,8 @@ namespace Pinakas { namespace Backend
     return average/A.numel();
   }
 
-  template<class MatrixLike, typename T = typename MatrixLike::Type>
-  double rms(const MatrixLike& A) noexcept
+  template<template<typename> class M, typename T>
+  double rms(const M<T>& A) noexcept
   {
     const size_t n = A.numel();
     double temporary = 0;
@@ -2231,8 +2254,8 @@ namespace Pinakas { namespace Backend
     return std::sqrt(temporary);
   }
 
-  template<class MatrixLike, typename T = typename MatrixLike::Type>
-  double geo(const MatrixLike& A) noexcept
+  template<template<typename> class M, typename T>
+  double geo(const M<T>& A) noexcept
   {
     double temporary = 0;
     for (size_t k = 0; k < A.numel(); ++k)
@@ -2415,8 +2438,8 @@ namespace Pinakas { namespace Backend
     return R;
   }
 
-  template<class MatrixLike, typename T = typename MatrixLike::Type>
-  MatrixLike&& reverse(MatrixLike&& A) noexcept
+  template<template<typename> class M, typename T>
+  M<T>&& reverse(M<T>&& A) noexcept
   {
     const size_t n   = A.numel();
     const size_t n_2 = n >> 1;
@@ -2789,8 +2812,8 @@ namespace Pinakas { namespace Backend
     return resampled;
   }
 
-  template<typename MatrixLike, typename T = typename MatrixLike::Type>
-  std::ostream& operator<<(std::ostream& ostream, const MatrixLike& A)
+  template<template<typename> class M, typename T>
+  std::ostream& operator<<(std::ostream& ostream, const M<T>& A)
   {
     if (A.numel()) {
       std::size_t max_len = 0;
@@ -3028,22 +3051,17 @@ int main()
   Matrix<int> x = {{1, 2, 3},
                    {4, 5, 6},
                    {7, 8, 9}};
-  std::cout << "x:\n" << x << '\n';
 
-  auto c1 = x({0, -1}, 1);
-  auto c2 = x({0, -1}, 2);
-  
-  c1 = c2;
-  c1(1) = 2;
-  
-  std::cout << "x:\n" << x << '\n';
+  auto s = x({0, -1}, 1);
+
+  Matrix<int> y(3, 1, 10);
+
+  s = y;
+
+  auto r = s + y;
 
 
-  for (auto& t : c1) {
-    t = 99;
-    std::cout << t << ' ';
-  }
-  std::cout << '\n';
+  std::cout << "x:\n" << r << '\n';
 
-  std::cout << "x:\n" << x << '\n';
+
 }

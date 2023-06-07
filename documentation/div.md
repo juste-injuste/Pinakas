@@ -3,11 +3,11 @@
 x = div(b, A)
 ```
 
-This function performs matrix division using QR decomposition with back substitution.
+This function performs matrix division using QR decomposition and back substitution.
 
 ```cpp
-template<typename T>
-Matrix<double> div(const Matrix<T>& b, Matrix<double> A);
+template<typename MatrixLike, typename T = typename MatrixLike::Type>
+Matrix<double> div(const MatrixLike& b, Matrix<double> A);
 ```
 
 ## Usage
