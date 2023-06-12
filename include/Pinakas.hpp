@@ -208,32 +208,36 @@ namespace Pinakas { namespace Backend
   template<typename T, typename T0 = convert_to_double<T>>
   Matrix<double> div(const Matrix<T>& A, Matrix<double> B);
 // --------------------------------------------------------------------------------------
-  Matrix<double> linspace(const double x1, const double x2, const size_t N);
-  Matrix<size_t> iota(const size_t n);
+  template<typename T = double>
+  Matrix<T> linspace(const double x1, const double x2, const size_t N);
+  template<typename T = size_t>
+  Matrix<T> iota(const size_t n);
+  template<typename T = double>
+  Matrix<T> eye(const size_t M, const size_t N);
 // --------------------------------------------------------------------------------------
-  template<template<typename> class M, typename T>
-  Matrix<T> transpose(const M<T>& A);
+  template<template<typename> class M1, typename T>
+  Matrix<T> transpose(const M1<T>& A);
   template<typename T>
   Matrix<T>&& transpose(Matrix<T>&& A);
-  template<template<typename> class M, typename T>
-  Matrix<T> reshape(const M<T>& A, const size_t M, const size_t N);
+  template<template<typename> class M1, typename T>
+  Matrix<T> reshape(const M1<T>& A, const size_t M, const size_t N);
   template<typename T1>
   Matrix<T1>&& reshape(Matrix<T1>&& A, const size_t M, const size_t N);
 // --------------------------------------------------------------------------------------
-  template<template<typename> class M, typename T>
-  T min(const M<T>& A) noexcept;
-  template<template<typename> class M, typename T>
-  T max(const M<T>& A) noexcept;
-  template<template<typename> class M, typename T>
-  T sum(const M<T>& A) noexcept;
-  template<template<typename> class M, typename T>
-  double prod(const M<T>& A) noexcept;
-  template<template<typename> class M, typename T>
-  double avg(const M<T>& A) noexcept;
-  template<template<typename> class M, typename T>
-  double rms(const M<T>& A) noexcept;
-  template<template<typename> class M, typename T>
-  double geo(const M<T>& A) noexcept;
+  template<template<typename> class M1, typename T>
+  T min(const M1<T>& A) noexcept;
+  template<template<typename> class M1, typename T>
+  T max(const M1<T>& A) noexcept;
+  template<template<typename> class M1, typename T>
+  T sum(const M1<T>& A) noexcept;
+  template<template<typename> class M1, typename T>
+  double prod(const M1<T>& A) noexcept;
+  template<template<typename> class M1, typename T>
+  double avg(const M1<T>& A) noexcept;
+  template<template<typename> class M1, typename T>
+  double rms(const M1<T>& A) noexcept;
+  template<template<typename> class M1, typename T>
+  double geo(const M1<T>& A) noexcept;
 // --------------------------------------------------------------------------------------
   Matrix<double> orthogonalize(Matrix<double> A);
   std::unique_ptr<Matrix<double>[]> qr(Matrix<double> A);
@@ -244,8 +248,8 @@ namespace Pinakas { namespace Backend
 // --------------------------------------------------------------------------------------
   template<typename T>
   Matrix<T> reverse(const Matrix<T>& A);
-  template<template<typename> class M, typename T>
-  M<T>&& reverse(M<T>&& A) noexcept;
+  template<template<typename> class M1, typename T>
+  M1<T>&& reverse(M1<T>&& A) noexcept;
 // --------------------------------------------------------------------------------------
   Matrix<double> diff(const Matrix<double>& A, size_t n = 1);
 // --------------------------------------------------------------------------------------
@@ -330,6 +334,7 @@ namespace Pinakas { inline namespace Frontend
   using Backend::linearize;
   using Backend::linspace;
   using Backend::iota;
+  using Backend::eye;
   using Backend::diff;
   using Backend::conv;
   using Backend::corr;
@@ -365,7 +370,6 @@ namespace Pinakas { namespace Backend
   template<typename T>
   class Matrix final {
     public:
-      using Type = T;
       // destructor
       ~Matrix() noexcept;
       // empty constructor
@@ -474,7 +478,6 @@ namespace Pinakas { namespace Backend
       Slice<T>& operator=(const Slice<T>& other);
       Slice<T>& operator=(const Matrix<T>& other);
     public:
-      using Type = T;
       inline Size size(void) const & noexcept;
       inline size_t numel(void) const & noexcept;
       inline size_t M(void) const & noexcept;
@@ -539,8 +542,8 @@ namespace Pinakas { namespace Backend
 // --Pinakas library: operator overloads forward declarations----------------------------
 namespace Pinakas { namespace Backend
 {
-  template<template<typename> class M, typename T>
-  std::ostream& operator<<(std::ostream& ostream, const M<T>& A);
+  template<template<typename> class M1, typename T>
+  std::ostream& operator<<(std::ostream& ostream, const M1<T>& A);
   std::ostream& operator<<(std::ostream& ostream, const Size size);
 // --------------------------------------------------------------------------------------
   template<typename T1, typename T2>

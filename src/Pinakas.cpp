@@ -625,16 +625,12 @@ namespace Pinakas { namespace Backend
 
   template<typename T>
   Slice<T>::Slice(const Slice<T>& other) noexcept
-  {
-    if (size_ != other.size()) {
-      std::cerr << "error: Slice: incompatible sizes (" << size_ << " vs " << other.size() << ")\n";
-      return *this;
-    }
-    
-    for (size_t j = 0; j < size_.M; ++j)
-      for (size_t i = 0; i < size_.N; ++i)
-        matrix_data_[i + j*matrix_M_ + offset_] = other[j][i];
-  }
+    : // member initialization list
+    matrix_data_(other.matrix_data_),
+    matrix_M_(other.matrix_M_),
+    offset_(other.offset_),
+    size_(other.size_)
+  {}
 
   template<typename T>
   Slice<T>& Slice<T>::operator=(const Slice<T>& other)
@@ -2153,8 +2149,8 @@ namespace Pinakas { namespace Backend
     return x;
   }
 // --------------------------------------------------------------------------------------
-  template<template<typename> class M, typename T>
-  Matrix<T> transpose(const M<T>& A)
+  template<template<typename> class M1, typename T>
+  Matrix<T> transpose(const M1<T>& A)
   {
     Matrix<T> R(A.N(), A.M());
     for (size_t y = 0; y < A.M(); ++y)
@@ -2171,8 +2167,8 @@ namespace Pinakas { namespace Backend
     return std::move(A);
   }
 
-  template<template<typename> class M, typename T>
-  Matrix<T> reshape(const M<T>& A, const size_t M, const size_t N)
+  template<template<typename> class M1, typename T>
+  Matrix<T> reshape(const M1<T>& A, const size_t M, const size_t N)
   {
     if (A.numel() != M * N) {
       std::cerr << "error: reshape: can't reshape " << A.size() << " matrix to " << M << 'x' << N << " matrix\n";
@@ -2202,19 +2198,19 @@ namespace Pinakas { namespace Backend
     return std::move(A);
   }
 // --------------------------------------------------------------------------------------
-  template<template<typename> class M, typename T>
-  T min(const M<T>& A) noexcept
+  template<template<typename> class M1, typename T>
+  T min(const M1<T>& A) noexcept
   {
     T minimum = A[0][0];
     for (size_t k = 1; k < A.numel(); ++k)
-      if (A[0][k] < minimum)s
+      if (A[0][k] < minimum)
         minimum = A[0][k];
         
     return minimum;
   }
   
-  template<template<typename> class M, typename T>
-  T max(const M<T>& A) noexcept
+  template<template<typename> class M1, typename T>
+  T max(const M1<T>& A) noexcept
   {
     T maximum = A[0][0];
     for (size_t k = 1; k < A.numel(); ++k)
@@ -2224,8 +2220,8 @@ namespace Pinakas { namespace Backend
     return maximum;
   }
   
-  template<template<typename> class M, typename T>
-  T sum(const M<T>& A) noexcept
+  template<template<typename> class M1, typename T>
+  T sum(const M1<T>& A) noexcept
   {
     T summation = 0;
     for (size_t k = 0; k < A.numel(); ++k)
@@ -2234,8 +2230,8 @@ namespace Pinakas { namespace Backend
     return summation;
   }
 
-  template<template<typename> class M, typename T>
-  double prod(const M<T>& A) noexcept
+  template<template<typename> class M1, typename T>
+  double prod(const M1<T>& A) noexcept
   {
     double temporary = 0;
     for (size_t k = 0; k < A.numel(); ++k)
@@ -2244,8 +2240,8 @@ namespace Pinakas { namespace Backend
     return std::exp(temporary);
   }
 
-  template<template<typename> class M, typename T>
-  double avg(const M<T>& A) noexcept
+  template<template<typename> class M1, typename T>
+  double avg(const M1<T>& A) noexcept
   {
     double average = 0;
     for (size_t k = 0; k < A.numel(); ++k)
@@ -2254,8 +2250,8 @@ namespace Pinakas { namespace Backend
     return average/A.numel();
   }
 
-  template<template<typename> class M, typename T>
-  double rms(const M<T>& A) noexcept
+  template<template<typename> class M1, typename T>
+  double rms(const M1<T>& A) noexcept
   {
     const size_t n = A.numel();
     double temporary = 0;
@@ -2265,8 +2261,8 @@ namespace Pinakas { namespace Backend
     return std::sqrt(temporary);
   }
 
-  template<template<typename> class M, typename T>
-  double geo(const M<T>& A) noexcept
+  template<template<typename> class M1, typename T>
+  double geo(const M1<T>& A) noexcept
   {
     double temporary = 0;
     for (size_t k = 0; k < A.numel(); ++k)
@@ -2431,28 +2427,45 @@ namespace Pinakas { namespace Backend
     return std::unique_ptr<M<double>[]>(new M<double>[2]{std::move(data_x), std::move(data_y)});;
   }
 
-  Matrix<double> linspace(const double x1, const double x2, const size_t N)
+  template<typename T = double>
+  Matrix<T> linspace(const double x1, const double x2, const size_t N)
   {
-    Matrix<double> R(1, N);
-
-    const double step  = (x2 - x1) / (N - 1);
+    Matrix<T> R(1, N);
 
     const size_t n = N-1;
-    R[0][0] = x1;
+    const double step  = (x2 - x1) / (N - 1);
+
+    double temporary = x1;
     for (size_t k = 1; k < n; ++k)
-      R[0][k] = R[0][k - 1] + step;
+      R[0][k] = std::round(temporary += step);
+
+    R[0][0] = x1;
     R[0][n] = x2;
 
     return R;
   }
 
-  Matrix<size_t> iota(const size_t n)
+  template<typename T = size_t>
+  Matrix<T> iota(const size_t n)
   {
-    Matrix<size_t> R(1, n);
+    Matrix<T> R(1, n);
 
     for (size_t k = 0; k < n; ++k)
       R[0][k] = k;
 
+    return R;
+  }
+
+  template<typename T = double>
+  Matrix<T> eye(const size_t M, const size_t N)
+  {
+    Matrix<T> R(M, N, 0);
+
+    const size_t n = std::min(M, N);
+
+    for (size_t k = 0; k < n; ++k)
+      R[k][k] = 1;
+    
     return R;
   }
 
@@ -2481,8 +2494,8 @@ namespace Pinakas { namespace Backend
     return R;
   }
 
-  template<template<typename> class M, typename T>
-  M<T>&& reverse(M<T>&& A) noexcept
+  template<template<typename> class M1, typename T>
+  M1<T>&& reverse(M1<T>&& A) noexcept
   {
     const size_t n   = A.numel();
     const size_t n_2 = n >> 1;
@@ -2855,8 +2868,8 @@ namespace Pinakas { namespace Backend
     return resampled;
   }
 
-  template<template<typename> class M, typename T>
-  std::ostream& operator<<(std::ostream& ostream, const M<T>& A)
+  template<template<typename> class M1, typename T>
+  std::ostream& operator<<(std::ostream& ostream, const M1<T>& A)
   {
     if (A.numel()) {
       std::size_t max_len = 0;
@@ -3091,20 +3104,9 @@ int main()
 {
   using namespace Pinakas;
 
-  Matrix<int> x = {{1, 2, 3},
-                   {4, 5, 6},
-                   {7, 8, 9}};
+  auto x = iota(15);
 
-  auto s = x({0, -1}, 1);
-
-  Matrix<int> y(3, 1, 10);
-
-  s = y;
-
-  auto r = s + y;
-
-
-  std::cout << "x:\n" << r << '\n';
+  std::cout << "x:\n" << x << '\n';
 
 
 }
