@@ -616,12 +616,25 @@ namespace Pinakas { namespace Backend
   Slice<T>::Slice(T* matrix_data, const Size matrix_size, const Range rows, const Range cols) noexcept
     : // member initialization list
     matrix_data_(matrix_data),
-    matrix_M(matrix_size.M),
+    matrix_M_(matrix_size.M),
     offset_(rows.start * matrix_size.N + cols.start),
     size_{size_t(rows.stop - rows.start + 1)
         , size_t(cols.stop - cols.start + 1)
         , size_t((rows.stop - rows.start + 1) * (cols.stop - cols.start + 1))}
   {}
+
+  template<typename T>
+  Slice<T>::Slice(const Slice<T>& other) noexcept
+  {
+    if (size_ != other.size()) {
+      std::cerr << "error: Slice: incompatible sizes (" << size_ << " vs " << other.size() << ")\n";
+      return *this;
+    }
+    
+    for (size_t j = 0; j < size_.M; ++j)
+      for (size_t i = 0; i < size_.N; ++i)
+        matrix_data_[i + j*matrix_M_ + offset_] = other[j][i];
+  }
 
   template<typename T>
   Slice<T>& Slice<T>::operator=(const Slice<T>& other)
@@ -633,7 +646,7 @@ namespace Pinakas { namespace Backend
     
     for (size_t j = 0; j < size_.M; ++j)
       for (size_t i = 0; i < size_.N; ++i)
-        matrix_data_[i + j*matrix_M + offset_] = other[j][i];
+        matrix_data_[i + j*matrix_M_ + offset_] = other[j][i];
 
     return *this;
   }
@@ -648,7 +661,7 @@ namespace Pinakas { namespace Backend
     
     for (size_t j = 0; j < size_.M; ++j)
       for (size_t i = 0; i < size_.N; ++i)
-        matrix_data_[i + j*matrix_M + offset_] = other[j][i];
+        matrix_data_[i + j*matrix_M_ + offset_] = other[j][i];
 
     return *this;
   }
@@ -680,13 +693,13 @@ namespace Pinakas { namespace Backend
   template<typename T>
   T* Slice<T>::operator[](const size_t j) noexcept
   {
-    return matrix_data_ + (j*matrix_M + offset_);
+    return matrix_data_ + (j*matrix_M_ + offset_);
   }
 
   template<typename T>
   const T* Slice<T>::operator[](const size_t j) const noexcept
   {
-    return matrix_data_ + (j*matrix_M + offset_);
+    return matrix_data_ + (j*matrix_M_ + offset_);
   }
 
   template<typename T>
@@ -707,7 +720,7 @@ namespace Pinakas { namespace Backend
     const size_t i = k % size_.N;
     const size_t j = k / size_.N;
 
-    return matrix_data_[i + j*matrix_M + offset_];
+    return matrix_data_[i + j*matrix_M_ + offset_];
   }
 
   template<typename T>
@@ -728,7 +741,7 @@ namespace Pinakas { namespace Backend
     const size_t i = k % size_.N;
     const size_t j = k / size_.N;
 
-    return matrix_data_[i + j*matrix_M + offset_];
+    return matrix_data_[i + j*matrix_M_ + offset_];
   }
 
   template<typename T>
@@ -754,7 +767,7 @@ namespace Pinakas { namespace Backend
     j += (j < 0) * size_.M;
     i += (i < 0) * size_.N;
 
-    return matrix_data_[i + j*matrix_M + offset_];
+    return matrix_data_[i + j*matrix_M_ + offset_];
   }
 
   template<typename T>
@@ -780,7 +793,7 @@ namespace Pinakas { namespace Backend
     j += (j < 0) * size_.M;
     i += (i < 0) * size_.N;
 
-    return matrix_data_[i + j*matrix_M + offset_];
+    return matrix_data_[i + j*matrix_M_ + offset_];
   }
   
   template<typename T> template<typename T0>
@@ -796,7 +809,7 @@ namespace Pinakas { namespace Backend
     const size_t i = current_ % slice_.size_.N;
     const size_t j = current_ / slice_.size_.N;
 
-    return slice_.matrix_data_[i + j*slice_.matrix_M + slice_.offset_];
+    return slice_.matrix_data_[i + j*slice_.matrix_M_ + slice_.offset_];
   }
 
   template<typename T> template<typename T0>
@@ -2140,10 +2153,10 @@ namespace Pinakas { namespace Backend
     return x;
   }
 // --------------------------------------------------------------------------------------
-  template<typename T1>
-  Matrix<T1> transpose(const Matrix<T1>& A)
+  template<template<typename> class M, typename T>
+  Matrix<T> transpose(const M<T>& A)
   {
-    Matrix<T1> R(A.N(), A.M());
+    Matrix<T> R(A.N(), A.M());
     for (size_t y = 0; y < A.M(); ++y)
       for (size_t x = 0; x < A.N(); ++x)
         R[x][y] = A[y][x];
@@ -2158,8 +2171,8 @@ namespace Pinakas { namespace Backend
     return std::move(A);
   }
 
-  template<typename T>
-  Matrix<T> reshape(const Matrix<T>& A, const size_t M, const size_t N)
+  template<template<typename> class M, typename T>
+  Matrix<T> reshape(const M<T>& A, const size_t M, const size_t N)
   {
     if (A.numel() != M * N) {
       std::cerr << "error: reshape: can't reshape " << A.size() << " matrix to " << M << 'x' << N << " matrix\n";
@@ -2192,8 +2205,6 @@ namespace Pinakas { namespace Backend
   template<template<typename> class M, typename T>
   T min(const M<T>& A) noexcept
   {
-    static_assert(std::is_same<M<T>, Slice<T>>::value || std::is_same<M<T>, Matrix<T>>::value, "M must be either Slice or Matrix");
-    
     T minimum = A[0][0];
     for (size_t k = 1; k < A.numel(); ++k)
       if (A[0][k] < minimum)s
@@ -2388,40 +2399,72 @@ namespace Pinakas { namespace Backend
     return std::unique_ptr<Matrix<double>[]>(new Matrix<double>[2]{std::move(lin_x), std::move(lin_y)});;
   }
 
+
+  template<template<typename> class M>
+  std::unique_ptr<M<double>[]> linearize(M<double>&& data_x, M<double>&& data_y)
+  {
+    if (data_x.numel() != data_y.numel()) {
+      std::cerr << "error: linearize: 'data_x' and 'data_y' must have the same number of elements\n";
+      return std::unique_ptr<M<double>[]>(new M<double>[2]{std::move(data_x), std::move(data_y)});
+    }
+
+    if ((data_x.M() != 1) ||(data_y.M() != 1))
+      std::clog << "warning: linearize: data is interpreted as a horizontal 1-dimensional matrix\n";
+
+    const size_t n = data_x.numel();
+
+    // build linearly spaced x data and its associated y value
+    const double step = (data_x[0][n - 1] - data_x[0][0]) / (n - 1);
+    double x1, x2, y1, y2;
+    for (size_t k = 1; k < (n - 1); ++k) {
+      // store necessary data to linearly interpolate y value
+      x1 = data_x[0][k];
+      y1 = data_y[0][k];
+      x2 = data_x[0][k+1];
+      y2 = data_y[0][k+1];
+
+      // build linearly spaced data
+      data_x[0][k] = data_x[0][k - 1] + step;
+      data_y[0][k] = y1 + (data_x[0][k] - x1) * (y2 - y1) / (x2 - x1);
+    }
+
+    return std::unique_ptr<M<double>[]>(new M<double>[2]{std::move(data_x), std::move(data_y)});;
+  }
+
   Matrix<double> linspace(const double x1, const double x2, const size_t N)
   {
-    Matrix<double> vector(1, N);
+    Matrix<double> R(1, N);
 
     const double step  = (x2 - x1) / (N - 1);
 
     const size_t n = N-1;
-    vector[0][0] = x1;
+    R[0][0] = x1;
     for (size_t k = 1; k < n; ++k)
-      vector[0][k] = vector[0][k - 1] + step;
-    vector[0][n] = x2;
+      R[0][k] = R[0][k - 1] + step;
+    R[0][n] = x2;
 
-    return vector;
+    return R;
   }
 
   Matrix<size_t> iota(const size_t n)
   {
-    Matrix<size_t> indices(1, n);
+    Matrix<size_t> R(1, n);
 
     for (size_t k = 0; k < n; ++k)
-      indices[0][k] = k;
+      R[0][k] = k;
 
-    return indices;
+    return R;
   }
 
   Matrix<double> diff(const Matrix<double>& A, size_t n)
   {
     if (n) {
-      Matrix<double> derivative(A.M(), A.N() - 1);
-      for (size_t y = 0; y < derivative.M(); ++y)
-        for (size_t x = 0; x < derivative.N(); ++x)
-          derivative[y][x] = A[y][x + 1] - A[y][x];
+      Matrix<double> R(A.M(), A.N() - 1);
+      for (size_t y = 0; y < R.M(); ++y)
+        for (size_t x = 0; x < R.N(); ++x)
+          R[y][x] = A[y][x + 1] - A[y][x];
 
-      return diff(derivative, n - 1);
+      return diff(R, n - 1);
     }
     return A;
   }
@@ -2719,7 +2762,7 @@ namespace Pinakas { namespace Backend
     return upsampled;
   }
 
-  Matrix<double> sinc_impulse(const size_t length, const double frequency)
+  Matrix<double> sinc_fir(const size_t length, const double frequency)
   {
     // validate impulse length
     if ((length % 2) == 0) {
@@ -2767,7 +2810,7 @@ namespace Pinakas { namespace Backend
     const size_t offset = L * alpha;
     // design low-pass interpolation filter
     const size_t filter_length = 2 * offset + 1;
-    const Matrix<double> filter = blackman(sinc_impulse(filter_length, 1.0 / L));
+    const Matrix<double> filter = blackman(sinc_fir(filter_length, 1.0 / L));
 
     const size_t N = data.N();
     const size_t M = data.M();

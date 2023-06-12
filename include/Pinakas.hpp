@@ -211,12 +211,12 @@ namespace Pinakas { namespace Backend
   Matrix<double> linspace(const double x1, const double x2, const size_t N);
   Matrix<size_t> iota(const size_t n);
 // --------------------------------------------------------------------------------------
-  template<typename T>
-  Matrix<T> transpose(const Matrix<T>& A);
+  template<template<typename> class M, typename T>
+  Matrix<T> transpose(const M<T>& A);
   template<typename T>
   Matrix<T>&& transpose(Matrix<T>&& A);
-  template<typename T>
-  Matrix<T> reshape(const Matrix<T>& A, const size_t M, const size_t N);
+  template<template<typename> class M, typename T>
+  Matrix<T> reshape(const M<T>& A, const size_t M, const size_t N);
   template<typename T1>
   Matrix<T1>&& reshape(Matrix<T1>&& A, const size_t M, const size_t N);
 // --------------------------------------------------------------------------------------
@@ -239,6 +239,8 @@ namespace Pinakas { namespace Backend
   std::unique_ptr<Matrix<double>[]> qr(Matrix<double> A);
 // --------------------------------------------------------------------------------------
   std::unique_ptr<Matrix<double>[]> linearize(const Matrix<double>& data_x, const Matrix<double>& data_y);
+  template<template<typename> class M>
+  std::unique_ptr<M<double>[]> linearize(M<double>&& data_x, M<double>&& data_y);
 // --------------------------------------------------------------------------------------
   template<typename T>
   Matrix<T> reverse(const Matrix<T>& A);
@@ -468,6 +470,7 @@ namespace Pinakas { namespace Backend
   class Slice final {
     public:
       inline explicit Slice(T* matrix_data, const Size matrix_size, const Range rows, const Range cols) noexcept;
+      inline Slice(const Slice<T>& other) noexcept;
       Slice<T>& operator=(const Slice<T>& other);
       Slice<T>& operator=(const Matrix<T>& other);
     public:
@@ -487,7 +490,7 @@ namespace Pinakas { namespace Backend
       const T& operator()(signed int j, signed int i) const noexcept;
     private:
       T* matrix_data_;
-      const size_t matrix_M;
+      const size_t matrix_M_;
       const size_t offset_;
       const Size size_;     
     private:
