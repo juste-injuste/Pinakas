@@ -92,8 +92,7 @@ namespace Pinakas { namespace Backend
 
   template<typename T>
   Matrix<T>::Matrix(const Size size)
-    : // member initialization list
-    Matrix<T>(size.M, size.N)
+    : Matrix(size.M, size.N)
   {}
 
   template<typename T>
@@ -113,7 +112,7 @@ namespace Pinakas { namespace Backend
 
   template<typename T>
   Matrix<T>::Matrix(const Size size, T value)
-    : Matrix<T>(size.M, size.N, value)
+    : Matrix(size.M, size.N, value)
   {}
 
   template<typename T>
@@ -138,8 +137,7 @@ namespace Pinakas { namespace Backend
 
   template<typename T>
   Matrix<T>::Matrix(const Size size, const Random range)
-    : // member initialization list
-    Matrix<T>(size.M, size.N, range)
+    : Matrix(size.M, size.N, range)
   {}
 
   template<typename T>
@@ -200,21 +198,21 @@ namespace Pinakas { namespace Backend
 #endif
 
     // dimension validation
-    size_t temp_M = 0;
-    size_t temp_N = 0;
+    size_t M_ = 0;
+    size_t N_ = 0;
     for (const Matrix<T>& matrix : list) {
-      if (temp_M && (temp_M != matrix.size_.M)) {
-        std::cerr << "error: horizontal dimensions mismatch (" << temp_M << " vs " << matrix.size_.M << ")\n";
+      if (M_ && (M_ != matrix.size_.M)) {
+        std::cerr << "error: horizontal dimensions mismatch (" << M_ << " vs " << matrix.size_.M << ")\n";
         size_ = {0, 0, 0};
         return;
       }
       else
-        temp_M = matrix.size_.M;
-      temp_N += matrix.size_.N;
+        M_ = matrix.size_.M;
+      N_ += matrix.size_.N;
     }
 
     // allocate memory
-    allocate(temp_M, temp_N);
+    allocate(M_, N_);
 
     // store values
     size_t k = 0;
@@ -3100,6 +3098,7 @@ namespace Pinakas { namespace Backend
   }
 }}
 
+
 int main()
 {
   using namespace Pinakas;
@@ -3107,6 +3106,5 @@ int main()
   auto x = iota(15);
 
   std::cout << "x:\n" << x << '\n';
-
 
 }
