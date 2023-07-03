@@ -39,7 +39,92 @@ namespace Pinakas
     #ifdef __AVX512F__
       #define PINAKAS_USE_AVX512 
       #define PINAKAS_USE_PARALLELISM
-      const char* instruction_set = "AVX512";  
+      const char* instruction_set = "AVX512";
+      
+      PINAKAS_INLINE __m512d simd_load(double* ptr)
+      {
+        return _mm512_loadu_pd(ptr);
+      }
+
+      PINAKAS_INLINE __m512 simd_load(float* ptr)
+      {
+        return _mm512_loadu_ps(ptr);
+      }
+      
+      PINAKAS_INLINE void simd_store(double* ptr, __m512d a)
+      {
+        _mm512_storeu_pd(ptr, a);
+      }
+
+      PINAKAS_INLINE void simd_store(float* ptr, __m512 a)
+      {
+        _mm512_storeu_ps(ptr, a);
+      }
+
+      PINAKAS_INLINE __m512d simd_set1(double value)
+      {
+        return _mm512_set1_pd(value);
+      }
+
+      PINAKAS_INLINE __m512 simd_set1(float value)
+      {
+        return _mm512_set1_ps(value);
+      }
+
+      template<typename T>
+      PINAKAS_INLINE T simd_setzero();
+
+      template<>
+      PINAKAS_INLINE __m512d simd_setzero()
+      {
+        return _mm512_setzero_pd();
+      }
+
+      template<>
+      PINAKAS_INLINE __m512 simd_setzero()
+      {
+        return _mm512_setzero_ps();
+      }
+
+      PINAKAS_INLINE __m512d simd_mul(__m512d a, __m512d b)
+      {
+        return _mm512_mul_pd(a, b);
+      }
+
+      PINAKAS_INLINE __m512 simd_mul(__m512 a, __m512 b)
+      {
+        return _mm512_mul_ps(a, b);
+      }
+
+      PINAKAS_INLINE __m512d simd_muladd(__m512d a, __m512d b, __m512d c)
+      {
+        return _mm512_fmadd_pd(a, b, c);
+      }
+
+      PINAKAS_INLINE __m512 simd_muladd(__m512 a, __m512 b, __m512 c)
+      {
+        return _mm512_fmadd_ps(a, b, c);
+      }
+
+      PINAKAS_INLINE __m512d simd_nmuladd(__m512d a, __m512d b, __m512d c)
+      {
+        return _mm512_fnmadd_pd(a, b, c);
+      }
+
+      PINAKAS_INLINE __m512 simd_nmuladd(__m512 a, __m512 b, __m512 c)
+      {
+        return _mm512_fnmadd_ps(a, b, c);
+      }
+
+      __m512d get_simd_type(double)
+      {
+        return __m512d();
+      }
+
+      __m512 get_simd_type(float)
+      {
+        return __m512();
+      }
     #elif defined(__AVX2__) || defined(__AVX__)
       #ifdef __AVX2__
         #define PINAKAS_USE_AVX2
@@ -62,12 +147,12 @@ namespace Pinakas
       
       PINAKAS_INLINE void simd_store(double* ptr, __m256d a)
       {
-        return _mm256_storeu_pd(ptr, a);
+        _mm256_storeu_pd(ptr, a);
       }
 
       PINAKAS_INLINE void simd_store(float* ptr, __m256 a)
       {
-        return _mm256_storeu_ps(ptr, a);
+        _mm256_storeu_ps(ptr, a);
       }
 
       PINAKAS_INLINE __m256d simd_set1(double value)
@@ -125,12 +210,12 @@ namespace Pinakas
         return _mm256_fnmadd_ps(a, b, c);
       }
 
-      constexpr __m256d get_simd_type(double)
+      __m256d get_simd_type(double)
       {
         return __m256d();
       }
 
-      constexpr __m256 get_simd_type(float)
+      __m256 get_simd_type(float)
       {
         return __m256();
       }
@@ -150,12 +235,12 @@ namespace Pinakas
       
       PINAKAS_INLINE void simd_store(double* ptr, __m128d a)
       {
-        return _mm_storeu_pd(ptr, a);
+        _mm_storeu_pd(ptr, a);
       }
 
       PINAKAS_INLINE void simd_store(float* ptr, __m128 a)
       {
-        return _mm_storeu_ps(ptr, a);
+        _mm_storeu_ps(ptr, a);
       }
 
       PINAKAS_INLINE __m128d simd_set1(double value)
@@ -213,12 +298,12 @@ namespace Pinakas
         return _mm_sub_ps(c, _mm_mul_ps(a, b));
       }
 
-      constexpr __m128d get_simd_type(double)
+      __m128d get_simd_type(double)
       {
         return __m128d();
       }
 
-      constexpr __m128 get_simd_type(float)
+      __m128 get_simd_type(float)
       {
         return __m128();
       }
@@ -228,8 +313,8 @@ namespace Pinakas
     #endif
 
 #ifdef PINAKAS_USE_PARALLELISM
-    template<typename T, typename T0>
-    Matrix<T> div(const Matrix<T>& b, Matrix<T> A)
+    template<typename T, typename T0 = convert_to_double<T>>
+    Matrix<T> div_fast(const Matrix<T>& b, Matrix<T> A)
     {
       using simd_type = decltype(get_simd_type(T()));
       constexpr size_t simd_size = sizeof(simd_type) / sizeof(T);
@@ -320,7 +405,6 @@ namespace Pinakas
         return x;
     }
 #endif
-
 
 
 

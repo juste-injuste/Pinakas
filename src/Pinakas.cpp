@@ -2077,7 +2077,7 @@ namespace Pinakas { namespace Backend
     return result;
   }
   
-  #ifdef PINAKAS_USE_NO_PARALLELISM
+  #ifndef PINAKAS_USE_NO_PARALLELISM
   template<typename T, typename T0>
   Matrix<T> div(const Matrix<T>& b, Matrix<T> A)
   {
@@ -3112,15 +3112,15 @@ int main()
   Matrix<float> A(80000, 16, {0, 1});
   Matrix<float> b(80000, 1, {0, 1});
 
-  for (int i = 0; i < 10; ++i) {
+  for (int i = 0; i < 5; ++i) {
     Chronometro::Stopwatch<> sw;
     Backend::div(b, A);
     sw.stop();
   }
   puts(Backend::instruction_set);
-  for (int i = 0; i < 10; ++i) {
+  for (int i = 0; i < 5; ++i) {
     Chronometro::Stopwatch<> sw;
-    div(b, A);
+    Backend::div_fast(b, A);
     sw.stop();
   }
 }
