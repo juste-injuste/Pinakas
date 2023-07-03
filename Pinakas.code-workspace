@@ -73,7 +73,10 @@
 			"xtr1common": "cpp",
 			"xutility": "cpp",
 			"valarray": "cpp",
-			"cassert": "cpp"
+			"cassert": "cpp",
+			"mutex": "cpp",
+			"condition_variable": "cpp",
+			"thread": "cpp"
 		}
 	}
 }

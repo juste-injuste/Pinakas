@@ -1,6 +1,7 @@
 // --inclusion guard---------------------------------------------------------------------
-#define LOGGING
+//#define LOGGING
 #include "../include/Pinakas.hpp"
+#include "../include/Intrinsics.hpp"
 #define M_PI 3.14159265358979323846
 // --Pinakas library: backend forward declaration----------------------------------------
 namespace Pinakas { namespace Backend
@@ -245,6 +246,7 @@ namespace Pinakas { namespace Backend
     size_ = {M, N, M * N};
   }
 // --------------------------------------------------------------------------------------
+
   template<typename T>
   T* Matrix<T>::operator[](const size_t j) noexcept
   {
@@ -2144,6 +2146,7 @@ namespace Pinakas { namespace Backend
       // solve x's i'th component
       x[i][0] = substitution / R[i][i];
     }
+
     return x;
   }
 // --------------------------------------------------------------------------------------
@@ -3103,8 +3106,18 @@ int main()
 {
   using namespace Pinakas;
 
-  auto x = iota(15);
+  Matrix<double> A(80000, 16, {0, 1});
+  Matrix<double> b(80000, 1, {0, 1});
 
-  std::cout << "x:\n" << x << '\n';
-
+  for (int i = 0; i < 5; ++i) {
+    Chronometro::Stopwatch<> sw;
+    Backend::div(b, A);
+    sw.stop();
+  }
+  puts("-------");
+  for (int i = 0; i < 5; ++i) {
+    Chronometro::Stopwatch<> sw;
+    Backend::div_fast(b, A);
+    sw.stop();
+  }
 }
