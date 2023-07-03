@@ -206,7 +206,7 @@ namespace Pinakas { namespace Backend
   template<typename T1, typename T2>
   Matrix<double> mul(const Matrix<T1>& A, const Matrix<T2>& B);
   template<typename T, typename T0 = convert_to_double<T>>
-  Matrix<double> div(const Matrix<T>& A, Matrix<double> B);
+  Matrix<T> div(const Matrix<T>& b, Matrix<T> A);
 // --------------------------------------------------------------------------------------
   template<typename T = double>
   Matrix<T> linspace(const double x1, const double x2, const size_t N);
