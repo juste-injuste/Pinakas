@@ -1140,8 +1140,36 @@ namespace Pinakas { namespace Backend
     return A;
   }
 
+  #ifdef PINAKAS_USE_PARALLELISM
+    template<typename T, typename S = typename get_simd_type<T>::type>
+    Matrix<T> mul_mat_simd(const Matrix<T>& A, const Matrix<T>& B)
+    {
+      if (A.size() != B.size()) {
+        std::cerr << "error: mul_mat: nonconformant arguments (A is " << A.size() << ", B is " << B.size() << ")\n";
+        return Matrix<T>();
+      }
+
+      Matrix<T> R(A.size());
+
+      const size_t n = A.numel();
+      
+      constexpr size_t simd_size = sizeof(S) / sizeof(T);
+      const size_t simd_iterations = n / simd_size;
+      
+      for (size_t k = 0, i = 0; i < simd_iterations; ++i, k+=simd_size) {
+        simd_store(&R[0][k], simd_mul(simd_load(&A[0][k]), simd_load(&B[0][k])));
+      }
+      
+      for (size_t k = simd_iterations * simd_size; k < n; ++k) {
+        R[0][k] = A[0][k] * B[0][k];
+      }
+
+      return R;
+    }
+  #endif
+
   template<typename T1, typename T2, typename T3>
-  Matrix<T3> mul_mat(const Matrix<T1>& A, const Matrix<T2>& B)
+  Matrix<T3> mul_mat_sequ(const Matrix<T1>& A, const Matrix<T2>& B)
   {
     if (A.size() != B.size()) {
       std::cerr << "error: mul_mat: nonconformant arguments (A is " << A.size() << ", B is " << B.size() << ")\n";
@@ -1206,7 +1234,17 @@ namespace Pinakas { namespace Backend
   template<typename T1, typename T2, typename T3>
   Matrix<T3> operator*(const Matrix<T1>& A, const Matrix<T2>& B)
   {
-    return mul_mat(A, B);
+    return mul_mat_sequ(A, B);
+  }
+  
+  template<typename T>
+  Matrix<T> operator*(const Matrix<T>& A, const Matrix<T>& B)
+  {
+    #ifdef PINAKAS_USE_PARALLELISM
+      return mul_mat_simd(A, B);
+    #else
+      return mul_mat_sequ(A, B);
+    #endif
   }
 
   template<typename T, typename T3>
@@ -2077,81 +2115,6 @@ namespace Pinakas { namespace Backend
     return result;
   }
   
-  #ifndef PINAKAS_USE_NO_PARALLELISM
-  template<typename T, typename T0>
-  Matrix<T> div(const Matrix<T>& b, Matrix<T> A)
-  {
-    // verify vertical dimensions
-    if (b.M() != A.M()) {
-      std::cerr << "error: div: vertical dimensions mismatch (b is " << b.M() << "x_, A is " << A.M() << "x_)\n";
-      return Matrix<double>();
-    }
-
-    // verify that b is a column matrix
-    if (b.N() != 1) {
-      std::cerr << "error: div: b's horizontal dimension is not 1 (b is _x" << b.N() << ")\n";
-      return Matrix<double>();
-    }
-
-    // store the dimensions of A
-    const size_t M = A.M();
-    const size_t N = A.N();
-
-    // QR decomposition matrices and result matrix
-    Matrix<double> Q(M, N), R(N, N), x(N, 1);
-
-    // QR decomposition using the modified Gram-Schmidt process
-    for (size_t i = 0; i < N; ++i) {
-      // calculate the squared Euclidean norm of A's i'th column
-      double sum_of_squares = 0;
-      for (size_t j = 0; j < M; ++j)
-        sum_of_squares += A[j][i] * A[j][i];
-
-      // skips if the squared Euclidean norm is 0
-      if (sum_of_squares != 0) {
-        // calculate the inverse Euclidean norm of A's i'th column
-        double inorm = std::pow(sum_of_squares, -0.5);
-        // normalize and store A's normalized i'th column
-        for (size_t j = 0; j < M; ++j)
-          Q[j][i] = A[j][i] * inorm;
-      }
-
-      // orthogonalize the remaining columns with respects to A's i'th column
-      for (size_t k = i; k < N; ++k) {
-        // calculate Q's i'th orthonormal projection onto A's k'th unorthogonalized column
-        double projection = 0;
-        for (size_t j = 0; j < M; ++j)
-          projection += Q[j][i] * A[j][k];
-
-        // construct upper triangle matrix R using Q's i'th orthonormal projection onto A's k'th unorthogonalized column
-        if (k >= i)
-          R[i][k] = projection;
-
-        // orthogonalize A's k'th column by removing Q's i'th orthonormal projection onto A's k'th unorthogonalized column
-        if (k != i) // skips if k == i because the projection would be 0
-          for (size_t j = 0; j < M; ++j)
-            A[j][k] -= projection * Q[j][i];
-      }
-    }
-
-    // solve linear system Rx = Qt*b using back substitution
-    for (size_t i = N - 1; i < N; --i) {
-      // calculate appropriate Qt*b component
-      double substitution = 0;
-      for (size_t j = 0; j < M; ++j)
-        substitution += Q[j][i] * b[j][0];
-
-      // back substitution of previously solved x components
-      for (size_t k = N - 1; k > i; --k)
-        substitution -= R[i][k] * x[k][0];
-
-      // solve x's i'th component
-      x[i][0] = substitution / R[i][i];
-    }
-
-    return x;
-  }
-  #endif
 // --------------------------------------------------------------------------------------
   template<template<typename> class M1, typename T>
   Matrix<T> transpose(const M1<T>& A)
@@ -3109,18 +3072,22 @@ int main()
 {
   using namespace Pinakas;
 
-  Matrix<float> A(80000, 16, {0, 1});
-  Matrix<float> b(80000, 1, {0, 1});
+  Matrix<float> A(8000, 8000, {0, 1});
+  Matrix<float> b(8000, 8000, {0, 1});
 
-  for (int i = 0; i < 5; ++i) {
+  //*
+  for (int i = 0; i < 10; ++i) {
     Chronometro::Stopwatch<> sw;
-    Backend::div(b, A);
+    Backend::mul_mat_sequ(b, A);
     sw.stop();
   }
+  //*/
   puts(Backend::instruction_set);
-  for (int i = 0; i < 5; ++i) {
+  for (int i = 0; i < 10; ++i) {
     Chronometro::Stopwatch<> sw;
-    Backend::div_fast(b, A);
+    b * A;
     sw.stop();
   }
+
+  //std::cout << b * A - Backend::mul_mat_sequ(b, A);
 }

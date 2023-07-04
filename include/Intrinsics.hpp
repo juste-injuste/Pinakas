@@ -41,32 +41,32 @@ namespace Pinakas
       #define PINAKAS_USE_PARALLELISM
       const char* instruction_set = "AVX512";
       
-      PINAKAS_INLINE __m512d simd_load(double* ptr)
+      PINAKAS_INLINE __m512d simd_load(const double* ptr)
       {
         return _mm512_loadu_pd(ptr);
       }
 
-      PINAKAS_INLINE __m512 simd_load(float* ptr)
+      PINAKAS_INLINE __m512 simd_load(const float* ptr)
       {
         return _mm512_loadu_ps(ptr);
       }
       
       PINAKAS_INLINE void simd_store(double* ptr, __m512d a)
       {
-        _mm512_storeu_pd(ptr, a);
+        _mm512_storeu_pd((void*)ptr, a);
       }
 
       PINAKAS_INLINE void simd_store(float* ptr, __m512 a)
       {
-        _mm512_storeu_ps(ptr, a);
+        _mm512_storeu_ps((void*)ptr, a);
       }
 
-      PINAKAS_INLINE __m512d simd_set1(double value)
+      PINAKAS_INLINE __m512d simd_set1(const double value)
       {
         return _mm512_set1_pd(value);
       }
 
-      PINAKAS_INLINE __m512 simd_set1(float value)
+      PINAKAS_INLINE __m512 simd_set1(const float value)
       {
         return _mm512_set1_ps(value);
       }
@@ -116,15 +116,18 @@ namespace Pinakas
         return _mm512_fnmadd_ps(a, b, c);
       }
 
-      __m512d get_simd_type(double)
-      {
-        return __m512d();
-      }
+      template<typename T>
+      struct get_simd_type;
 
-      __m512 get_simd_type(float)
-      {
-        return __m512();
-      }
+      template<>
+      struct get_simd_type<double> {
+        using type = __m512d;
+      };
+
+      template<>
+      struct get_simd_type<float> {
+        using type = __m512;
+      };
     #elif defined(__AVX2__) || defined(__AVX__)
       #ifdef __AVX2__
         #define PINAKAS_USE_AVX2
@@ -135,12 +138,12 @@ namespace Pinakas
       #endif
       #define PINAKAS_USE_PARALLELISM
       
-      PINAKAS_INLINE __m256d simd_load(double* ptr)
+      PINAKAS_INLINE __m256d simd_load(const double* ptr)
       {
         return _mm256_loadu_pd(ptr);
       }
 
-      PINAKAS_INLINE __m256 simd_load(float* ptr)
+      PINAKAS_INLINE __m256 simd_load(const float* ptr)
       {
         return _mm256_loadu_ps(ptr);
       }
@@ -155,12 +158,12 @@ namespace Pinakas
         _mm256_storeu_ps(ptr, a);
       }
 
-      PINAKAS_INLINE __m256d simd_set1(double value)
+      PINAKAS_INLINE __m256d simd_set1(const double value)
       {
         return _mm256_set1_pd(value);
       }
 
-      PINAKAS_INLINE __m256 simd_set1(float value)
+      PINAKAS_INLINE __m256 simd_set1(const float value)
       {
         return _mm256_set1_ps(value);
       }
@@ -210,25 +213,28 @@ namespace Pinakas
         return _mm256_fnmadd_ps(a, b, c);
       }
 
-      __m256d get_simd_type(double)
-      {
-        return __m256d();
-      }
+      template<typename T>
+      struct get_simd_type;
 
-      __m256 get_simd_type(float)
-      {
-        return __m256();
-      }
+      template<>
+      struct get_simd_type<double> {
+        using type = __m256d;
+      };
+
+      template<>
+      struct get_simd_type<float> {
+        using type = __m256;
+      };
     #elif defined(__SSE__)
       #define PINAKAS_USE_SSE
       #define PINAKAS_USE_PARALLELISM
       const char* instruction_set = "SSE";
-      PINAKAS_INLINE __m128d simd_load(double* ptr)
+      PINAKAS_INLINE __m128d simd_load(const double* ptr)
       {
         return _mm_loadu_pd(ptr);
       }
 
-      PINAKAS_INLINE __m128 simd_load(float* ptr)
+      PINAKAS_INLINE __m128 simd_load(const float* ptr)
       {
         return _mm_loadu_ps(ptr);
       }
@@ -243,12 +249,12 @@ namespace Pinakas
         _mm_storeu_ps(ptr, a);
       }
 
-      PINAKAS_INLINE __m128d simd_set1(double value)
+      PINAKAS_INLINE __m128d simd_set1(const double value)
       {
         return _mm_set1_pd(value);
       }
 
-      PINAKAS_INLINE __m128 simd_set1(float value)
+      PINAKAS_INLINE __m128 simd_set1(const float value)
       {
         return _mm_set1_ps(value);
       }
@@ -298,26 +304,28 @@ namespace Pinakas
         return _mm_sub_ps(c, _mm_mul_ps(a, b));
       }
 
-      __m128d get_simd_type(double)
-      {
-        return __m128d();
-      }
+      template<typename T>
+      struct get_simd_type;
 
-      __m128 get_simd_type(float)
-      {
-        return __m128();
-      }
+      template<>
+      struct get_simd_type<double> {
+        using type = __m128d;
+      };
+
+      template<>
+      struct get_simd_type<float> {
+        using type = __m128;
+      };
     #else
       #define PINAKAS_USE_NO_PARALLELISM
       const char* instruction_set = "no SIMD set";
     #endif
 
 #ifdef PINAKAS_USE_PARALLELISM
-    template<typename T, typename T0 = convert_to_double<T>>
-    Matrix<T> div_fast(const Matrix<T>& b, Matrix<T> A)
+    template<typename T, typename S = typename get_simd_type<T>::type>
+    Matrix<T> div_simd(const Matrix<T>& b, Matrix<T> A)
     {
-      using simd_type = decltype(get_simd_type(T()));
-      constexpr size_t simd_size = sizeof(simd_type) / sizeof(T);
+      constexpr size_t simd_size = sizeof(S) / sizeof(T);
 
       // verify vertical dimensions
       if (b.M() != A.M()) {
@@ -348,11 +356,11 @@ namespace Pinakas
         // skips if the squared Euclidean norm is 0
         if (sum_of_squares != 0) {
           // calculate the inverse Euclidean norm of A's i'th column
-          simd_type inorm = simd_set1(T(std::pow(sum_of_squares, -0.5)));
+          S inorm = simd_set1(T(std::pow(sum_of_squares, -0.5)));
           // normalize and store A's normalized i'th column using AVX-512
           for (size_t j = 0; j < M; j += simd_size) {
-            simd_type A_col = simd_load(&A[j][i]);
-            simd_type Q_col = simd_mul(A_col, inorm);
+            S A_col = simd_load(&A[j][i]);
+            S Q_col = simd_mul(A_col, inorm);
             simd_store(&Q[j][i], Q_col);
           }
         }
@@ -360,10 +368,10 @@ namespace Pinakas
         // orthogonalize the remaining columns with respect to A's i'th column
         for (size_t k = i; k < N; ++k) {
           // calculate Q's i'th orthonormal projection onto A's k'th unorthogonalized column using AVX-512
-          simd_type projection = simd_setzero<simd_type>();
+          S projection = simd_setzero<S>();
           for (size_t j = 0; j < M; j += simd_size) {
-            simd_type Q_col = simd_load(&Q[j][i]);
-            simd_type A_col = simd_load(&A[j][k]);
+            S Q_col = simd_load(&Q[j][i]);
+            S A_col = simd_load(&A[j][k]);
             projection = simd_muladd(Q_col, A_col, projection);
           }
 
@@ -378,8 +386,8 @@ namespace Pinakas
           // orthogonalize A's k'th column by removing Q's i'th orthonormal projection onto A's k'th unorthogonalized column
           if (k != i) { // skips if k == i because the projection would be 0
             for (size_t j = 0; j < M; j += simd_size) {
-              simd_type projection = simd_load(&Q[j][k]);
-              simd_type A_col = simd_load(&A[j][k]);
+              S projection = simd_load(&Q[j][k]);
+              S A_col = simd_load(&A[j][k]);
               A_col = simd_nmuladd(projection, A_col, A_col);
               simd_store(&A[j][k], A_col);
             }
@@ -405,8 +413,97 @@ namespace Pinakas
         return x;
     }
 #endif
+    template<typename T>
+    Matrix<T> div_sequ(const Matrix<T>& b, Matrix<T> A)
+    {
+      // verify vertical dimensions
+      if (b.M() != A.M()) {
+        std::cerr << "error: div: vertical dimensions mismatch (b is " << b.M() << "x_, A is " << A.M() << "x_)\n";
+        return Matrix<double>();
+      }
+
+      // verify that b is a column matrix
+      if (b.N() != 1) {
+        std::cerr << "error: div: b's horizontal dimension is not 1 (b is _x" << b.N() << ")\n";
+        return Matrix<double>();
+      }
+
+      // store the dimensions of A
+      const size_t M = A.M();
+      const size_t N = A.N();
+
+      // QR decomposition matrices and result matrix
+      Matrix<double> Q(M, N), R(N, N), x(N, 1);
+
+      // QR decomposition using the modified Gram-Schmidt process
+      for (size_t i = 0; i < N; ++i) {
+        // calculate the squared Euclidean norm of A's i'th column
+        double sum_of_squares = 0;
+        for (size_t j = 0; j < M; ++j)
+          sum_of_squares += A[j][i] * A[j][i];
+
+        // skips if the squared Euclidean norm is 0
+        if (sum_of_squares != 0) {
+          // calculate the inverse Euclidean norm of A's i'th column
+          double inorm = std::pow(sum_of_squares, -0.5);
+          // normalize and store A's normalized i'th column
+          for (size_t j = 0; j < M; ++j)
+            Q[j][i] = A[j][i] * inorm;
+        }
+
+        // orthogonalize the remaining columns with respects to A's i'th column
+        for (size_t k = i; k < N; ++k) {
+          // calculate Q's i'th orthonormal projection onto A's k'th unorthogonalized column
+          double projection = 0;
+          for (size_t j = 0; j < M; ++j)
+            projection += Q[j][i] * A[j][k];
+
+          // construct upper triangle matrix R using Q's i'th orthonormal projection onto A's k'th unorthogonalized column
+          if (k >= i)
+            R[i][k] = projection;
+
+          // orthogonalize A's k'th column by removing Q's i'th orthonormal projection onto A's k'th unorthogonalized column
+          if (k != i) // skips if k == i because the projection would be 0
+            for (size_t j = 0; j < M; ++j)
+              A[j][k] -= projection * Q[j][i];
+        }
+      }
+
+      // solve linear system Rx = Qt*b using back substitution
+      for (size_t i = N - 1; i < N; --i) {
+        // calculate appropriate Qt*b component
+        double substitution = 0;
+        for (size_t j = 0; j < M; ++j)
+          substitution += Q[j][i] * b[j][0];
+
+        // back substitution of previously solved x components
+        for (size_t k = N - 1; k > i; --k)
+          substitution -= R[i][k] * x[k][0];
+
+        // solve x's i'th component
+        x[i][0] = substitution / R[i][i];
+      }
+
+      return x;
+    }
 
 
+
+    template<typename T, typename T0>
+    Matrix<T> div(const Matrix<T>& b, Matrix<T> A)
+    {
+      #ifdef PINAKAS_USE_PARALLELISM
+        using simd_type = typename get_simd_type<T>::type;
+        constexpr size_t simd_size = sizeof(simd_type) / sizeof(T);
+        if (A.N() >= simd_size) {
+          std::cout << "sizey: " << simd_size << ' ';
+          return div_simd<T, simd_type>(b, A);
+        }
+        else std::cout << "sizen: " << simd_size << ' ';
+      #endif
+
+      return div_sequ(b, A);
+    }
 
 
   }

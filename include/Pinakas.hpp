@@ -119,7 +119,7 @@ namespace Pinakas { namespace Backend
   template<typename T>
   Matrix<T>& mul_rng_inplace(Matrix<T>& A, const Random B) noexcept;
   template<typename T1, typename T2, typename T3 = appropriate_type<T1, T2>>
-  Matrix<T3> mul_mat(const Matrix<T1>& A, const Matrix<T2>& B);
+  Matrix<T3> mul_mat_sequ(const Matrix<T1>& A, const Matrix<T2>& B);
   template<typename T1, typename T2, typename T3 = appropriate_type<T1, T2>>
   Matrix<T3> mul_val(const Matrix<T1>& A, const T2 B) noexcept;
   template<typename T1, typename T3 = appropriate_type<T1, double>>
