@@ -35,3 +35,4 @@
 include/Chronometro.hpp
 src/fft.cpp
 include/Chronometro.hpp
+include/Parallilos.hpp

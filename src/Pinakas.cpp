@@ -557,60 +557,28 @@ namespace Pinakas { namespace Backend
     return size_.numel;
   }
 // --------------------------------------------------------------------------------------
-  template<typename T> template<typename T0>
-  Matrix<T>::Iterator<T0>::Iterator(T0* matrix_data, const size_t index) noexcept
-    : // member initialization list
-    matrix_data_(matrix_data),
-    index(index)
-  {}
-
-  template<typename T> template<typename T0>
-  bool Matrix<T>::Iterator<T0>::operator==(const Iterator<T0> &other) const noexcept
-  {
-    return index == other.index;
-  }
-
-  template<typename T> template<typename T0>
-  bool Matrix<T>::Iterator<T0>::operator!=(const Iterator<T0>& other) const noexcept
-  {
-    return index != other.index;
-  }
-
-  template<typename T> template<typename T0>
-  typename Matrix<T>::template Iterator<T0>& Matrix<T>::Iterator<T0>::operator++(void) noexcept
-  {
-    ++index;
-    return *this;
-  }
-
-  template<typename T> template<typename T0>
-  T0& Matrix<T>::Iterator<T0>::operator*(void) const noexcept
-  {
-    return matrix_data_[index];
-  }
-// --------------------------------------------------------------------------------------
   template<typename T>
-  typename Matrix<T>::template Iterator<T> Matrix<T>::begin(void) noexcept
+  typename Matrix<T>::iterator Matrix<T>::begin(void) noexcept
   {
-    return Iterator<T>(data_.get(), 0);
+    return data_.get();
   }
 
   template<typename T>
-  typename Matrix<T>::template Iterator<T> Matrix<T>::end(void) noexcept
+  typename Matrix<T>::iterator Matrix<T>::end(void) noexcept
   {
-    return Iterator<T>(data_.get(), size_.numel);
+    return data_.get() + size_.numel;
   }
 
   template<typename T>
-  typename Matrix<T>::template Iterator<const T> Matrix<T>::begin(void) const noexcept
+  typename Matrix<T>::const_iterator Matrix<T>::begin(void) const noexcept
   {
-    return Iterator<const T>(data_.get(), 0);
+    return data_.get();
   }
 
   template<typename T>
-  typename Matrix<T>::template Iterator<const T> Matrix<T>::end(void) const noexcept
+  typename Matrix<T>::const_iterator Matrix<T>::end(void) const noexcept
   {
-    return Iterator<const T>(data_.get(), size_.numel);
+    return data_.get() + size_.numel;
   }
 // --------------------------------------------------------------------------------------
   template<typename T>
@@ -1005,8 +973,8 @@ namespace Pinakas { namespace Backend
     return add_val_inplace(A, B);
   }
   
-  template<template<typename> class M1, template<typename> class M2, typename T1, typename T2, typename T3>
-  Matrix<T3> operator+(const M1<T1>& A, const M2<T2>& B)
+  template<typename T1, typename T2, typename T3>
+  Matrix<T3> operator+(const Matrix<T1>& A, const Matrix<T2>& B)
   {
     return add_mat(A, B);
   }
@@ -1141,7 +1109,7 @@ namespace Pinakas { namespace Backend
   }
 
   #ifdef PARALLILOS_USE_PARALLELISM
-    template<typename T, typename S = typename Parallilos::get_type<T>::type>
+    template<typename T, typename S = typename Parallilos::simd_properties<T>::type>
     Matrix<T> mul_mat_simd(const Matrix<T>& A, const Matrix<T>& B)
     {
       if (A.size() != B.size()) {
@@ -1151,20 +1119,7 @@ namespace Pinakas { namespace Backend
 
       Matrix<T> R(A.size());
 
-      const size_t n = A.numel();
-      
-      constexpr size_t size = sizeof(S) / sizeof(T);
-      const size_t iterations = n / size;
-      
-      for (size_t k = 0, i = 0; i < iterations; ++i, k+=size) {
-        store(&R[0][k], mul(load(&A[0][k]), load(&B[0][k])));
-      }
-      
-      for (size_t k = iterations * size; k < n; ++k) {
-        R[0][k] = A[0][k] * B[0][k];
-      }
-
-      return R;
+      return Parallilos::mul_arrays(A, B, R, A.numel());
     }
   #endif
 
@@ -3148,27 +3103,38 @@ namespace Pinakas { namespace Backend
     return conj(fft(conj(std::move(spectrum)))) / spectrum.numel();
   }
 }}
-
+#include <vector>
 int main()
 {
   using namespace Pinakas;
+  //*
+  size_t M = 3;
+  size_t N = 3;
+  Matrix<float> a(M, N, {0, 1});
+  Matrix<float> b(M, N, {0, 1});
+  Matrix<float> c(M, N);
 
+  Parallilos::add_arrays(a[0], b[0], c[0], a.numel());
+
+  std::cout << "c:\n" << c;
+  std::cout << "error:\n" << (c - (a + b));
+  //*/
+
+  /*
   Matrix<float> A(8000, 8000, {0, 1});
   Matrix<float> b(8000, 8000, {0, 1});
-
-  //*
+  Matrix<float> c(8000, 8000);
   for (int i = 0; i < 10; ++i) {
     Chronometro::Stopwatch<> sw;
     Backend::mul_mat_sequ(b, A);
     sw.stop();
   }
-  //*/
   puts(PARALLILOS_EXTENDED_INSTRUCTION_SET);
   for (int i = 0; i < 10; ++i) {
     Chronometro::Stopwatch<> sw;
     b * A;
     sw.stop();
   }
-
   //std::cout << b * A - Backend::mul_mat_sequ(b, A);
+  //*/
 }

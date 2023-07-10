@@ -446,26 +446,14 @@ namespace Pinakas { namespace Backend
       Slice<const T> operator()(Range rows, Range cols) const noexcept;
       Slice<const T> operator()(Range rows, signed int col) const noexcept;
       Slice<const T> operator()(signed int row, Range cols) const noexcept;
-    private:
-      template<typename T0>
-      class Iterator final {
-        public:
-          inline explicit Iterator(T0* matrix_data, const size_t index) noexcept;
-          inline bool operator==(const Iterator<T0>& other) const noexcept;
-          inline bool operator!=(const Iterator<T0>& other) const noexcept;
-          Iterator& operator++(void) noexcept;
-          inline T0& operator*(void) const noexcept;
-        private:
-          T0* matrix_data_;
-          size_t index;
-      };
     public:
-      Iterator<T> begin(void) noexcept;
-      Iterator<T> end(void) noexcept;
-      Iterator<const T> begin(void) const noexcept;
-      Iterator<const T> end(void) const noexcept;
+      using iterator = T*;
+      using const_iterator = const T*;
+      iterator begin(void) noexcept;
+      iterator end(void) noexcept;
+      const_iterator begin(void) const noexcept;
+      const_iterator end(void) const noexcept;
     friend class Slice<T>;
-    friend class Iterator<T>;
     friend Matrix<T>&& transpose<T>(Matrix<T>&& A);
     friend Matrix<T>&& reshape<T>(Matrix<T>&& A, const size_t M, const size_t N);
   };
