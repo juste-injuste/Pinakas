@@ -1,7 +1,6 @@
 // --inclusion guard---------------------------------------------------------------------
 //#define LOGGING
 #include "../include/Pinakas.hpp"
-#include "../include/Parallilos.hpp"
 
 #define M_PI 3.14159265358979323846
 // --Pinakas library: backend forward declaration----------------------------------------
@@ -236,8 +235,13 @@ namespace Pinakas { namespace Backend
       throw std::invalid_argument(error_message.str());
     }
 
-    // allocate memory
-    data_.reset(new T[M*N]);
+    #ifdef PARALLILOS_USE_PARALLELISM
+      // allocate memory
+      data_.reset(Parallilos::allocate<T>(M * N));
+    #else
+      // allocate memory
+      data_.reset(new T[M*N]);
+    #endif
 
     // validate memory allocation
     if (!data_.get())
@@ -511,13 +515,18 @@ namespace Pinakas { namespace Backend
   template<typename T>
   Matrix<T>& Matrix<T>::operator=(Matrix<T>&& other) & noexcept
   {
-#ifdef LOGGING
-    std::clog << "move assigned\n";
-#endif
-
-    // take over ressources from other matrix
-    size_ = other.size_;
-    data_.reset(other.data_.release());
+    if (other.data_.get() != nullptr) {
+      // take over ressources from other matrix
+      size_ = other.size_;
+      data_.reset(other.data_.release());
+      #ifdef LOGGING
+          std::clog << "move assigned\n";
+      #endif
+    } else {
+      #ifdef LOGGING
+        std::clog << "couldn't move assign\n";
+      #endif
+    }
     return *this;
   }
 
@@ -910,8 +919,24 @@ namespace Pinakas { namespace Backend
     return A;
   }
 
-  template<template<typename> class M1, template<typename> class M2, typename T1, typename T2, typename T3>
-  Matrix<T3> add_mat(const M1<T1>& A, const M2<T2>& B)
+  template<typename T>
+  Matrix<T> add_mat_simd(const Matrix<T>& A, const Matrix<T>& B)
+  {
+    if (A.size() != B.size()) {
+      std::cerr << "error: add_mat: nonconformant arguments (A is " << A.size() << ", B is " << B.size() << ")\n";
+      return Matrix<T>();
+    }
+
+    Matrix<T> R(A.size());
+
+    // parallel addition using SIMD
+    Parallilos::add_arrays(A.data(), B.data(), R.data(), A.numel());
+
+    return R;
+  }
+
+  template<typename T1, typename T2, typename T3>
+  Matrix<T3> add_mat_sequ(const Matrix<T1>& A, const Matrix<T2>& B)
   {
     if (A.size() != B.size()) {
       std::cerr << "error: add_mat: nonconformant arguments (A is " << A.size() << ", B is " << B.size() << ")\n";
@@ -920,21 +945,39 @@ namespace Pinakas { namespace Backend
 
     Matrix<T3> R(A.size());
 
+    const T1* a = A.data();
+    const T2* b = B.data();
+    T3* r = R.data();
+
     const size_t n = A.numel();
     for (size_t k = 0; k < n; ++k)
-      R[0][k] = A[0][k] + B[0][k];
-      
+      r[k] = a[k] + b[k];
+    
+    return R;
+  }
+
+  template<typename T>
+  Matrix<T> add_val_simd(const Matrix<T>& A, const T B) noexcept
+  {
+    Matrix<T> R(A.size());
+
+    // parallel addition using SIMD
+    Parallilos::add_arrays(A.data(), B, R.data(), A.numel());
+
     return R;
   }
 
   template<typename T1, typename T2, typename T3>
-  Matrix<T3> add_val(const Matrix<T1>& A, const T2 B) noexcept
+  Matrix<T3> add_val_sequ(const Matrix<T1>& A, const T2 B) noexcept
   {
     Matrix<T3> R(A.size());
 
+    const T1* a = A.data();
+    T3* r = R.data();
+
     const size_t n = A.numel();
     for (size_t k = 0; k < n; ++k)
-      R[0][k] = A[0][k] + B;
+      r[k] = a[k] + B;
 
     return R;
   }
@@ -976,7 +1019,17 @@ namespace Pinakas { namespace Backend
   template<typename T1, typename T2, typename T3>
   Matrix<T3> operator+(const Matrix<T1>& A, const Matrix<T2>& B)
   {
-    return add_mat(A, B);
+    return add_mat_sequ(A, B);
+  }
+  
+  template<typename T>
+  Matrix<T> operator+(const Matrix<T>& A, const Matrix<T>& B)
+  {
+    #ifdef PARALLILOS_USE_PARALLELISM
+      return add_mat_simd(A, B);
+    #else
+      return add_mat_sequ(A, B);
+    #endif
   }
 
   template<typename T, typename T3>
@@ -990,11 +1043,31 @@ namespace Pinakas { namespace Backend
   {
     return add_rng(B, A);
   }
-  
+
+  template<typename T>
+  Matrix<T> operator+(const Matrix<T>& A, const T B) noexcept
+  {
+    #ifdef PARALLILOS_USE_PARALLELISM
+      return add_val_simd(A, B);
+    #else
+      return add_val_sequ(A, B);
+    #endif
+  }
+
   template<typename T1, typename T2, typename T3>
   Matrix<T3> operator+(const Matrix<T1>& A, const T2 B) noexcept
   {
     return add_val(A, B);
+  }
+  
+  template<typename T>
+  Matrix<T> operator+(const T A, const Matrix<T>& B) noexcept
+  {
+    #ifdef PARALLILOS_USE_PARALLELISM
+      return add_val_simd(B, A);
+    #else
+      return add_val_sequ(B, A);
+    #endif
   }
   
   template<typename T1, typename T2, typename T3>
@@ -1108,20 +1181,21 @@ namespace Pinakas { namespace Backend
     return A;
   }
 
-  #ifdef PARALLILOS_USE_PARALLELISM
-    template<typename T, typename S = typename Parallilos::simd_properties<T>::type>
-    Matrix<T> mul_mat_simd(const Matrix<T>& A, const Matrix<T>& B)
-    {
-      if (A.size() != B.size()) {
-        std::cerr << "error: mul_mat: nonconformant arguments (A is " << A.size() << ", B is " << B.size() << ")\n";
-        return Matrix<T>();
-      }
-
-      Matrix<T> R(A.size());
-
-      return Parallilos::mul_arrays(A, B, R, A.numel());
+  template<typename T>
+  Matrix<T> mul_mat_simd(const Matrix<T>& A, const Matrix<T>& B)
+  {
+    if (A.size() != B.size()) {
+      std::cerr << "error: mul_mat: nonconformant arguments (A is " << A.size() << ", B is " << B.size() << ")\n";
+      return Matrix<T>();
     }
-  #endif
+
+    Matrix<T> R(A.size());
+
+    // parallel addition using SIMD
+    Parallilos::mul_arrays(A.data(), B.data(), R.data(), A.numel());
+
+    return R;
+  }
 
   template<typename T1, typename T2, typename T3>
   Matrix<T3> mul_mat_sequ(const Matrix<T1>& A, const Matrix<T2>& B)
@@ -1133,10 +1207,14 @@ namespace Pinakas { namespace Backend
 
     Matrix<T3> R(A.size());
 
+    const T1* a = A.data();
+    const T1* b = B.data();
+    T1* r = R.data();
+
     const size_t n = A.numel();
     for (size_t k = 0; k < n; ++k)
-      R[0][k] = A[0][k] * B[0][k];
-
+      r[k] = a[k] * b[k];
+    
     return R;
   }
 
@@ -1195,7 +1273,7 @@ namespace Pinakas { namespace Backend
   template<typename T>
   Matrix<T> operator*(const Matrix<T>& A, const Matrix<T>& B)
   {
-    #ifdef PINAKAS_USE_PARALLELISM
+    #ifdef PARALLILOS_USE_PARALLELISM
       return mul_mat_simd(A, B);
     #else
       return mul_mat_sequ(A, B);
@@ -1358,20 +1436,40 @@ namespace Pinakas { namespace Backend
     return B;
   }
 
-  template<typename T1, typename T2, typename T3>
-  Matrix<T3> sub_mat(const Matrix<T1>& A, const Matrix<T2>& B)
+  template<typename T>
+  Matrix<T> sub_mat_simd(const Matrix<T>& A, const Matrix<T>& B)
   {
     if (A.size() != B.size()) {
-      std::cerr << "error: sub_ll_mat: nonconformant arguments (A is " << A.size() << ", B is " << B.size() << ")\n";
+      std::cerr << "error: sub_mat: nonconformant arguments (A is " << A.size() << ", B is " << B.size() << ")\n";
+      return Matrix<T>();
+    }
+
+    Matrix<T> R(A.size());
+
+    // parallel addition using SIMD
+    Parallilos::sub_arrays(A.data(), B.data(), R.data(), A.numel());
+
+    return R;
+  }
+
+  template<typename T1, typename T2, typename T3>
+  Matrix<T3> sub_mat_sequ(const Matrix<T1>& A, const Matrix<T2>& B)
+  {
+    if (A.size() != B.size()) {
+      std::cerr << "error: sub_mat: nonconformant arguments (A is " << A.size() << ", B is " << B.size() << ")\n";
       return Matrix<T3>();
     }
 
     Matrix<T3> R(A.size());
 
+    const T1* a = A.data();
+    const T1* b = B.data();
+    T1* r = R.data();
+
     const size_t n = A.numel();
     for (size_t k = 0; k < n; ++k)
-      R[0][k] = A[0][k] - B[0][k];
-
+      r[k] = a[k] - b[k];
+    
     return R;
   }
 
@@ -1474,7 +1572,17 @@ namespace Pinakas { namespace Backend
   template<typename T1, typename T2, typename T3>
   Matrix<T3> operator-(const Matrix<T1>& A, const Matrix<T2>& B)
   {
-    return sub_ll_mat(A, B);
+    return sub_mat_sequ(A, B);
+  }
+  
+  template<typename T>
+  Matrix<T> operator-(const Matrix<T>& A, const Matrix<T>& B)
+  {
+    #ifdef PARALLILOS_USE_PARALLELISM
+      return sub_mat_simd(A, B);
+    #else
+      return sub_mat_sequ(A, B);
+    #endif
   }
 
   template<typename T, typename T3>
@@ -1647,20 +1755,40 @@ namespace Pinakas { namespace Backend
     return B;
   }
 
-  template<typename T1, typename T2, typename T3>
-  Matrix<T3> div_ll_mat(const Matrix<T1>& A, const Matrix<T2>& B)
+  template<typename T>
+  Matrix<T> div_mat_simd(const Matrix<T>& A, const Matrix<T>& B)
   {
     if (A.size() != B.size()) {
-      std::cerr << "error: div_ll_mat: nonconformant arguments (A is " << A.size() << ", B is " << B.size() << ")\n";
+      std::cerr << "error: div_mat: nonconformant arguments (A is " << A.size() << ", B is " << B.size() << ")\n";
+      return Matrix<T>();
+    }
+
+    Matrix<T> R(A.size());
+
+    // parallel addition using SIMD
+    Parallilos::div_arrays(A.data(), B.data(), R.data(), A.numel());
+
+    return R;
+  }
+
+  template<typename T1, typename T2, typename T3>
+  Matrix<T3> div_mat_sequ(const Matrix<T1>& A, const Matrix<T2>& B)
+  {
+    if (A.size() != B.size()) {
+      std::cerr << "error: div_mat: nonconformant arguments (A is " << A.size() << ", B is " << B.size() << ")\n";
       return Matrix<T3>();
     }
 
     Matrix<T3> R(A.size());
 
+    const T1* a = A.data();
+    const T2* b = B.data();
+    T3* r = R.data();
+
     const size_t n = A.numel();
     for (size_t k = 0; k < n; ++k)
-      R[0][k] = A[0][k] / B[0][k];
-
+      r[k] = a[k] / b[k];
+    
     return R;
   }
 
@@ -1742,7 +1870,17 @@ namespace Pinakas { namespace Backend
   template<typename T1, typename T2, typename T3>
   Matrix<T3> operator/(const Matrix<T1>& A, const Matrix<T2>& B)
   {
-    return div_ll_mat(A, B);
+    return div_mat_sequ(A, B);
+  }
+  
+  template<typename T>
+  Matrix<T> operator/(const Matrix<T>& A, const Matrix<T>& B)
+  {
+    #ifdef PARALLILOS_USE_PARALLELISM
+      return div_mat_simd(A, B);
+    #else
+      return div_mat_sequ(A, B);
+    #endif
   }
 
   template<typename T, typename T3>
@@ -2147,7 +2285,7 @@ namespace Pinakas { namespace Backend
   template<typename T, typename T0>
   Matrix<T> div(const Matrix<T>& b, Matrix<T> A)
   {
-    #ifdef PINAKAS_USE_PARALLELISM
+    #ifdef PARALLILOS_USE_PARALLELISM
     #endif
 
     return div_sequ(b, A);
@@ -3103,11 +3241,11 @@ namespace Pinakas { namespace Backend
     return conj(fft(conj(std::move(spectrum)))) / spectrum.numel();
   }
 }}
-#include <vector>
+
 int main()
 {
   using namespace Pinakas;
-  //*
+  /*
   size_t M = 3;
   size_t N = 3;
   Matrix<float> a(M, N, {0, 1});
@@ -3120,21 +3258,28 @@ int main()
   std::cout << "error:\n" << (c - (a + b));
   //*/
 
-  /*
-  Matrix<float> A(8000, 8000, {0, 1});
-  Matrix<float> b(8000, 8000, {0, 1});
-  Matrix<float> c(8000, 8000);
-  for (int i = 0; i < 10; ++i) {
+  //*
+  Matrix<float> A(10000, 1000, {0, 1});
+  Matrix<float> b(10000, 1000, {0, 1});
+
+  loop:
+    puts("sequential");
     Chronometro::Stopwatch<> sw;
-    Backend::mul_mat_sequ(b, A);
-    sw.stop();
-  }
-  puts(PARALLILOS_EXTENDED_INSTRUCTION_SET);
-  for (int i = 0; i < 10; ++i) {
-    Chronometro::Stopwatch<> sw;
-    b * A;
-    sw.stop();
-  }
-  //std::cout << b * A - Backend::mul_mat_sequ(b, A);
+    for (int i = 0; i < 1; ++i) {
+      Backend::add_mat_sequ(A, b);
+      //sw.lap();
+    }
+    sw.split();
+
+    puts(Parallilos::simd_properties<float>::set);
+    sw.reset();
+    for (int i = 0; i < 1; ++i) {
+      Backend::add_mat_simd(A, b);
+      //sw.lap();
+    }
+    sw.split();
+
+    std::cin.get();
+  goto loop;
   //*/
 }

@@ -55,6 +55,7 @@
 #include <type_traits>      // for std::enable_if, std::is_same, std::common_type
 // --non-essential depencies-------------------------------------------------------------
 #include "Chronometro.hpp"
+#include "Parallilos.hpp"
 // --Pinakas library: backend forward declaration----------------------------------------
 namespace Pinakas { namespace Backend
 {
@@ -105,10 +106,10 @@ namespace Pinakas { namespace Backend
   Matrix<T1>& add_val_inplace(Matrix<T1>& A, const T2 B) noexcept;
   template<typename T>
   Matrix<T>& add_rng_inplace(Matrix<T>& A, const Random B) noexcept;
-  template<template<typename> class M1, template<typename> class M2, typename T1, typename T2, typename T3 = appropriate_type<T1, T2>>
-  Matrix<T3> add_mat(const M1<T1>& A, const M2<T2>& B);
   template<typename T1, typename T2, typename T3 = appropriate_type<T1, T2>>
-  Matrix<T3> add_val(const Matrix<T1>& A, const T2 B) noexcept;
+  Matrix<T3> add_mat_sequ(const Matrix<T1>& A, const Matrix<T2>& B);
+  template<typename T1, typename T2, typename T3 = appropriate_type<T1, T2>>
+  Matrix<T3> add_val_sequ(const Matrix<T1>& A, const T2 B) noexcept;
   template<typename T1, typename T3 = appropriate_type<T1, double>>
   Matrix<T3> add_rng(const Matrix<T1>& A, const Random B) noexcept;
 // --------------------------------------------------------------------------------------
@@ -138,7 +139,7 @@ namespace Pinakas { namespace Backend
   template<typename T>
   Matrix<T>& sub_rl_rng_inplace(Matrix<T>& B, const Random A) noexcept;
   template<typename T1, typename T2, typename T3 = appropriate_type<T1, T2>>
-  Matrix<T3> sub_mat(const Matrix<T1>& A, const Matrix<T2>& B);
+  Matrix<T3> sub_mat_sequ(const Matrix<T1>& A, const Matrix<T2>& B);
   template<typename T1, typename T2, typename T3 = appropriate_type<T1, T2>>
   Matrix<T3> sub_ll_val(const Matrix<T1>& A, const T2 B) noexcept;
   template<typename T1, typename T2, typename T3 = appropriate_type<T1, T2>>
@@ -165,7 +166,7 @@ namespace Pinakas { namespace Backend
   template<typename T>
   Matrix<T>& div_rl_rng_inplace(Matrix<T>& B, const Random A) noexcept;
   template<typename T1, typename T2, typename T3 = appropriate_type<T1, T2>>
-  Matrix<T3> div_ll_mat(const Matrix<T1>& A, const Matrix<T2>& B);
+  Matrix<T3> div_mat_sequ(const Matrix<T1>& A, const Matrix<T2>& B);
   template<typename T1, typename T2, typename T3 = appropriate_type<T1, T2>>
   Matrix<T3> div_ll_val(const Matrix<T1>& A, const T2 B) noexcept;
   template<typename T1, typename T2, typename T3 = appropriate_type<T1, T2>>
@@ -423,7 +424,11 @@ namespace Pinakas { namespace Backend
       // matrix size information
       Size size_;
       // T[M * N] array
-      std::unique_ptr<T[]> data_;
+      #ifdef PARALLILOS_USE_PARALLELISM
+        std::unique_ptr<T[], Parallilos::deleter> data_;
+      #else
+        std::unique_ptr<T[]> data_;
+      #endif
       // allocates memory to data_
       void allocate(const size_t M, const size_t N);
     public:
@@ -446,13 +451,17 @@ namespace Pinakas { namespace Backend
       Slice<const T> operator()(Range rows, Range cols) const noexcept;
       Slice<const T> operator()(Range rows, signed int col) const noexcept;
       Slice<const T> operator()(signed int row, Range cols) const noexcept;
-    public:
-      using iterator = T*;
+    public: // container named requirements
+      using value_type = T;
+      using reference  = T&;
+      using iterator   = T*;
       using const_iterator = const T*;
       iterator begin(void) noexcept;
       iterator end(void) noexcept;
       const_iterator begin(void) const noexcept;
       const_iterator end(void) const noexcept;
+      T* data(void) noexcept {return data_.get();}
+      const T* data(void) const noexcept {return data_.get();}
     friend class Slice<T>;
     friend Matrix<T>&& transpose<T>(Matrix<T>&& A);
     friend Matrix<T>&& reshape<T>(Matrix<T>&& A, const size_t M, const size_t N);
@@ -542,6 +551,8 @@ namespace Pinakas { namespace Backend
   Matrix<T1>& operator+=(Matrix<T1>& A, const T2 B) noexcept;
   template<typename T1, typename T2, typename T3 = appropriate_type<T1, T2>>
   Matrix<T3> operator+(const Matrix<T1>& A, const Matrix<T2>& B);
+  template<typename T>
+  Matrix<T> operator+(const Matrix<T>& A, const Matrix<T>& B);
   template<typename T, typename T3 = appropriate_type<T, double>>
   Matrix<T3> operator+(const Matrix<T>& A, const Random B) noexcept;
   template<typename T, typename T3 = appropriate_type<T, double>>
@@ -581,6 +592,8 @@ namespace Pinakas { namespace Backend
   Matrix<T1>& operator-=(Matrix<T1>& A, const T2 B) noexcept;
   template<typename T1, typename T2, typename T3 = appropriate_type<T1, T2>>
   Matrix<T3> operator-(const Matrix<T1>& A, const Matrix<T2>& B);
+  template<typename T>
+  Matrix<T> operator-(const Matrix<T>& A, const Matrix<T>& B);
   template<typename T, typename T3 = appropriate_type<T, double>>
   Matrix<T3> operator-(const Matrix<T>& A, const Random B) noexcept;
   template<typename T, typename T3 = appropriate_type<T, double>>
@@ -620,6 +633,8 @@ namespace Pinakas { namespace Backend
   Matrix<T1>& operator*=(Matrix<T1>& A, const T2 B) noexcept;
   template<typename T1, typename T2, typename T3 = appropriate_type<T1, T2>>
   Matrix<T3> operator*(const Matrix<T1>& A, const Matrix<T2>& B);
+  template<typename T>
+  Matrix<T> operator*(const Matrix<T>& A, const Matrix<T>& B);
   template<typename T, typename T3 = appropriate_type<T, double>>
   Matrix<T3> operator*(const Matrix<T>& A, const Random B) noexcept;
   template<typename T, typename T3 = appropriate_type<T, double>>
@@ -655,6 +670,8 @@ namespace Pinakas { namespace Backend
   Matrix<T1>& operator/=(Matrix<T1>& A, const T2 B) noexcept;
   template<typename T1, typename T2, typename T3 = appropriate_type<T1, T2>>
   Matrix<T3> operator/(const Matrix<T1>& A, const Matrix<T2>& B);
+  template<typename T>
+  Matrix<T> operator/(const Matrix<T>& A, const Matrix<T>& B);
   template<typename T, typename T3 = appropriate_type<T, double>>
   Matrix<T3> operator/(const Matrix<T>& A, const Random B) noexcept;
   template<typename T, typename T3 = appropriate_type<T, double>>
