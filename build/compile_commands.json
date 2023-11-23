@@ -1,8 +1,0 @@
-[
-{
-  "directory": "C:/code/juste-injuste/Pinakas/build",
-  "command": "C:\\msys64\\ucrt64\\bin\\g++.exe  @CMakeFiles/Pinakas.dir/includes_CXX.rsp  -O3 -g3 -Wall -Wextra -Wpedantic -pedantic -march=native -g -o CMakeFiles\\Pinakas.dir\\example\\main.cpp.obj -c C:\\code\\juste-injuste\\Pinakas\\example\\main.cpp",
-  "file": "C:/code/juste-injuste/Pinakas/example/main.cpp",
-  "output": "CMakeFiles/Pinakas.dir/example/main.cpp.obj"
-}
-]
