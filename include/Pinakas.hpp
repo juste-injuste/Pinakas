@@ -53,10 +53,22 @@
 #include <cstdio>           // for std::remove
 #include <complex>          // for std::complex
 #include <type_traits>      // for std::enable_if, std::is_same, std::common_type
+#if defined(PINAKAS_LOGGING)
+# include <cstdio> // for std::sprintf
+# include <mutex>  // for std::mutex
+#endif
 // --non-essential depencies-------------------------------------------------------------
 #include "Chronometro.hpp"
 #include "Parallilos.hpp"
 // --Pinakas library: backend forward declaration----------------------------------------
+namespace Pinakas
+{
+  namespace Global
+  {
+    std::ostream log{std::clog.rdbuf()}; // logging ostream
+  }
+}
+
 namespace Pinakas { namespace Backend
 {
   //
@@ -77,6 +89,25 @@ namespace Pinakas { namespace Backend
   //
   typedef std::pair<const Matrix<double>, const Matrix<double>> DataSet;
   typedef std::complex<double> complex;
+
+  
+# if defined(PINAKAS_LOGGING)
+    void log(const char* caller, const char* message)
+    {
+      static std::mutex mtx;
+      std::lock_guard<std::mutex> lock{mtx};
+      Pinakas::Global::log << caller << ": " << message << std::endl;
+    }
+#   define PINAKAS_LOG(...)                    \
+      [&](const char* caller) -> void         \
+      {                                       \
+        static char buffer[255];              \
+        sprintf(buffer, __VA_ARGS__);         \
+        Pinakas::Backend::log(caller, buffer); \
+      }(__func__)
+# else
+#   define PINAKAS_LOG(...) ((void)0)
+# endif
 }}
 // --Pinakas library: template meta programming------------------------------------------
 namespace Pinakas { namespace Backend
@@ -210,20 +241,20 @@ namespace Pinakas { namespace Backend
   Matrix<T> div(const Matrix<T>& b, Matrix<T> A);
 // --------------------------------------------------------------------------------------
   template<typename T = double>
-  Matrix<T> linspace(const double x1, const double x2, const size_t N);
-  template<typename T = size_t>
-  Matrix<T> iota(const size_t n);
+  Matrix<T> linspace(const double x1, const double x2, const unsigned N);
+  template<typename T = unsigned>
+  Matrix<T> iota(const unsigned n);
   template<typename T = double>
-  Matrix<T> eye(const size_t M, const size_t N);
+  Matrix<T> eye(const unsigned M, const unsigned N);
 // --------------------------------------------------------------------------------------
   template<template<typename> class M1, typename T>
   Matrix<T> transpose(const M1<T>& A);
   template<typename T>
   Matrix<T>&& transpose(Matrix<T>&& A);
   template<template<typename> class M1, typename T>
-  Matrix<T> reshape(const M1<T>& A, const size_t M, const size_t N);
+  Matrix<T> reshape(const M1<T>& A, const unsigned M, const unsigned N);
   template<typename T1>
-  Matrix<T1>&& reshape(Matrix<T1>&& A, const size_t M, const size_t N);
+  Matrix<T1>&& reshape(Matrix<T1>&& A, const unsigned M, const unsigned N);
 // --------------------------------------------------------------------------------------
   template<template<typename> class M1, typename T>
   T min(const M1<T>& A) noexcept;
@@ -252,7 +283,7 @@ namespace Pinakas { namespace Backend
   template<template<typename> class M1, typename T>
   M1<T>&& reverse(M1<T>&& A) noexcept;
 // --------------------------------------------------------------------------------------
-  Matrix<double> diff(const Matrix<double>& A, size_t n = 1);
+  Matrix<double> diff(const Matrix<double>& A, unsigned n = 1);
 // --------------------------------------------------------------------------------------
   template<typename T1, typename T2, typename T3 = appropriate_type<T1, T2>>
   Matrix<T3> conv(const Matrix<T1>& A, const Matrix<T2>& B);
@@ -261,10 +292,10 @@ namespace Pinakas { namespace Backend
   template<typename T>
   Matrix<T> corr(const Matrix<T>& A);
   Matrix<double> rxx(const Matrix<double>& A);
-  Matrix<double> rxx(const Matrix<double>& A, const size_t K);
-  Matrix<double> lpc(const Matrix<double>& A, const size_t p);
+  Matrix<double> rxx(const Matrix<double>& A, const unsigned K);
+  Matrix<double> lpc(const Matrix<double>& A, const unsigned p);
   Matrix<double> toeplitz(const Matrix<double>& A);
-  double newton(const std::function<double(double)> function, const double tol, const size_t max_iteration, const double seed) noexcept;
+  double newton(const std::function<double(double)> function, const double tol, const unsigned max_iteration, const double seed) noexcept;
 // --------------------------------------------------------------------------------------
   template<typename T>
   Matrix<double> cos(Matrix<T>& A);
@@ -276,19 +307,19 @@ namespace Pinakas { namespace Backend
   Matrix<double> sinc(Matrix<T>& A);
   Matrix<double>&& sinc(Matrix<double>&& A) noexcept;
 // --------------------------------------------------------------------------------------
-  Matrix<double> blackman(const size_t N);
+  Matrix<double> blackman(const unsigned N);
   Matrix<double> blackman(const Matrix<double>& signal);
   Matrix<double>&& blackman(Matrix<double>&& signal) noexcept;
-  Matrix<double> hamming(const size_t N);
+  Matrix<double> hamming(const unsigned N);
   Matrix<double> hamming(const Matrix<double>& signal);
   Matrix<double>&& hamming(Matrix<double>&& signal) noexcept;
-  Matrix<double> hann(const size_t N);
+  Matrix<double> hann(const unsigned N);
   Matrix<double> hann(const Matrix<double>& signal);
   Matrix<double>&& hann(Matrix<double>&& signal) noexcept;
 // --------------------------------------------------------------------------------------
-  Matrix<double> sinc_impulse(const size_t length, const double frequency);
+  Matrix<double> sinc_impulse(const unsigned length, const double frequency);
   template<typename T, typename T0 = convert_to_double<T>>
-  Matrix<double> resample(const Matrix<T>& data, const size_t L, const size_t keep=2, const double alpha=3.5, const bool tail=false);
+  Matrix<double> resample(const Matrix<T>& data, const unsigned L, const unsigned keep=2, const double alpha=3.5, const bool tail=false);
 // --------------------------------------------------------------------------------------
   void plot(List<std::string> titles, List<DataSet> data_sets, bool persistent = true, bool remove = true, bool pause = false, bool lines = true);
 // --------------------------------------------------------------------------------------
@@ -357,7 +388,7 @@ namespace Pinakas { inline namespace Frontend
 namespace Pinakas { namespace Backend
 {
   struct Size final {
-    size_t M, N, numel;
+    unsigned M, N, numel;
     inline bool operator==(const Size other) const noexcept;
     inline bool operator!=(const Size other) const noexcept;
   };
@@ -374,14 +405,14 @@ namespace Pinakas { namespace Backend
       // destructor
       ~Matrix() noexcept;
       // empty constructor
-      explicit Matrix() noexcept;
+      Matrix() noexcept;
       // empty MxN constructor 
-      explicit Matrix(const size_t M, const size_t N);
+      explicit Matrix(const unsigned M, const unsigned N);
       // random MxN constructor 
-      explicit Matrix(const size_t M, const size_t N, Random range);
+      explicit Matrix(const unsigned M, const unsigned N, Random range);
 
       // fill constructor
-      explicit Matrix(const size_t M, const size_t N, const T value);
+      explicit Matrix(const unsigned M, const unsigned N, const T value);
       // fill assignation
       Matrix<T>& operator=(const T value) & noexcept;
 
@@ -403,8 +434,8 @@ namespace Pinakas { namespace Backend
       Matrix<T>& operator=(const Matrix<T2>& other) &;
     public:
       // indexing
-      inline T* operator[](const size_t j) noexcept;
-      inline const T* operator[](const size_t j) const noexcept;
+      inline T* operator[](const unsigned j) noexcept;
+      inline const T* operator[](const unsigned j) const noexcept;
 
       // bound-checked flat-indexing
       T& operator()(signed int k);
@@ -416,21 +447,17 @@ namespace Pinakas { namespace Backend
     public:
       // return matrix dimensions
       inline Size size(void) const & noexcept;
-      inline size_t numel(void) const & noexcept;
-      inline size_t M(void) const & noexcept;
-      inline size_t N(void) const & noexcept;
-      operator size_t (void);     
+      inline unsigned numel(void) const & noexcept;
+      inline unsigned M(void) const & noexcept;
+      inline unsigned N(void) const & noexcept;
+      operator unsigned (void);     
     private:
       // matrix size information
       Size size_;
       // T[M * N] array
-      #ifdef PARALLILOS_USE_PARALLELISM
-        std::unique_ptr<T[], Parallilos::deleter> data_;
-      #else
-        std::unique_ptr<T[]> data_;
-      #endif
+        T* data_;
       // allocates memory to data_
-      void allocate(const size_t M, const size_t N);
+      void allocate(const unsigned M, const unsigned N);
     public:
       // size-based constructor
       inline explicit Matrix(const Size size);
@@ -460,11 +487,11 @@ namespace Pinakas { namespace Backend
       iterator end(void) noexcept;
       const_iterator begin(void) const noexcept;
       const_iterator end(void) const noexcept;
-      T* data(void) noexcept {return data_.get();}
-      const T* data(void) const noexcept {return data_.get();}
+      T* data(void) noexcept {return data_;}
+      const T* data(void) const noexcept {return data_;}
     friend class Slice<T>;
     friend Matrix<T>&& transpose<T>(Matrix<T>&& A);
-    friend Matrix<T>&& reshape<T>(Matrix<T>&& A, const size_t M, const size_t N);
+    friend Matrix<T>&& reshape<T>(Matrix<T>&& A, const unsigned M, const unsigned N);
   };
 
   template<typename T>
@@ -476,12 +503,12 @@ namespace Pinakas { namespace Backend
       Slice<T>& operator=(const Matrix<T>& other);
     public:
       inline Size size(void) const & noexcept;
-      inline size_t numel(void) const & noexcept;
-      inline size_t M(void) const & noexcept;
-      inline size_t N(void) const & noexcept;
+      inline unsigned numel(void) const & noexcept;
+      inline unsigned M(void) const & noexcept;
+      inline unsigned N(void) const & noexcept;
       // indexing
-      inline T* operator[](const size_t j) noexcept;
-      inline const T* operator[](const size_t j) const noexcept;
+      inline T* operator[](const unsigned j) noexcept;
+      inline const T* operator[](const unsigned j) const noexcept;
       // bound-checked flat-indexing
       T& operator()(signed int k) noexcept;
       const T& operator()(signed int k) const noexcept;
@@ -490,8 +517,8 @@ namespace Pinakas { namespace Backend
       const T& operator()(signed int j, signed int i) const noexcept;
     private:
       T* matrix_data_;
-      const size_t matrix_M_;
-      const size_t offset_;
+      const unsigned matrix_M_;
+      const unsigned offset_;
       const Size size_;     
     private:
       template<typename T0>
@@ -514,9 +541,9 @@ namespace Pinakas { namespace Backend
 
   class Range final {
     public:
-      inline explicit Range(const size_t stop) noexcept;
+      inline explicit Range(const unsigned stop) noexcept;
       inline Range(const int start, const int stop) noexcept;
-      inline explicit Range(const int start, const int stop, const size_t step) noexcept;
+      inline explicit Range(const int start, const int stop, const unsigned step) noexcept;
       int start;
       int stop;
       int step;

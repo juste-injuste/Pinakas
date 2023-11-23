@@ -1,5 +1,4 @@
 // --inclusion guard---------------------------------------------------------------------
-//#define LOGGING
 #include "../include/Pinakas.hpp"
 
 #define M_PI 3.14159265358979323846
@@ -19,29 +18,21 @@ namespace Pinakas { namespace Backend
   template<typename T>
   Matrix<T>::~Matrix() noexcept
   {
-    #ifdef LOGGING
-    std::clog << "Matrix deleted !\n";
-    #endif
+    delete[] data_;
+    PINAKAS_LOG("deleted %ux%u", size_.M, size_.N);
   }
 
   template<typename T>
-  Matrix<T>::Matrix() noexcept
-    : // member initialization list
+  Matrix<T>::Matrix() noexcept :
     size_{0, 0, 0},
     data_(nullptr)
   {
-#ifdef LOGGING
-    std::clog << "Matrix created ! (empty)\n";
-#endif
+    PINAKAS_LOG("created %ux%u", size_.M, size_.N);
   }
 
   template<typename T>
   Matrix<T>::Matrix(const Matrix<T>& other)
   {
-#ifdef LOGGING
-    std::clog << "Matrix copied !\n";
-#endif
-
     if (this != &other) {
       // allocate memory
       allocate(other.size_.M, other.size_.N);
@@ -50,27 +41,26 @@ namespace Pinakas { namespace Backend
       for (size_t k = 0; k < size_.numel; ++k)
         data_[k] = other[0][k];
     }
+
+    PINAKAS_LOG("copied %ux%u", other.size_.M, other.size_.N);
   }
 
   template<typename T>
-  Matrix<T>::Matrix(Matrix<T>&& other) noexcept
-    : // member initialization list
+  Matrix<T>::Matrix(Matrix<T>&& other) noexcept :
     size_(other.size_),
-    data_(other.data_.release())
+    data_(other.data_)
   {
-#ifdef LOGGING
-    std::clog << "Matrix moved !\n";
-#endif
+    other.size_ = Size{0, 0, 0};
+    other.data_ = nullptr;
+
+    PINAKAS_LOG("moved %ux%u", size_.M, size_.N);
   }
 
   template<typename T> template<typename T2>
   Matrix<T>::Matrix(const Matrix<T2>& other)
   {
-#ifdef LOGGING
-    std::clog << "Matrix converted !\n";
-#endif
-
-    if (size_t(this) != size_t(&other)) {
+    if (size_t(this) != size_t(&other))
+    {
       // allocate memory
       allocate(other.M(), other.N());
 
@@ -78,17 +68,17 @@ namespace Pinakas { namespace Backend
       for (size_t k = 0; k < size_.numel; ++k)
         data_[k] = other[0][k];
     }
+
+    PINAKAS_LOG("copy converted %ux%u", size_.M, size_.N);
   }
 
   template<typename T>
-  Matrix<T>::Matrix(const size_t M, const size_t N)
+  Matrix<T>::Matrix(const unsigned M, const unsigned N)
   {
-#ifdef LOGGING
-    std::clog << "Matrix created !\n";
-#endif
-
     // allocate memory
     allocate(M, N);
+
+    PINAKAS_LOG("created %ux%u", size_.M, size_.N);
   }
 
   template<typename T>
@@ -97,18 +87,16 @@ namespace Pinakas { namespace Backend
   {}
 
   template<typename T>
-  Matrix<T>::Matrix(const size_t M, const size_t N, const T value)
+  Matrix<T>::Matrix(const unsigned M, const unsigned N, const T value)
   {
-#ifdef LOGGING
-    std::clog << "Matrix created !\n";
-#endif
-
     // allocate memory
     allocate(M, N);
 
     // store values
     for (size_t k = 0; k < size_.numel; ++k)
       data_[k] = value;
+
+    PINAKAS_LOG("created %ux%u and filled", size_.M, size_.N);
   }
 
   template<typename T>
@@ -117,12 +105,8 @@ namespace Pinakas { namespace Backend
   {}
 
   template<typename T>
-  Matrix<T>::Matrix(const size_t M, const size_t N, const Random range)
+  Matrix<T>::Matrix(const unsigned M, const unsigned N, const Random range)
   {
-#ifdef LOGGING
-    std::clog << "Matrix created !\n";
-#endif
-
     // allocate memory
     allocate(M, N);
 
@@ -134,6 +118,8 @@ namespace Pinakas { namespace Backend
     // assign random value to matrix
     for (size_t k = 0; k < size_.numel; ++k)
       data_[k] = uniform_distribution(generator);
+      
+    PINAKAS_LOG("created %ux%u from range [%f, %f]", M, N, range.min_, range.max_);
   }
 
   template<typename T>
@@ -144,10 +130,6 @@ namespace Pinakas { namespace Backend
   template<typename T>
   Matrix<T>::Matrix(const List<T> list)
   {
-#ifdef LOGGING
-    std::clog << "Matrix created !\n";
-#endif
-
     // allocate memory
     allocate(1, list.size());
 
@@ -155,15 +137,13 @@ namespace Pinakas { namespace Backend
     size_t x = 0;
     for (T value : list)
       data_[x++] = value;
+
+    PINAKAS_LOG("created %ux%u", size_.M, size_.N);
   }
 
   template<typename T>
   Matrix<T>::Matrix(const List<const List<const T>> values)
   {
-#ifdef LOGGING
-    std::clog << "Matrix created !\n";
-#endif
-
     // dimension validation
     size_t temp_N = 0;
     for (const List<const T>& vector : values) {
@@ -189,15 +169,13 @@ namespace Pinakas { namespace Backend
       }
       ++y;
     }
+
+    PINAKAS_LOG("created %ux%u", size_.M, size_.N);
   }
 
   template<typename T>
   Matrix<T>::Matrix(const List<const Matrix<T>> list)
   {
-#ifdef LOGGING
-    std::clog << "Matrix created !\n";
-#endif
-
     // dimension validation
     size_t M_ = 0;
     size_t N_ = 0;
@@ -223,10 +201,12 @@ namespace Pinakas { namespace Backend
           data_[x + k + y * size_.N] = matrix[y][x];
       k += matrix.size_.N;
     }
+
+    PINAKAS_LOG("created %ux%u from concatonation", size_.M, size_.N);
   }
 // --------------------------------------------------------------------------------------
   template<typename T>
-  void Matrix<T>::allocate(const size_t M, const size_t N)
+  void Matrix<T>::allocate(const unsigned M, const unsigned N)
   {
     // validate sizes
     if (!(M && N)) {
@@ -235,16 +215,10 @@ namespace Pinakas { namespace Backend
       throw std::invalid_argument(error_message.str());
     }
 
-    #ifdef PARALLILOS_USE_PARALLELISM
-      // allocate memory
-      data_.reset(Parallilos::allocate<T>(M * N));
-    #else
-      // allocate memory
-      data_.reset(new T[M*N]);
-    #endif
+    data_ = new T[M*N];
 
     // validate memory allocation
-    if (!data_.get())
+    if (data_ == nullptr)
       throw std::bad_alloc();
 
     // save size information
@@ -253,15 +227,15 @@ namespace Pinakas { namespace Backend
 // --------------------------------------------------------------------------------------
 
   template<typename T>
-  T* Matrix<T>::operator[](const size_t j) noexcept
+  T* Matrix<T>::operator[](const unsigned j) noexcept
   {
-    return data_.get() + (j * size_.N);
+    return data_ + (j * size_.N);
   }
 
   template<typename T>
-  const T* Matrix<T>::operator[](const size_t j) const noexcept
+  const T* Matrix<T>::operator[](const unsigned j) const noexcept
   {
-    return data_.get() + (j * size_.N);
+    return data_ + (j * size_.N);
   }
 
   template<typename T>
@@ -475,19 +449,19 @@ namespace Pinakas { namespace Backend
   }
 
   template<typename T>
-  size_t Matrix<T>::numel(void) const & noexcept
+  unsigned Matrix<T>::numel(void) const & noexcept
   {
     return size_.numel;
   }
 
   template<typename T>
-  size_t Matrix<T>::M(void) const & noexcept
+  unsigned Matrix<T>::M(void) const & noexcept
   {
     return size_.M;
   }
 
   template<typename T>
-  size_t Matrix<T>::N(void) const & noexcept
+  unsigned Matrix<T>::N(void) const & noexcept
   {
     return size_.N;
   }
@@ -495,9 +469,7 @@ namespace Pinakas { namespace Backend
   template<typename T>
   Matrix<T>& Matrix<T>::operator=(const Matrix<T>& other) &
   {
-#ifdef LOGGING
-    std::clog << "copy assigned\n";
-#endif
+    PINAKAS_LOG("copy assigned");
 
     // validate both matrices are not the same
     if (this != &other) {
@@ -515,27 +487,27 @@ namespace Pinakas { namespace Backend
   template<typename T>
   Matrix<T>& Matrix<T>::operator=(Matrix<T>&& other) & noexcept
   {
-    if (other.data_.get() != nullptr) {
+    if (other.data_.get() != nullptr)
+    {
       // take over ressources from other matrix
       size_ = other.size_;
-      data_.reset(other.data_.release());
-      #ifdef LOGGING
-          std::clog << "move assigned\n";
-      #endif
-    } else {
-      #ifdef LOGGING
-        std::clog << "couldn't move assign\n";
-      #endif
+      data_ = other.data_;
+
+      other.size_ = Size{0, 0, 0};
+      other.data_ = nullptr;
+      
+      PINAKAS_LOG("move assigned %ux%u", size_.M, size_.N);
     }
+    else PINAKAS_LOG("nothing to move");
+
     return *this;
   }
 
   template<typename T> template<typename T2>
   Matrix<T>& Matrix<T>::operator=(const Matrix<T2>& other) &
   {
-#ifdef LOGGING
-    std::clog << "conversion assigned\n";
-#endif
+    PINAKAS_LOG("conversion assigned");
+
     // allocate memory if necessary
     if ((size_ != other.size_) ||!data_.get())
       allocate(other.size_.M, other.size_.N);
@@ -550,9 +522,8 @@ namespace Pinakas { namespace Backend
   template<typename T>
   Matrix<T>& Matrix<T>::operator=(const T value) & noexcept
   {
-#ifdef LOGGING
-    std::clog << "fill assigned\n";
-#endif
+    PINAKAS_LOG("filled");
+
     // store values
     for (size_t k = 0; k < size_.numel; ++k)
       data_[k] = value;
@@ -561,7 +532,7 @@ namespace Pinakas { namespace Backend
   }
 
   template<typename T>
-  Matrix<T>::operator size_t (void)
+  Matrix<T>::operator unsigned (void)
   {
     return size_.numel;
   }
@@ -591,8 +562,7 @@ namespace Pinakas { namespace Backend
   }
 // --------------------------------------------------------------------------------------
   template<typename T>
-  Slice<T>::Slice(T* matrix_data, const Size matrix_size, const Range rows, const Range cols) noexcept
-    : // member initialization list
+  Slice<T>::Slice(T* matrix_data, const Size matrix_size, const Range rows, const Range cols) noexcept :
     matrix_data_(matrix_data),
     matrix_M_(matrix_size.M),
     offset_(rows.start * matrix_size.N + cols.start),
@@ -602,8 +572,7 @@ namespace Pinakas { namespace Backend
   {}
 
   template<typename T>
-  Slice<T>::Slice(const Slice<T>& other) noexcept
-    : // member initialization list
+  Slice<T>::Slice(const Slice<T>& other) noexcept :
     matrix_data_(other.matrix_data_),
     matrix_M_(other.matrix_M_),
     offset_(other.offset_),
@@ -647,31 +616,31 @@ namespace Pinakas { namespace Backend
   }
 
   template<typename T>
-  size_t Slice<T>::M(void) const & noexcept
+  unsigned Slice<T>::M(void) const & noexcept
   {
     return size_.M;
   }
 
   template<typename T>
-  size_t Slice<T>::N(void) const & noexcept
+  unsigned Slice<T>::N(void) const & noexcept
   {
     return size_.N;
   }
 
   template<typename T>
-  size_t Slice<T>::numel(void) const & noexcept
+  unsigned Slice<T>::numel(void) const & noexcept
   {
     return size_.numel;
   }
 
   template<typename T>
-  T* Slice<T>::operator[](const size_t j) noexcept
+  T* Slice<T>::operator[](const unsigned j) noexcept
   {
     return matrix_data_ + (j*matrix_M_ + offset_);
   }
 
   template<typename T>
-  const T* Slice<T>::operator[](const size_t j) const noexcept
+  const T* Slice<T>::operator[](const unsigned j) const noexcept
   {
     return matrix_data_ + (j*matrix_M_ + offset_);
   }
@@ -771,8 +740,7 @@ namespace Pinakas { namespace Backend
   }
   
   template<typename T> template<typename T0>
-  Slice<T>::Iterator<T0>::Iterator(Slice<T>& slice, const int value) noexcept
-    : // member initialization list
+  Slice<T>::Iterator<T0>::Iterator(Slice<T>& slice, const int value) noexcept :
     slice_(slice),
     current_(value)
   {}
@@ -822,35 +790,30 @@ namespace Pinakas { namespace Backend
       return Iterator<const T>(*this, size_.numel);
   }
 // --------------------------------------------------------------------------------------
-  Random::Random(const double min, const double max) noexcept
-    : // member initialization list
+  Random::Random(const double min, const double max) noexcept :
     min_(min),
     max_(max)
   {}
 // --------------------------------------------------------------------------------------
-  Range::Range(const size_t high) noexcept
-    : // member initialization list
+  Range::Range(const unsigned high) noexcept :
     start(0),
     stop(high-1),
     step(1)
   {}
 
-  Range::Range(const int start, const int stop) noexcept
-    : // member initialization list
+  Range::Range(const int start, const int stop) noexcept :
     start(start),
     stop(stop),
     step(((stop-start) >= 0) ? 1 : -1)
   {}
 
-  Range::Range(const int start, const int stop, const size_t step) noexcept
-    : // member initialization list
+  Range::Range(const int start, const int stop, const unsigned step) noexcept :
     start(start),
     stop(stop),
     step(((stop-start) >= 0) ? step : -signed(step))
   {}
   
-  Range::Iterator::Iterator(const int value, const int step) noexcept
-    : // member initialization list
+  Range::Iterator::Iterator(const int value, const int step) noexcept :
     current_(value),
     step_(step)
   {}
@@ -919,21 +882,21 @@ namespace Pinakas { namespace Backend
     return A;
   }
 
-  template<typename T>
-  Matrix<T> add_mat_simd(const Matrix<T>& A, const Matrix<T>& B)
-  {
-    if (A.size() != B.size()) {
-      std::cerr << "error: add_mat: nonconformant arguments (A is " << A.size() << ", B is " << B.size() << ")\n";
-      return Matrix<T>();
-    }
+  // template<typename T>
+  // Matrix<T> add_mat_simd(const Matrix<T>& A, const Matrix<T>& B)
+  // {
+  //   if (A.size() != B.size()) {
+  //     std::cerr << "error: add_mat: nonconformant arguments (A is " << A.size() << ", B is " << B.size() << ")\n";
+  //     return Matrix<T>();
+  //   }
 
-    Matrix<T> R(A.size());
+  //   Matrix<T> R(A.size());
 
-    // parallel addition using SIMD
-    Parallilos::add_arrays(A.data(), B.data(), R.data(), A.numel());
+  //   // parallel addition using SIMD
+  //   Parallilos::add_arrays(A.data(), B.data(), R.data(), A.numel());
 
-    return R;
-  }
+  //   return R;
+  // }
 
   template<typename T1, typename T2, typename T3>
   Matrix<T3> add_mat_sequ(const Matrix<T1>& A, const Matrix<T2>& B)
@@ -956,16 +919,16 @@ namespace Pinakas { namespace Backend
     return R;
   }
 
-  template<typename T>
-  Matrix<T> add_val_simd(const Matrix<T>& A, const T B) noexcept
-  {
-    Matrix<T> R(A.size());
+  // template<typename T>
+  // Matrix<T> add_val_simd(const Matrix<T>& A, const T B) noexcept
+  // {
+  //   Matrix<T> R(A.size());
 
-    // parallel addition using SIMD
-    Parallilos::add_arrays(A.data(), B, R.data(), A.numel());
+  //   // parallel addition using SIMD
+  //   Parallilos::add_arrays(A.data(), B, R.data(), A.numel());
 
-    return R;
-  }
+  //   return R;
+  // }
 
   template<typename T1, typename T2, typename T3>
   Matrix<T3> add_val_sequ(const Matrix<T1>& A, const T2 B) noexcept
@@ -1026,7 +989,7 @@ namespace Pinakas { namespace Backend
   Matrix<T> operator+(const Matrix<T>& A, const Matrix<T>& B)
   {
     #ifdef PARALLILOS_USE_PARALLELISM
-      return add_mat_simd(A, B);
+      // return add_mat_simd(A, B);
     #else
       return add_mat_sequ(A, B);
     #endif
@@ -1048,7 +1011,7 @@ namespace Pinakas { namespace Backend
   Matrix<T> operator+(const Matrix<T>& A, const T B) noexcept
   {
     #ifdef PARALLILOS_USE_PARALLELISM
-      return add_val_simd(A, B);
+      // return add_val_simd(A, B);
     #else
       return add_val_sequ(A, B);
     #endif
@@ -1064,7 +1027,7 @@ namespace Pinakas { namespace Backend
   Matrix<T> operator+(const T A, const Matrix<T>& B) noexcept
   {
     #ifdef PARALLILOS_USE_PARALLELISM
-      return add_val_simd(B, A);
+      // return add_val_simd(B, A);
     #else
       return add_val_sequ(B, A);
     #endif
@@ -1181,21 +1144,21 @@ namespace Pinakas { namespace Backend
     return A;
   }
 
-  template<typename T>
-  Matrix<T> mul_mat_simd(const Matrix<T>& A, const Matrix<T>& B)
-  {
-    if (A.size() != B.size()) {
-      std::cerr << "error: mul_mat: nonconformant arguments (A is " << A.size() << ", B is " << B.size() << ")\n";
-      return Matrix<T>();
-    }
+  // template<typename T>
+  // Matrix<T> mul_mat_simd(const Matrix<T>& A, const Matrix<T>& B)
+  // {
+  //   if (A.size() != B.size()) {
+  //     std::cerr << "error: mul_mat: nonconformant arguments (A is " << A.size() << ", B is " << B.size() << ")\n";
+  //     return Matrix<T>();
+  //   }
 
-    Matrix<T> R(A.size());
+  //   Matrix<T> R(A.size());
 
-    // parallel addition using SIMD
-    Parallilos::mul_arrays(A.data(), B.data(), R.data(), A.numel());
+  //   // parallel addition using SIMD
+  //   Parallilos::mul_arrays(A.data(), B.data(), R.data(), A.numel());
 
-    return R;
-  }
+  //   return R;
+  // }
 
   template<typename T1, typename T2, typename T3>
   Matrix<T3> mul_mat_sequ(const Matrix<T1>& A, const Matrix<T2>& B)
@@ -1274,7 +1237,7 @@ namespace Pinakas { namespace Backend
   Matrix<T> operator*(const Matrix<T>& A, const Matrix<T>& B)
   {
     #ifdef PARALLILOS_USE_PARALLELISM
-      return mul_mat_simd(A, B);
+      // return mul_mat_simd(A, B);
     #else
       return mul_mat_sequ(A, B);
     #endif
@@ -1436,21 +1399,21 @@ namespace Pinakas { namespace Backend
     return B;
   }
 
-  template<typename T>
-  Matrix<T> sub_mat_simd(const Matrix<T>& A, const Matrix<T>& B)
-  {
-    if (A.size() != B.size()) {
-      std::cerr << "error: sub_mat: nonconformant arguments (A is " << A.size() << ", B is " << B.size() << ")\n";
-      return Matrix<T>();
-    }
+  // template<typename T>
+  // Matrix<T> sub_mat_simd(const Matrix<T>& A, const Matrix<T>& B)
+  // {
+  //   if (A.size() != B.size()) {
+  //     std::cerr << "error: sub_mat: nonconformant arguments (A is " << A.size() << ", B is " << B.size() << ")\n";
+  //     return Matrix<T>();
+  //   }
 
-    Matrix<T> R(A.size());
+  //   Matrix<T> R(A.size());
 
-    // parallel addition using SIMD
-    Parallilos::sub_arrays(A.data(), B.data(), R.data(), A.numel());
+  //   // parallel addition using SIMD
+  //   Parallilos::sub_arrays(A.data(), B.data(), R.data(), A.numel());
 
-    return R;
-  }
+  //   return R;
+  // }
 
   template<typename T1, typename T2, typename T3>
   Matrix<T3> sub_mat_sequ(const Matrix<T1>& A, const Matrix<T2>& B)
@@ -1579,7 +1542,7 @@ namespace Pinakas { namespace Backend
   Matrix<T> operator-(const Matrix<T>& A, const Matrix<T>& B)
   {
     #ifdef PARALLILOS_USE_PARALLELISM
-      return sub_mat_simd(A, B);
+      // return sub_mat_simd(A, B);
     #else
       return sub_mat_sequ(A, B);
     #endif
@@ -1755,21 +1718,21 @@ namespace Pinakas { namespace Backend
     return B;
   }
 
-  template<typename T>
-  Matrix<T> div_mat_simd(const Matrix<T>& A, const Matrix<T>& B)
-  {
-    if (A.size() != B.size()) {
-      std::cerr << "error: div_mat: nonconformant arguments (A is " << A.size() << ", B is " << B.size() << ")\n";
-      return Matrix<T>();
-    }
+  // template<typename T>
+  // Matrix<T> div_mat_simd(const Matrix<T>& A, const Matrix<T>& B)
+  // {
+  //   if (A.size() != B.size()) {
+  //     std::cerr << "error: div_mat: nonconformant arguments (A is " << A.size() << ", B is " << B.size() << ")\n";
+  //     return Matrix<T>();
+  //   }
 
-    Matrix<T> R(A.size());
+  //   Matrix<T> R(A.size());
 
-    // parallel addition using SIMD
-    Parallilos::div_arrays(A.data(), B.data(), R.data(), A.numel());
+  //   // parallel addition using SIMD
+  //   Parallilos::div_arrays(A.data(), B.data(), R.data(), A.numel());
 
-    return R;
-  }
+  //   return R;
+  // }
 
   template<typename T1, typename T2, typename T3>
   Matrix<T3> div_mat_sequ(const Matrix<T1>& A, const Matrix<T2>& B)
@@ -1877,7 +1840,7 @@ namespace Pinakas { namespace Backend
   Matrix<T> operator/(const Matrix<T>& A, const Matrix<T>& B)
   {
     #ifdef PARALLILOS_USE_PARALLELISM
-      return div_mat_simd(A, B);
+      // return div_mat_simd(A, B);
     #else
       return div_mat_sequ(A, B);
     #endif
@@ -3096,13 +3059,13 @@ namespace Pinakas { namespace Backend
     // plot all data sets
     gnuplot_pipeline << " -e \"set title \\\"gnuplot\\\"; plot 'gnuplot.data'";
     size_t k = 0;
-    for (std::string title : titles) {
+    for (const std::string& title : titles) {
       if (k)
         gnuplot_pipeline << ", ''";
       gnuplot_pipeline << " index " << k;
       if (lines)
         gnuplot_pipeline << " with lines";
-      gnuplot_pipeline << " title '" << title << '\'';
+      gnuplot_pipeline << " title '" << title.c_str() << '\'';
       k++;
     }
     gnuplot_pipeline << '"';
@@ -3241,45 +3204,3 @@ namespace Pinakas { namespace Backend
     return conj(fft(conj(std::move(spectrum)))) / spectrum.numel();
   }
 }}
-
-int main()
-{
-  using namespace Pinakas;
-  /*
-  size_t M = 3;
-  size_t N = 3;
-  Matrix<float> a(M, N, {0, 1});
-  Matrix<float> b(M, N, {0, 1});
-  Matrix<float> c(M, N);
-
-  Parallilos::add_arrays(a[0], b[0], c[0], a.numel());
-
-  std::cout << "c:\n" << c;
-  std::cout << "error:\n" << (c - (a + b));
-  //*/
-
-  //*
-  Matrix<float> A(10000, 1000, {0, 1});
-  Matrix<float> b(10000, 1000, {0, 1});
-
-  loop:
-    puts("sequential");
-    Chronometro::Stopwatch<> sw;
-    for (int i = 0; i < 1; ++i) {
-      Backend::add_mat_sequ(A, b);
-      //sw.lap();
-    }
-    sw.split();
-
-    puts(Parallilos::simd_properties<float>::set);
-    sw.reset();
-    for (int i = 0; i < 1; ++i) {
-      Backend::add_mat_simd(A, b);
-      //sw.lap();
-    }
-    sw.split();
-
-    std::cin.get();
-  goto loop;
-  //*/
-}
