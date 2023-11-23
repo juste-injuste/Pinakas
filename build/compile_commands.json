@@ -1,14 +1,8 @@
 [
 {
-  "directory": "C:/Users/justi/OneDrive - USherbrooke/Documents/github/Pinakas/build",
-  "command": "C:\\MinGW\\bin\\g++.exe  @CMakeFiles/Pinakas.dir/includes_CXX.rsp -g -o CMakeFiles\\Pinakas.dir\\src\\Pinakas.cpp.obj -c \"C:\\Users\\justi\\OneDrive - USherbrooke\\Documents\\github\\Pinakas\\src\\Pinakas.cpp\"",
-  "file": "C:/Users/justi/OneDrive - USherbrooke/Documents/github/Pinakas/src/Pinakas.cpp",
-  "output": "CMakeFiles/Pinakas.dir/src/Pinakas.cpp.obj"
-},
-{
-  "directory": "C:/Users/justi/OneDrive - USherbrooke/Documents/github/Pinakas/build",
-  "command": "C:\\MinGW\\bin\\g++.exe  @CMakeFiles/Pinakas_main.dir/includes_CXX.rsp -g -o CMakeFiles\\Pinakas_main.dir\\test\\main.cpp.obj -c \"C:\\Users\\justi\\OneDrive - USherbrooke\\Documents\\github\\Pinakas\\test\\main.cpp\"",
-  "file": "C:/Users/justi/OneDrive - USherbrooke/Documents/github/Pinakas/test/main.cpp",
-  "output": "CMakeFiles/Pinakas_main.dir/test/main.cpp.obj"
+  "directory": "C:/code/juste-injuste/Pinakas/build",
+  "command": "C:\\msys64\\ucrt64\\bin\\g++.exe  @CMakeFiles/Pinakas.dir/includes_CXX.rsp  -O3 -g3 -Wall -Wextra -Wpedantic -pedantic -march=native -g -o CMakeFiles\\Pinakas.dir\\example\\main.cpp.obj -c C:\\code\\juste-injuste\\Pinakas\\example\\main.cpp",
+  "file": "C:/code/juste-injuste/Pinakas/example/main.cpp",
+  "output": "CMakeFiles/Pinakas.dir/example/main.cpp.obj"
 }
 ]

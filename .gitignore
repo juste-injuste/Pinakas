@@ -30,6 +30,11 @@
 # Custom data
 *.data
 
+# Folders
+**/.vscode/**
+**/output/**
+**/ignore/**
+**/build/**
 
 *.json
 include/Chronometro.hpp
