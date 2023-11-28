@@ -54,17 +54,17 @@ Solve the linear system Rx = Qt*b using back substitution.
 
 int main()
 {
-    using namespace Pinakas;
+  using namespace Pinakas;
 
-    Matrix<double> xdata = linspace(0, 1, 10).transpose();
+  Matrix<double> xdata = linspace(0, 1, 10).transpose();
 
-    Matrix<double> b = 2*(xdata^2) - 0.5*xdata + 1.5;
-    Matrix<double> A = {xdata^2, xdata^1, xdata^0};
+  Matrix<double> b = 2*(xdata^2) - 0.5*xdata + 1.5;
+  Matrix<double> A = {xdata^2, xdata^1, xdata^0};
 
-    // solve Ax = b   ->   x = b/A
-    Matrix<double> x = div(b, A);
+  // solve Ax = b   ->   x = b/A
+  Matrix<double> x = div(b, A);
 
-    std::cout << "x:\n" << x;
+  std::cout << "x:\n" << x;
 }
 ```
 Console output:
