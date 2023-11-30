@@ -83,10 +83,10 @@ namespace Pinakas
   class Slice;
   //
   class Range;
-  //
-  typedef std::pair<const Matrix<double>&, const Matrix<double>&> DataSet;
-  typedef std::complex<double> complex;
 
+  struct Set;
+
+  typedef std::complex<double> complex;
 
   namespace Backend
   {
@@ -97,13 +97,15 @@ namespace Pinakas
       Global::err << "error: " << caller << ": " << message << std::endl;
     }
 
-#   define PINAKAS_ERROR(...)                 \
-      [&](const char* caller) noexcept        \
-      {                                       \
-        static char buffer[255];              \
-        sprintf(buffer, __VA_ARGS__);         \
-        Backend::error_print(caller, buffer); \
+#   define PINAKAS_ERROR(...)                   \
+      [&](const char* caller) noexcept          \
+      {                                         \
+        static char buffer[255];                \
+        sprintf(buffer, __VA_ARGS__);           \
+        Backend::error_print(caller, buffer);   \
       }(__func__)
+
+#   define PINAKAS_ERROR_IF(condition, ...) if (condition) PINAKAS_ERROR(__VA_ARGS__)
 
     void warning_print(const char* caller, const char* message) noexcept
     {
@@ -112,13 +114,15 @@ namespace Pinakas
       Global::wrn << "warning: " << caller << ": " << message << std::endl;
     }
 
-#   define PINAKAS_WARNING(...)                 \
-      [&](const char* caller) noexcept          \
-      {                                         \
-        static char buffer[255];                \
-        sprintf(buffer, __VA_ARGS__);           \
-        Backend::warning_print(caller, buffer); \
+#   define PINAKAS_WARNING(...)                   \
+      [&](const char* caller) noexcept            \
+      {                                           \
+        static char buffer[255];                  \
+        sprintf(buffer, __VA_ARGS__);             \
+        Backend::warning_print(caller, buffer);   \
       }(__func__)
+
+#   define PINAKAS_WARNING_IF(condition, ...) if (condition) PINAKAS_WARNING(__VA_ARGS__)        
 
 # if defined(PINAKAS_LOGGING)
     void log_print(const char* caller, const char* message) noexcept
@@ -128,15 +132,18 @@ namespace Pinakas
       Global::log << caller << ": " << message << std::endl;
     }
 
-#   define PINAKAS_LOG(...)                 \
-      [&](const char* caller) noexcept      \
-      {                                     \
-        static char buffer[255];            \
-        sprintf(buffer, __VA_ARGS__);       \
-        Backend::log_print(caller, buffer); \
+#   define PINAKAS_LOG(...)                  \
+      [&](const char* caller) noexcept       \
+      {                                      \
+        static char buffer[255];             \
+        sprintf(buffer, __VA_ARGS__);        \
+        Backend::log_print(caller, buffer);  \
       }(__func__)
+
+#   define PINAKAS_LOG_IF(condition, ...) if (condition) PINAKAS_LOG(__VA_ARGS__)
 # else
-#   define PINAKAS_LOG(...) void(0)
+#   define PINAKAS_LOG(...)               void(0)
+#   define PINAKAS_LOG_IF(condition, ...) void(0)
 # endif
   
     // gives the common type T1 and T2 can be implicitely converted to
@@ -342,7 +349,7 @@ namespace Pinakas
   template<typename T>
   Matrix<double> resample(const Matrix<T>& data, const unsigned L, const unsigned keep=2, const double alpha=3.5, const bool tail=false);
 // --------------------------------------------------------------------------------------
-  void plot(List<std::string> titles, List<DataSet> data_sets, bool persistent = true, bool remove = true, bool pause = false, bool lines = true);
+  void plot(List<Set> data_sets, bool persistent = true, bool remove = true, bool pause = false, bool lines = true);
 // --------------------------------------------------------------------------------------
   template<typename T>
   Matrix<double> abs(const Matrix<T>& A);
@@ -361,12 +368,6 @@ namespace Pinakas
       unsigned M, N, numel;
       inline bool operator==(const Size other) const noexcept;
       inline bool operator!=(const Size other) const noexcept;
-    };
-
-    struct Random final {
-      Random(const double min, const double max) noexcept;
-      const double min_;
-      const double max_;
     };
 
     template<typename T>
@@ -512,6 +513,13 @@ namespace Pinakas
       inline Iterator<const T> end() const noexcept;
     };
 
+    struct Random final
+    {
+      Random(const double min, const double max) noexcept;
+      const double min_;
+      const double max_;
+    };
+
     class Range final
     {
     public:
@@ -536,6 +544,19 @@ namespace Pinakas
     public:
       inline Iterator begin() const noexcept;
       inline Iterator end() const noexcept;
+    };
+
+    struct Set final
+    {
+      Set(const char* name, const Matrix<double>& x, const Matrix<double>& y) noexcept;
+      Set(const char* name, const Matrix<double>& y) noexcept;
+    private:
+      Matrix<double> x_if_temp;
+      Matrix<double> y_if_temp;
+    public:
+      const char* const name;
+      const Matrix<double>& x;
+      const Matrix<double>& y;
     };
 // --Pinakas library: operator overloads forward declarations----------------------------
 

@@ -280,7 +280,9 @@ namespace Pinakas
     // positive and negative bound checking
     if ((k < -signed(size_.numel)) || (signed(size_.numel) <= k))
     {
-      PINAKAS_WARNING("(%d) out of bound %u, wrapped around to (%d)", k, size_.numel, k %= signed(size_.numel));
+      auto old_k = k;
+      k %= signed(size_.numel);
+      PINAKAS_WARNING("(%d) out of bound %u, wrapped around to (%d)", old_k, size_.numel, k);
     }
 
     // convert negative indices
@@ -295,7 +297,9 @@ namespace Pinakas
     // positive and negative bound checking
     if ((k < -signed(size_.numel)) || (signed(size_.numel) <= k))
     {
-      PINAKAS_WARNING("(%d) out of bound %u, wrapped around to (%d)", k, size_.numel, k %= signed(size_.numel));
+      auto old_k = k;
+      k %= signed(size_.numel);
+      PINAKAS_WARNING("(%d) out of bound %u, wrapped around to (%d)", old_k, size_.numel, k);
     }
 
     // convert negative indices
@@ -310,13 +314,17 @@ namespace Pinakas
     // positive and negative bound checking
     if ((j < -signed(size_.M)) || (signed(size_.M) <= j))
     {
-      PINAKAS_WARNING("(%d, _) out of bound %u, wrapped around to (%d, _)", j, size_.M, j %= signed(size_.M));
+      auto old_j = j;
+      j %= signed(size_.M);
+      PINAKAS_WARNING("(%d, _) out of bound %u, wrapped around to (%d, _)", old_j, size_.M, j);
     }
 
     // positive and negative bound checking
     if ((i < -signed(size_.N)) || (signed(size_.N) <= i))
     {
-      PINAKAS_WARNING("(_, %d) out of bound %u, wrapped around to (_, %d)", i, size_.N, i %= signed(size_.N));
+      auto old_i = i;
+      i %= signed(size_.N);
+      PINAKAS_WARNING("(_, %d) out of bound %u, wrapped around to (_, %d)", old_i, size_.N, i);
     }
 
     // convert negative indices
@@ -332,13 +340,17 @@ namespace Pinakas
     // positive and negative bound checking
     if ((j < -signed(size_.M)) || (signed(size_.M) <= j))
     {
-      PINAKAS_WARNING("(%d, _) out of bound %u, wrapped around to (%d, _)", j, size_.M, j %= signed(size_.M));
+      auto old_j = j;
+      j %= signed(size_.M);
+      PINAKAS_WARNING("(%d, _) out of bound %u, wrapped around to (%d, _)", old_j, size_.M, j);
     }
 
     // positive and negative bound checking
     if ((i < -signed(size_.N)) || (signed(size_.N) <= i))
     {
-      PINAKAS_WARNING("(_, %d) out of bound %u, wrapped around to (_, %d)", i, size_.N, i %= signed(size_.N));
+      auto old_i = i;
+      i %= signed(size_.N);
+      PINAKAS_WARNING("(_, %d) out of bound %u, wrapped around to (_, %d)", old_i, size_.N, i);
     }
 
     // convert negative indices
@@ -353,33 +365,41 @@ namespace Pinakas
   {
     if ((rows.step != 1) || (cols.step != 1))
     {
-      PINAKAS_WARNING("Range step not equal to 1 note implement yet, step = 1 used instead");
       rows.step = 1;
       cols.step = 1;
+      PINAKAS_WARNING("Range step not equal to 1 note implement yet, step = 1 used instead");
     }
 
     // positive and negative bound checking
     if ((rows.start < -signed(size_.M)) || (signed(size_.M) <= rows.start))
     {
-      PINAKAS_WARNING("(%d, _) out of bound %u, wrapped around to (%d, _)", rows.start, size_.M, rows.start %= signed(size_.M));
+      auto rows_start_old = rows.start;
+      rows.start %= signed(size_.M);
+      PINAKAS_WARNING("(%d, _) out of bound %u, wrapped around to (%d, _)", rows_start_old, size_.M, rows.start);
     }
 
     // positive and negative bound checking
     if ((rows.stop < -signed(size_.M)) || (signed(size_.M) <= rows.stop))
     {
-      PINAKAS_WARNING("(%d, _) out of bound %u, wrapped around to (%d, _)", rows.stop, size_.M, rows.stop %= signed(size_.M));
+      auto rows_stop_old = rows.stop;
+      rows.stop %= signed(size_.M);
+      PINAKAS_WARNING("(%d, _) out of bound %u, wrapped around to (%d, _)", rows_stop_old, size_.M, rows.stop);
     }
 
     // positive and negative bound checking
     if ((cols.start < -signed(size_.N)) || (signed(size_.N) <= cols.start))
     {
-      PINAKAS_WARNING("(_, %d) out of bound %u, wrapped around to (_, %d)", cols.start, size_.N, cols.start %= signed(size_.N));
+      auto cols_start_old = cols.start;
+      cols.start %= signed(size_.N);
+      PINAKAS_WARNING("(_, %d) out of bound %u, wrapped around to (_, %d)", cols_start_old, size_.N, cols.start);
     }
 
     // positive and negative bound checking
     if ((cols.stop < -signed(size_.N)) || (signed(size_.N) <= cols.stop))
     {
-      PINAKAS_WARNING("(_, %d) out of bound %u, wrapped around to (_, %d)", cols.stop, size_.N, cols.stop %= signed(size_.N));
+      auto cols_stop_old = cols.stop;
+      cols.stop %= signed(size_.N);
+      PINAKAS_WARNING("(_, %d) out of bound %u, wrapped around to (_, %d)", cols_stop_old, size_.N, cols.stop);
     }
 
     // convert negative indices
@@ -406,28 +426,37 @@ namespace Pinakas
   template<typename T>
   Slice<const T> Matrix<T>::operator()(Range rows, Range cols) const noexcept
   {
+
     // positive and negative bound checking
     if ((rows.start < -signed(size_.M)) || (signed(size_.M) <= rows.start))
     {
-      PINAKAS_WARNING("(%d, _) out of bound %u, wrapped around to (%d, _)", rows.start, size_.M, rows.start %= signed(size_.M));
+      auto rows_start_old = rows.start;
+      rows.start %= signed(size_.M);
+      PINAKAS_WARNING("(%d, _) out of bound %u, wrapped around to (%d, _)", rows_start_old, size_.M, rows.start);
     }
 
     // positive and negative bound checking
     if ((rows.stop < -signed(size_.M)) || (signed(size_.M) <= rows.stop))
     {
-      PINAKAS_WARNING("(%d, _) out of bound %u, wrapped around to (%d, _)", rows.stop, size_.M, rows.stop %= signed(size_.M));
+      auto rows_stop_old = rows.stop;
+      rows.stop %= signed(size_.M);
+      PINAKAS_WARNING("(%d, _) out of bound %u, wrapped around to (%d, _)", rows_stop_old, size_.M, rows.stop);
     }
 
     // positive and negative bound checking
     if ((cols.start < -signed(size_.N)) || (signed(size_.N) <= cols.start))
     {
-      PINAKAS_WARNING("(_, %d) out of bound %u, wrapped around to (_, %d)", cols.start, size_.N, cols.start %= signed(size_.N));
+      auto cols_start_old = cols.start;
+      cols.start %= signed(size_.N);
+      PINAKAS_WARNING("(_, %d) out of bound %u, wrapped around to (_, %d)", cols_start_old, size_.N, cols.start);
     }
 
     // positive and negative bound checking
     if ((cols.stop < -signed(size_.N)) || (signed(size_.N) <= cols.stop))
     {
-      PINAKAS_WARNING("(_, %d) out of bound %u, wrapped around to (_, %d)", cols.stop, size_.N, cols.stop %= signed(size_.N));
+      auto cols_stop_old = cols.stop;
+      cols.stop %= signed(size_.N);
+      PINAKAS_WARNING("(_, %d) out of bound %u, wrapped around to (_, %d)", cols_stop_old, size_.N, cols.stop);
     }
 
     // convert negative indices
@@ -668,7 +697,9 @@ namespace Pinakas
     // positive and negative bound checking
     if ((k < -signed(size_.numel)) || (signed(size_.numel) <= k))
     {
-      PINAKAS_WARNING("(%d) out of bound %u, wrapped around to (%d)", k, size_.numel, k %= signed(size_.numel));
+      auto old_k = k;
+      k %= signed(size_.numel);
+      PINAKAS_WARNING("(%d) out of bound %u, wrapped around to (%d)", old_k, size_.numel, k);
     }
 
     // convert negative indices
@@ -687,7 +718,9 @@ namespace Pinakas
     // positive and negative bound checking
     if ((k < -signed(size_.numel)) || (signed(size_.numel) <= k))
     {
-      PINAKAS_WARNING("(%d) out of bound %u, wrapped around to (%d)", k, size_.numel, k %= signed(size_.numel));
+      auto old_k = k;
+      k %= signed(size_.numel);
+      PINAKAS_WARNING("(%d) out of bound %u, wrapped around to (%d)", old_k, size_.numel, k);
     }
 
     // convert negative indices
@@ -706,13 +739,17 @@ namespace Pinakas
     // positive and negative bound checking
     if ((j < -signed(size_.M)) || (signed(size_.M) <= j))
     {
-      PINAKAS_WARNING("(%d, _) out of bound %u, wrapped around to (%d, _)", j, size_.M, j %= signed(size_.M));
+      auto j_old = j;
+      j %= signed(size_.M);
+      PINAKAS_WARNING("(%d, _) out of bound %u, wrapped around to (%d, _)", j_old, size_.M, j);
     }
 
     // positive and negative bound checking
     if ((i < -signed(size_.N)) || (signed(size_.N) <= i))
     {
-      PINAKAS_WARNING("(_, %d) out of bound %u, wrapped around to (_, %d)", i, size_.N, i %= signed(size_.N));
+      auto i_old = i;
+      i %= signed(size_.N);
+      PINAKAS_WARNING("(_, %d) out of bound %u, wrapped around to (_, %d)", i_old, size_.N, i);
     }
 
     // convert negative indices
@@ -728,13 +765,17 @@ namespace Pinakas
     // positive and negative bound checking
     if ((j < -signed(size_.M)) || (signed(size_.M) <= j))
     {
-      PINAKAS_WARNING("(%d, _) out of bound %u, wrapped around to (%d, _)", j, size_.M, j %= signed(size_.M));
+      auto j_old = j;
+      j %= signed(size_.M);
+      PINAKAS_WARNING("(%d, _) out of bound %u, wrapped around to (%d, _)", j_old, size_.M, j);
     }
 
     // positive and negative bound checking
     if ((i < -signed(size_.N)) || (signed(size_.N) <= i))
     {
-      PINAKAS_WARNING("(_, %d) out of bound %u, wrapped around to (_, %d)", i, size_.N, i %= signed(size_.N));
+      auto i_old = i;
+      i %= signed(size_.N);
+      PINAKAS_WARNING("(_, %d) out of bound %u, wrapped around to (_, %d)", i_old, size_.N, i);
     }
 
     // convert negative indices
@@ -847,6 +888,19 @@ namespace Pinakas
   {
       return Iterator(stop, step);
   }
+
+  Set::Set(const char* name, const Matrix<double>& x, const Matrix<double>& y) noexcept :
+    name{name},
+    x{x},
+    y{y}
+  {}
+
+  Set::Set(const char* name, const Matrix<double>& y) noexcept :
+    x_if_temp{linspace(0, 1, y.numel())},
+    name{name},
+    x{x_if_temp},
+    y{y}
+  {}
 // --------------------------------------------------------------------------------------
   template<typename T1, typename T2>
   Matrix<T1>& add_mat_inplace(Matrix<T1>& A, const Matrix<T2>& B)
@@ -2457,10 +2511,7 @@ namespace Pinakas
       return result;
     }
 
-    if ((data_x.M() != 1) || (data_y.M() != 1))
-    {
-      PINAKAS_WARNING("data is interpreted as a horizontal 1-dimensional matrix");
-    }
+    PINAKAS_WARNING_IF((data_x.M() != 1) || (data_y.M() != 1), "data is interpreted as a horizontal 1-dimensional matrix");
 
     const unsigned n = data_x.numel();
 
@@ -2504,10 +2555,7 @@ namespace Pinakas
       return result;
     }
 
-    if ((data_x.M() != 1) || (data_y.M() != 1))
-    {
-      PINAKAS_WARNING("data is interpreted as a horizontal 1-dimensional matrix");
-    }
+    PINAKAS_WARNING_IF((data_x.M() != 1) || (data_y.M() != 1), "data is interpreted as a horizontal 1-dimensional matrix");
 
     const unsigned n = data_x.numel();
 
@@ -2692,10 +2740,7 @@ namespace Pinakas
       return result;
     }
 
-    if (A.M() != 1)
-    {
-      PINAKAS_WARNING("'A' should be a horizontal vector");
-    }
+    PINAKAS_WARNING_IF(A.M() != 1, "'A' should be a horizontal vector");
 
     Matrix<double> rxx_ = rxx(A, p+1);
 
@@ -3086,7 +3131,7 @@ namespace Pinakas
   }
 
   __attribute__((optimize("O0")))
-  void plot(List<std::string> titles, List<DataSet> data_sets, bool persistent, bool remove, bool pause, bool lines)
+  void plot(List<Set> data_sets, bool persistent, bool remove, bool pause, bool lines)
   {
     // validate that gnuplot is in system path
     static bool gnuplot_on_system_path = false;
@@ -3098,20 +3143,13 @@ namespace Pinakas
     gnuplot_on_system_path = true;
 
     // validate that x and y have the same number of elements
-    for (auto& data_set : data_sets)
+    for (const auto& data_set : data_sets)
     {
-      const Matrix<double>& xdata = data_set.first;
-      const Matrix<double>& ydata = data_set.second;
-      if (xdata.numel() != ydata.numel())
+      if (data_set.x.numel() != data_set.y.numel())
       {
-        PINAKAS_ERROR("number of element mismatch (x has %u elements, y has %u elements)", xdata.numel(), ydata.numel());
+        PINAKAS_ERROR("number of element mismatch (x has %u elements, y has %u elements)", data_set.x.numel(), data_set.y.numel());
         return;
       }
-    }
-
-    if (titles.size() != data_sets.size())
-    {
-      PINAKAS_WARNING("number of titles does not equal number of data sets");
     }
 
     // create temporary file
@@ -3127,12 +3165,9 @@ namespace Pinakas
     // write x and y data to file for each data set
     for (const auto& data_set : data_sets)
     {
-      const auto& x = data_set.first;
-      const auto& y = data_set.second;
-
-      for (unsigned k = 0; k < x.numel(); ++k)
+      for (unsigned k = 0; k < data_set.x.numel(); ++k)
       {
-        file << x[0][k] << ' ' << y[0][k] << '\n';
+        file << data_set.x[0][k] << ' ' << data_set.y[0][k] << '\n';
       }
 
       // separate data sets
@@ -3155,13 +3190,13 @@ namespace Pinakas
     // plot all data sets
     gnuplot_pipeline << " -e \"set title \\\"gnuplot\\\"; plot 'gnuplot.txt'";
     unsigned k = 0;
-    for (const std::string& title : titles) {
+    for (const auto& data_set : data_sets) {
       if (k)
         gnuplot_pipeline << ", ''";
       gnuplot_pipeline << " index " << k;
       if (lines)
         gnuplot_pipeline << " with lines";
-      gnuplot_pipeline << " title '" << title.c_str() << '\'';
+      gnuplot_pipeline << " title '" << data_set.name << '\'';
       k++;
     }
     gnuplot_pipeline << '"';
