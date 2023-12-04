@@ -48,7 +48,7 @@ namespace Pinakas
       // store value
       for (unsigned k = 0; k < size_.numel; ++k)
       {
-        data_[k] = other[0][k];
+        data_[k] = other.data()[k];
       }
     }
 
@@ -66,24 +66,6 @@ namespace Pinakas
     PINAKAS_LOG("moved %ux%u", size_.M, size_.N);
   }
 
-  template<typename T> template<typename T2>
-  Matrix<T>::Matrix(const Matrix<T2>& other)
-  {
-    if (unsigned(this) != unsigned(&other))
-    {
-      // allocate memory
-      allocate(other.M(), other.N());
-
-      // store value
-      for (unsigned k = 0; k < size_.numel; ++k)
-      {
-        data_[k] = other[0][k];
-      }
-    }
-
-    PINAKAS_LOG("copy converted %ux%u", size_.M, size_.N);
-  }
-
   template<typename T>
   Matrix<T>::Matrix(const unsigned M, const unsigned N)
   {
@@ -94,8 +76,8 @@ namespace Pinakas
   }
 
   template<typename T>
-  Matrix<T>::Matrix(const Size size)
-    : Matrix(size.M, size.N)
+  Matrix<T>::Matrix(const Size size) :
+    Matrix(size.M, size.N)
   {}
 
   template<typename T>
@@ -109,10 +91,6 @@ namespace Pinakas
     {
       data = value;
     }
-    // for (unsigned k = 0; k < size_.numel; ++k)
-    // {
-    //   data_[k] = value;
-    // }
 
     PINAKAS_LOG("created %ux%u and filled", size_.M, size_.N);
   }
@@ -131,18 +109,20 @@ namespace Pinakas
     // random number generator
     std::random_device device;
     std::mt19937 generator(device());
-    std::uniform_real_distribution<> uniform_distribution(range.min_, range.max_);
+    std::uniform_real_distribution<> uniform_distribution(range.min_, range.max_ + std::is_integral<T>::value);
 
     // assign random value to matrix
     for (unsigned k = 0; k < size_.numel; ++k)
+    {
       data_[k] = uniform_distribution(generator);
+    }
       
-    PINAKAS_LOG("created %ux%u from range [%f, %f]", M, N, range.min_, range.max_);
+    PINAKAS_LOG("created %ux%u from range [%f, %f]", M, N, range.min_, range.max_ + std::is_integral<T>::value);
   }
 
   template<typename T>
-  Matrix<T>::Matrix(const Size size, const Random range)
-    : Matrix(size.M, size.N, range)
+  Matrix<T>::Matrix(const Size size, const Random range) :
+    Matrix(size.M, size.N, range)
   {}
 
   template<typename T>
@@ -154,7 +134,9 @@ namespace Pinakas
     // store values
     unsigned x = 0;
     for (T value : list)
+    {
       data_[x++] = value;
+    }
 
     PINAKAS_LOG("created %ux%u", size_.M, size_.N);
   }
@@ -255,35 +237,26 @@ namespace Pinakas
 
     // validate memory allocation
     if (data_ == nullptr)
+    {
       throw std::bad_alloc();
+    }
 
     // save size information
-    size_ = {M, N, M * N};
+    size_ = Size{M, N, M * N};
   }
 // --------------------------------------------------------------------------------------
-
   template<typename T>
-  T* Matrix<T>::operator[](const unsigned j) noexcept
+  T& Matrix<T>::operator()(signed int k) noexcept
   {
-    return data_ + (j * size_.N);
-  }
-
-  template<typename T>
-  const T* Matrix<T>::operator[](const unsigned j) const noexcept
-  {
-    return data_ + (j * size_.N);
-  }
-
-  template<typename T>
-  T& Matrix<T>::operator()(signed int k)
-  {
+# if defined PINAKAS_DEBUG_MODE
     // positive and negative bound checking
     if ((k < -signed(size_.numel)) || (signed(size_.numel) <= k))
     {
-      auto old_k = k;
+      auto k_old = k;
       k %= signed(size_.numel);
-      PINAKAS_WARNING("(%d) out of bound %u, wrapped around to (%d)", old_k, size_.numel, k);
+      PINAKAS_WARNING("(%d) out of bound %u, wrapped around to (%d)", k_old, size_.numel, k);
     }
+#endif
 
     // convert negative indices
     k += (k < 0) * size_.numel;
@@ -292,15 +265,17 @@ namespace Pinakas
   }
 
   template<typename T>
-  const T& Matrix<T>::operator()(signed int k) const
+  const T& Matrix<T>::operator()(signed int k) const noexcept
   {
+# if defined PINAKAS_DEBUG_MODE
     // positive and negative bound checking
     if ((k < -signed(size_.numel)) || (signed(size_.numel) <= k))
     {
-      auto old_k = k;
+      auto k_old = k;
       k %= signed(size_.numel);
-      PINAKAS_WARNING("(%d) out of bound %u, wrapped around to (%d)", old_k, size_.numel, k);
+      PINAKAS_WARNING("(%d) out of bound %u, wrapped around to (%d)", k_old, size_.numel, k);
     }
+#endif
 
     // convert negative indices
     k += (k < 0) * size_.numel;
@@ -309,23 +284,25 @@ namespace Pinakas
   }
 
   template<typename T>
-  T& Matrix<T>::operator()(signed int j, signed int i)
+  T& Matrix<T>::operator()(signed int j, signed int i) noexcept
   {
+# if defined PINAKAS_DEBUG_MODE
     // positive and negative bound checking
     if ((j < -signed(size_.M)) || (signed(size_.M) <= j))
     {
-      auto old_j = j;
+      auto j_old = j;
       j %= signed(size_.M);
-      PINAKAS_WARNING("(%d, _) out of bound %u, wrapped around to (%d, _)", old_j, size_.M, j);
+      PINAKAS_WARNING("(%d, _) out of bound %u, wrapped around to (%d, _)", j_old, size_.M, j);
     }
 
     // positive and negative bound checking
     if ((i < -signed(size_.N)) || (signed(size_.N) <= i))
     {
-      auto old_i = i;
+      auto i_old = i;
       i %= signed(size_.N);
-      PINAKAS_WARNING("(_, %d) out of bound %u, wrapped around to (_, %d)", old_i, size_.N, i);
+      PINAKAS_WARNING("(_, %d) out of bound %u, wrapped around to (_, %d)", i_old, size_.N, i);
     }
+#endif
 
     // convert negative indices
     j += (j < 0) * size_.M;
@@ -335,23 +312,25 @@ namespace Pinakas
   }
 
   template<typename T>
-  const T& Matrix<T>::operator()(signed int j, signed int i) const
+  const T& Matrix<T>::operator()(signed int j, signed int i) const noexcept
   {
+# if defined PINAKAS_DEBUG_MODE
     // positive and negative bound checking
     if ((j < -signed(size_.M)) || (signed(size_.M) <= j))
     {
-      auto old_j = j;
+      auto j_old = j;
       j %= signed(size_.M);
-      PINAKAS_WARNING("(%d, _) out of bound %u, wrapped around to (%d, _)", old_j, size_.M, j);
+      PINAKAS_WARNING("(%d, _) out of bound %u, wrapped around to (%d, _)", j_old, size_.M, j);
     }
 
     // positive and negative bound checking
     if ((i < -signed(size_.N)) || (signed(size_.N) <= i))
     {
-      auto old_i = i;
+      auto i_old = i;
       i %= signed(size_.N);
-      PINAKAS_WARNING("(_, %d) out of bound %u, wrapped around to (_, %d)", old_i, size_.N, i);
+      PINAKAS_WARNING("(_, %d) out of bound %u, wrapped around to (_, %d)", i_old, size_.N, i);
     }
+#endif
 
     // convert negative indices
     j += (j < 0) * size_.M;
@@ -367,9 +346,10 @@ namespace Pinakas
     {
       rows.step = 1;
       cols.step = 1;
-      PINAKAS_WARNING("Range step not equal to 1 note implement yet, step = 1 used instead");
+      PINAKAS_WARNING("Range step not equal to 1 not implement yet, step = 1 used instead");
     }
 
+# if defined PINAKAS_DEBUG_MODE
     // positive and negative bound checking
     if ((rows.start < -signed(size_.M)) || (signed(size_.M) <= rows.start))
     {
@@ -401,6 +381,7 @@ namespace Pinakas
       cols.stop %= signed(size_.N);
       PINAKAS_WARNING("(_, %d) out of bound %u, wrapped around to (_, %d)", cols_stop_old, size_.N, cols.stop);
     }
+#endif
 
     // convert negative indices
     rows.start += (rows.start < 0) * size_.M;
@@ -410,23 +391,11 @@ namespace Pinakas
 
     return Slice<T>(data_, size_, rows, cols);
   }
-  
-  template<typename T>
-  Slice<T> Matrix<T>::operator()(Range rows, signed int col) noexcept
-  {
-    return operator()(rows, {col, col});
-  }
-  
-  template<typename T>
-  Slice<T> Matrix<T>::operator()(signed int row, Range cols) noexcept
-  {
-    return operator()({row, row}, cols);
-  }
 
   template<typename T>
   Slice<const T> Matrix<T>::operator()(Range rows, Range cols) const noexcept
   {
-
+# if defined PINAKAS_DEBUG_MODE
     // positive and negative bound checking
     if ((rows.start < -signed(size_.M)) || (signed(size_.M) <= rows.start))
     {
@@ -458,6 +427,7 @@ namespace Pinakas
       cols.stop %= signed(size_.N);
       PINAKAS_WARNING("(_, %d) out of bound %u, wrapped around to (_, %d)", cols_stop_old, size_.N, cols.stop);
     }
+#endif
 
     // convert negative indices
     rows.start += (rows.start < 0) * size_.M;
@@ -467,45 +437,9 @@ namespace Pinakas
 
     return Slice<const T>(data_, size_, rows, cols);
   }
-  
-  template<typename T>
-  Slice<const T> Matrix<T>::operator()(Range rows, signed int col) const noexcept
-  {
-    return operator()(rows, {col, col});
-  }
-  
-  template<typename T>
-  Slice<const T> Matrix<T>::operator()(signed int row, Range cols) const noexcept
-  {
-    return operator()({row, row}, cols);
-  }
 // --------------------------------------------------------------------------------------
   template<typename T>
-  Size Matrix<T>::size(void) const & noexcept
-  {
-    return size_;
-  }
-
-  template<typename T>
-  unsigned Matrix<T>::numel(void) const & noexcept
-  {
-    return size_.numel;
-  }
-
-  template<typename T>
-  unsigned Matrix<T>::M(void) const & noexcept
-  {
-    return size_.M;
-  }
-
-  template<typename T>
-  unsigned Matrix<T>::N(void) const & noexcept
-  {
-    return size_.N;
-  }
-// --------------------------------------------------------------------------------------
-  template<typename T>
-  Matrix<T>& Matrix<T>::operator=(const Matrix<T>& other) &
+  Matrix<T>& Matrix<T>::operator=(const Matrix<T>& other)
   {
     PINAKAS_LOG("copy assigned");
 
@@ -517,13 +451,13 @@ namespace Pinakas
 
       // store values
       for (unsigned k = 0; k < size_.numel; ++k)
-        data_[k] = other[0][k];
+        data_[k] = other.data()[k];
     }
     return *this;
   }
 
   template<typename T>
-  Matrix<T>& Matrix<T>::operator=(Matrix<T>&& other) & noexcept
+  Matrix<T>& Matrix<T>::operator=(Matrix<T>&& other) noexcept
   {
     if (other.data_ != nullptr)
     {
@@ -541,26 +475,8 @@ namespace Pinakas
     return *this;
   }
 
-  template<typename T> template<typename T2>
-  Matrix<T>& Matrix<T>::operator=(const Matrix<T2>& other) &
-  {
-    PINAKAS_LOG("conversion assigned");
-
-    // allocate memory if necessary
-    if ((size_ != other.size_) ||!data_)
-    {
-      allocate(other.size_.M, other.size_.N);
-    }
-
-    // store values
-    for (unsigned k = 0; k < size_.numel; ++k)
-      data_[k] = other[0][k];
-
-    return *this;
-  }
-
   template<typename T>
-  Matrix<T>& Matrix<T>::operator=(const T value) & noexcept
+  Matrix<T>& Matrix<T>::operator=(const T value) noexcept
   {
     PINAKAS_LOG("filled");
 
@@ -569,36 +485,6 @@ namespace Pinakas
       data_[k] = value;
 
     return *this;
-  }
-
-  template<typename T>
-  Matrix<T>::operator unsigned () const noexcept
-  {
-    return size_.numel;
-  }
-// --------------------------------------------------------------------------------------
-  template<typename T>
-  typename Matrix<T>::iterator Matrix<T>::begin(void) noexcept
-  {
-    return data_;
-  }
-
-  template<typename T>
-  typename Matrix<T>::iterator Matrix<T>::end(void) noexcept
-  {
-    return data_ + size_.numel;
-  }
-
-  template<typename T>
-  typename Matrix<T>::const_iterator Matrix<T>::begin(void) const noexcept
-  {
-    return data_;
-  }
-
-  template<typename T>
-  typename Matrix<T>::const_iterator Matrix<T>::end(void) const noexcept
-  {
-    return data_ + size_.numel;
   }
 // --------------------------------------------------------------------------------------
   template<typename T>
@@ -649,58 +535,42 @@ namespace Pinakas
     }
     
     for (unsigned j = 0; j < size_.M; ++j)
+    {
       for (unsigned i = 0; i < size_.N; ++i)
+      {
         matrix_data_[i + j*matrix_M_ + offset_] = other[j][i];
+      }
+    }
+
+    return *this;
+  }
+  
+  template<typename T>
+  Slice<T>& Slice<T>::operator=(T value)
+  {
+    for (unsigned j = 0; j < size_.M; ++j)
+    {
+      for (unsigned i = 0; i < size_.N; ++i)
+      {
+        matrix_data_[i + j*matrix_M_ + offset_] = value;
+      }
+    }
 
     return *this;
   }
 
   template<typename T>
-  Size Slice<T>::size(void) const & noexcept
-  {
-    return size_;
-  }
-
-  template<typename T>
-  unsigned Slice<T>::M(void) const & noexcept
-  {
-    return size_.M;
-  }
-
-  template<typename T>
-  unsigned Slice<T>::N(void) const & noexcept
-  {
-    return size_.N;
-  }
-
-  template<typename T>
-  unsigned Slice<T>::numel(void) const & noexcept
-  {
-    return size_.numel;
-  }
-
-  template<typename T>
-  T* Slice<T>::operator[](const unsigned j) noexcept
-  {
-    return matrix_data_ + (j*matrix_M_ + offset_);
-  }
-
-  template<typename T>
-  const T* Slice<T>::operator[](const unsigned j) const noexcept
-  {
-    return matrix_data_ + (j*matrix_M_ + offset_);
-  }
-
-  template<typename T>
   T& Slice<T>::operator()(signed int k) noexcept
   {
+# if defined PINAKAS_DEBUG_MODE
     // positive and negative bound checking
     if ((k < -signed(size_.numel)) || (signed(size_.numel) <= k))
     {
-      auto old_k = k;
+      auto k_old = k;
       k %= signed(size_.numel);
-      PINAKAS_WARNING("(%d) out of bound %u, wrapped around to (%d)", old_k, size_.numel, k);
+      PINAKAS_WARNING("(%d) out of bound %u, wrapped around to (%d)", k_old, size_.numel, k);
     }
+#endif
 
     // convert negative indices
     k += (k < 0) * size_.numel;
@@ -715,20 +585,22 @@ namespace Pinakas
   template<typename T>
   const T& Slice<T>::operator()(signed int k) const noexcept
   {
+# if defined PINAKAS_DEBUG_MODE
     // positive and negative bound checking
     if ((k < -signed(size_.numel)) || (signed(size_.numel) <= k))
     {
-      auto old_k = k;
+      auto k_old = k;
       k %= signed(size_.numel);
-      PINAKAS_WARNING("(%d) out of bound %u, wrapped around to (%d)", old_k, size_.numel, k);
+      PINAKAS_WARNING("(%d) out of bound %u, wrapped around to (%d)", k_old, size_.numel, k);
     }
+#endif
 
     // convert negative indices
     k += (k < 0) * size_.numel;
 
     // compute 2D indices
-    const unsigned i = k % size_.N;
-    const unsigned j = k / size_.N;
+    unsigned i = k % size_.N;
+    unsigned j = k / size_.N;
 
     return matrix_data_[i + j*matrix_M_ + offset_];
   }
@@ -736,6 +608,7 @@ namespace Pinakas
   template<typename T>
   T& Slice<T>::operator()(signed int j, signed int i) noexcept
   {
+# if defined PINAKAS_DEBUG_MODE
     // positive and negative bound checking
     if ((j < -signed(size_.M)) || (signed(size_.M) <= j))
     {
@@ -751,6 +624,7 @@ namespace Pinakas
       i %= signed(size_.N);
       PINAKAS_WARNING("(_, %d) out of bound %u, wrapped around to (_, %d)", i_old, size_.N, i);
     }
+#endif
 
     // convert negative indices
     j += (j < 0) * size_.M;
@@ -762,6 +636,7 @@ namespace Pinakas
   template<typename T>
   const T& Slice<T>::operator()(signed int j, signed int i) const noexcept
   {
+# if defined PINAKAS_DEBUG_MODE
     // positive and negative bound checking
     if ((j < -signed(size_.M)) || (signed(size_.M) <= j))
     {
@@ -777,63 +652,13 @@ namespace Pinakas
       i %= signed(size_.N);
       PINAKAS_WARNING("(_, %d) out of bound %u, wrapped around to (_, %d)", i_old, size_.N, i);
     }
+#endif
 
     // convert negative indices
     j += (j < 0) * size_.M;
     i += (i < 0) * size_.N;
 
     return matrix_data_[i + j*matrix_M_ + offset_];
-  }
-  
-  template<typename T> template<typename T0>
-  Slice<T>::Iterator<T0>::Iterator(Slice<T>& slice, const int value) noexcept :
-    slice_(slice),
-    current_(value)
-  {}
-  
-  template<typename T> template<typename T0>
-  T0& Slice<T>::Iterator<T0>::operator*() const noexcept
-  {
-    const unsigned i = current_ % slice_.size_.N;
-    const unsigned j = current_ / slice_.size_.N;
-
-    return slice_.matrix_data_[i + j*slice_.matrix_M_ + slice_.offset_];
-  }
-
-  template<typename T> template<typename T0>
-  void Slice<T>::Iterator<T0>::operator++() noexcept
-  {
-    ++current_;
-  }
-
-  template<typename T> template<typename T0>
-  bool Slice<T>::Iterator<T0>::operator!=(const Iterator& other) const noexcept
-  {           
-    return current_ != other.current_;
-  }
-  
-  template<typename T>
-  typename Slice<T>::template Iterator<T> Slice<T>::begin() noexcept
-  {
-    return Iterator<T>(*this, 0);
-  }
-
-  template<typename T>
-  typename Slice<T>::template Iterator<T> Slice<T>::end() noexcept
-  {
-      return Iterator<T>(*this, size_.numel);
-  }
-  
-  template<typename T>
-  typename Slice<T>::template Iterator<const T> Slice<T>::begin() const noexcept
-  {
-    return Iterator<const T>(*this, 0);
-  }
-
-  template<typename T>
-  typename Slice<T>::template Iterator<const T> Slice<T>::end() const noexcept
-  {
-      return Iterator<const T>(*this, size_.numel);
   }
 // --------------------------------------------------------------------------------------
   Random::Random(const double min, const double max) noexcept :
@@ -913,7 +738,7 @@ namespace Pinakas
 
     const unsigned n = A.numel();
     for (unsigned k = 0; k < n; ++k)
-      A[0][k] += B[0][k];
+      A.data()[k] += B.data()[k];
 
     return A;
   }
@@ -923,7 +748,7 @@ namespace Pinakas
   {
     const unsigned n = A.numel();
     for (unsigned k = 0; k < n; ++k)
-      A[0][k] += B;
+      A.data()[k] += B;
 
     return A;
   }
@@ -933,11 +758,11 @@ namespace Pinakas
   {
     std::random_device device;
     std::mt19937 generator(device());
-    std::uniform_real_distribution<> uniform_distribution(B.min_, B.max_);
+    std::uniform_real_distribution<> uniform_distribution(B.min_, B.max_ + std::is_integral<T>::value);
 
     const unsigned n = A.numel();
     for (unsigned k = 0; k < n; ++k)
-      A[0][k] += uniform_distribution(generator);
+      A.data()[k] += uniform_distribution(generator);
 
     return A;
   }
@@ -945,18 +770,18 @@ namespace Pinakas
   template<typename T1, typename T2, typename T3>
   Matrix<T3> add_mat_sequ(const Matrix<T1>& A, const Matrix<T2>& B)
   {
-    Matrix<T3> R;
+    Matrix<T3> result;
     if (A.size() != B.size())
     {
       PINAKAS_ERROR("nonconformant arguments (A is %ux%u, B is %ux%u)", A.M(), A.N(), B.M(), B.N());
-      return R;
+      return result;
     }
 
-    R = Matrix<T3>(A.size());
+    result = Matrix<T3>(A.size());
 
     const T1* a = A.data();
     const T2* b = B.data();
-    T3* r = R.data();
+    T3* r = result.data();
 
     const unsigned n = A.numel();
     for (unsigned k = 0; k < n; ++k)
@@ -964,22 +789,22 @@ namespace Pinakas
       r[k] = a[k] + b[k];
     }
     
-    return R;
+    return result;
   }
 
   template<typename T1, typename T2, typename T3>
   Matrix<T3> add_val_sequ(const Matrix<T1>& A, const T2 B) noexcept
   {
-    Matrix<T3> R(A.size());
+    Matrix<T3> result(A.size());
 
     const T1* a = A.data();
-    T3* r = R.data();
+    T3* r = result.data();
 
     const unsigned n = A.numel();
     for (unsigned k = 0; k < n; ++k)
       r[k] = a[k] + B;
 
-    return R;
+    return result;
   }
 
   template<typename T1, typename T3>
@@ -987,172 +812,31 @@ namespace Pinakas
   {
     std::random_device device;
     std::mt19937 generator(device());
-    std::uniform_real_distribution<> uniform_distribution(B.min_, B.max_);
+    std::uniform_real_distribution<> uniform_distribution(B.min_, B.max_ + std::is_integral<T1>::value);
     
-    Matrix<T3> R(A.size());
+    Matrix<T3> result(A.size());
 
     const unsigned n = A.numel();
     for (unsigned k = 0; k < n; ++k)
-      R[0][k] = A[0][k] + uniform_distribution(generator);
+      result.data()[k] = A.data()[k] + uniform_distribution(generator);
 
-    return R;
-  }
-// --------------------------------------------------------------------------------------
-  template<typename T1, typename T2>
-  Matrix<T1>& operator+=(Matrix<T1>& A, const Matrix<T2>& B)
-  {
-    return add_mat_inplace(A, B);
-  }
-
-  template<typename T>
-  Matrix<T>& operator+=(Matrix<T>& A, const Random B) noexcept
-  {
-    return add_rng_inplace(A, B);
-  }
-
-  template<typename T1, typename T2>
-  Matrix<T1>& operator+=(Matrix<T1>& A, const T2 B) noexcept
-  {
-    return add_val_inplace(A, B);
-  }
-  
-  template<typename T1, typename T2, typename T3>
-  Matrix<T3> operator+(const Matrix<T1>& A, const Matrix<T2>& B)
-  {
-    return add_mat_sequ(A, B);
-  }
-  
-  template<typename T>
-  Matrix<T> operator+(const Matrix<T>& A, const Matrix<T>& B)
-  {
-    #ifdef PARALLILOS_USE_PARALLELISM
-      // return add_mat_simd(A, B);
-    #else
-      return add_mat_sequ(A, B);
-    #endif
-  }
-
-  template<typename T, typename T3>
-  Matrix<T3> operator+(const Matrix<T>& A, const Random B) noexcept
-  {
-    return add_rng(A, B);
-  }
-
-  template<typename T, typename T3>
-  Matrix<T3> operator+(const Random A, const Matrix<T>& B) noexcept
-  {
-    return add_rng(B, A);
-  }
-
-  template<typename T>
-  Matrix<T> operator+(const Matrix<T>& A, const T B) noexcept
-  {
-    #ifdef PARALLILOS_USE_PARALLELISM
-      // return add_val_simd(A, B);
-    #else
-      return add_val_sequ(A, B);
-    #endif
-  }
-
-  template<typename T1, typename T2, typename T3>
-  Matrix<T3> operator+(const Matrix<T1>& A, const T2 B) noexcept
-  {
-    return add_val(A, B);
-  }
-  
-  template<typename T>
-  Matrix<T> operator+(const T A, const Matrix<T>& B) noexcept
-  {
-    #ifdef PARALLILOS_USE_PARALLELISM
-      // return add_val_simd(B, A);
-    #else
-      return add_val_sequ(B, A);
-    #endif
-  }
-  
-  template<typename T1, typename T2, typename T3>
-  Matrix<T3> operator+(const T1 A, const Matrix<T2>& B) noexcept
-  {
-    return add_val(B, A);
-  }
-
-  template<typename T>
-  Matrix<T>& operator+(const Matrix<T>& A) noexcept
-  {
-    return A;
-  }
-
-  template<typename T1, typename T2, typename T3>
-  Matrix<T3>&& operator+(const Matrix<T1>& A, Matrix<T2>&& B)
-  {
-    return std::move(add_mat_inplace(B, A));
-  }
-  
-  template<typename T1, typename T2, typename T3>
-  Matrix<T3>&& operator+(Matrix<T1>&& A, const Matrix<T2>& B)
-  {
-    return std::move(add_mat_inplace(A, B));
-  }
-  
-  template<typename T1, typename T2>
-  auto operator+(Matrix<T1>&& A, Matrix<T2>&& B) -> Matrix<Backend::if_no_loss<T2, T1>>&&
-  {
-    return std::move(add_mat_inplace(B, A));
-  }
-
-  template<typename T1, typename T2>
-  auto operator+(Matrix<T1>&& A, Matrix<T2>&& B) -> Matrix<Backend::if_no_loss<T1, T2>>&&
-  {
-    return std::move(add_mat_inplace(A, B));
-  }
-  
-  template<typename T>
-  Matrix<T>&& operator+(Matrix<T>&& A, Matrix<T>&& B)
-  {
-    return std::move(add_mat_inplace(A, B));
-  }
-
-  template<typename T, typename T3>
-  Matrix<T3>&& operator+(Matrix<T>&& A, const Random B) noexcept
-  {
-    return std::move(add_rng_inplace(A, B));
-  }
-
-  template<typename T, typename T3>
-  Matrix<T3>&& operator+(const Random A, Matrix<T>&& B) noexcept
-  {
-    return std::move(add_rng_inplace(B, A));
-  }
-  
-  template<typename T1, typename T2, typename T3>
-  Matrix<T3>&& operator+(const T1 A, Matrix<T2>&& B) noexcept
-  {
-    return std::move(add_val_inplace(B, A));
-  }
-
-  template<typename T1, typename T2, typename T3>
-  Matrix<T3>&& operator+(Matrix<T1>&& A, const T2 B) noexcept
-  {
-    return std::move(add_val_inplace(A, B));
-  }
-
-  template<typename T>
-  Matrix<T>&& operator+(Matrix<T>&& A) noexcept
-  {
-    return std::move(A);
+    return result;
   }
 // --------------------------------------------------------------------------------------
   template<typename T1, typename T2>
   Matrix<T1>& mul_mat_inplace(Matrix<T1>& A, const Matrix<T2>& B)
   {
-    if (A.size() != B.size()) {
+    if (A.size() != B.size())
+    {
       PINAKAS_ERROR("nonconformant arguments (A is %ux%u, B is %ux%u)", A.M(), A.N(), B.M(), B.N());
       return A;
     }
 
     const unsigned n = A.numel();
     for (unsigned k = 0; k < n; ++k)
-      A[0][k] *= B[0][k];
+    {
+      A.data()[k] *= B.data()[k];
+    }
 
     return A;
   }
@@ -1162,7 +846,7 @@ namespace Pinakas
   {
     const unsigned n = A.numel();
     for (unsigned k = 0; k < n; ++k)
-      A[0][k] *= B;
+      A.data()[k] *= B;
 
     return A;
   }
@@ -1172,11 +856,11 @@ namespace Pinakas
   {
     std::random_device device;
     std::mt19937 generator(device());
-    std::uniform_real_distribution<> uniform_distribution(B.min_, B.max_);
+    std::uniform_real_distribution<> uniform_distribution(B.min_, B.max_ + std::is_integral<T>::value);
     
     const unsigned n = A.numel();
     for (unsigned k = 0; k < n; ++k)
-      A[0][k] *= uniform_distribution(generator);
+      A.data()[k] *= uniform_distribution(generator);
 
     return A;
   }
@@ -1184,34 +868,35 @@ namespace Pinakas
   template<typename T1, typename T2, typename T3>
   Matrix<T3> mul_mat_sequ(const Matrix<T1>& A, const Matrix<T2>& B)
   {
-    if (A.size() != B.size()) {
+    if (A.size() != B.size())
+    {
       PINAKAS_ERROR("nonconformant arguments (A is %ux%u, B is %ux%u)", A.M(), A.N(), B.M(), B.N());
       return Matrix<T3>();
     }
 
-    Matrix<T3> R(A.size());
+    Matrix<T3> result(A.size());
 
     const T1* a = A.data();
     const T1* b = B.data();
-    T1* r = R.data();
+    T1* r = result.data();
 
     const unsigned n = A.numel();
     for (unsigned k = 0; k < n; ++k)
       r[k] = a[k] * b[k];
     
-    return R;
+    return result;
   }
 
   template<typename T1, typename T2, typename T3>
   Matrix<T3> mul_val(const Matrix<T1>& A, const T2 B) noexcept
   {
-    Matrix<T3> R(A.size());
+    Matrix<T3> result(A.size());
 
     const unsigned n = A.numel();
     for (unsigned k = 0; k < n; ++k)
-      R[0][k] = A[0][k] * B;
+      result.data()[k] = A.data()[k] * B;
 
-    return R;
+    return result;
   }
 
   template<typename T1, typename T3>
@@ -1219,15 +904,15 @@ namespace Pinakas
   {
     std::random_device device;
     std::mt19937 generator(device());
-    std::uniform_real_distribution<> uniform_distribution(B.min_, B.max_);
+    std::uniform_real_distribution<> uniform_distribution(B.min_, B.max_ + std::is_integral<T1>::value);
 
-    Matrix<T3> R(A.size());
+    Matrix<T3> result(A.size());
 
     const unsigned n = A.numel();
     for (unsigned k = 0; k < n; ++k)
-      R[0][k] = A[0][k] * uniform_distribution(generator);
+      result.data()[k] = A.data()[k] * uniform_distribution(generator);
 
-    return R;
+    return result;
   }
 // --------------------------------------------------------------------------------------
   template<typename T1, typename T2>
@@ -1345,14 +1030,15 @@ namespace Pinakas
   template<typename T1, typename T2>
   Matrix<T1>& sub_ll_mat_inplace(Matrix<T1>& A, const Matrix<T2>& B)
   {
-    if (A.size() != B.size()) {
+    if (A.size() != B.size())
+    {
       PINAKAS_ERROR("nonconformant arguments (A is %ux%u, B is %ux%u)", A.M(), A.N(), B.M(), B.N());
       return A;
     }
 
     const unsigned n = A.numel();
     for (unsigned k = 0; k < n; ++k)
-      A[0][k] -= B[0][k];
+      A.data()[k] -= B.data()[k];
 
     return A;
   }
@@ -1360,14 +1046,15 @@ namespace Pinakas
   template<typename T1, typename T2>
   Matrix<T1>& sub_rl_mat_inplace(Matrix<T1>& B, const Matrix<T2>& A)
   {
-    if (A.size() != B.size()) {
+    if (A.size() != B.size())
+    {
       PINAKAS_ERROR("nonconformant arguments (A is %ux%u, B is %ux%u)", A.M(), A.N(), B.M(), B.N());
       return B;
     }
 
     const unsigned n = B.numel();
     for (unsigned k = 0; k < n; ++k)
-      B[0][k] = A[0][k] - B[0][k];
+      B.data()[k] = A.data()[k] - B.data()[k];
 
     return B;
   }
@@ -1377,7 +1064,7 @@ namespace Pinakas
   {
     const unsigned n = A.numel();
     for (unsigned k = 0; k < n; ++k)
-      A[0][k] -= B;
+      A.data()[k] -= B;
 
     return A;
   }
@@ -1387,7 +1074,7 @@ namespace Pinakas
   {
     const unsigned n = B.numel();
     for (unsigned k = 0; k < n; ++k)
-      B[0][k] = A - B[0][k];
+      B.data()[k] = A - B.data()[k];
 
     return B;
   }
@@ -1397,11 +1084,11 @@ namespace Pinakas
   {
     std::random_device device;
     std::mt19937 generator(device());
-    std::uniform_real_distribution<> uniform_distribution(B.min_, B.max_);
+    std::uniform_real_distribution<> uniform_distribution(B.min_, B.max_ + std::is_integral<T>::value);
 
     const unsigned n = A.numel();
     for (unsigned k = 0; k < n; ++k)
-      A[0][k] -= uniform_distribution(generator);
+      A.data()[k] -= uniform_distribution(generator);
 
     return A;
   }
@@ -1411,11 +1098,11 @@ namespace Pinakas
   {
     std::random_device device;
     std::mt19937 generator(device());
-    std::uniform_real_distribution<> uniform_distribution(B.min_, B.max_);
+    std::uniform_real_distribution<> uniform_distribution(B.min_, B.max_ + std::is_integral<T>::value);
 
     const unsigned n = B.numel();
     for (unsigned k = 0; k < n; ++k)
-      B[0][k] = uniform_distribution(generator) - B[0][k];
+      B.data()[k] = uniform_distribution(generator) - B.data()[k];
 
     return B;
   }
@@ -1423,46 +1110,47 @@ namespace Pinakas
   template<typename T1, typename T2, typename T3>
   Matrix<T3> sub_mat_sequ(const Matrix<T1>& A, const Matrix<T2>& B)
   {
-    if (A.size() != B.size()) {
+    if (A.size() != B.size())
+    {
       PINAKAS_ERROR("nonconformant arguments (A is %ux%u, B is %ux%u)", A.M(), A.N(), B.M(), B.N());
       return Matrix<T3>();
     }
 
-    Matrix<T3> R(A.size());
+    Matrix<T3> result(A.size());
 
     const T1* a = A.data();
     const T1* b = B.data();
-    T1* r = R.data();
+    T1* r = result.data();
 
     const unsigned n = A.numel();
     for (unsigned k = 0; k < n; ++k)
       r[k] = a[k] - b[k];
     
-    return R;
+    return result;
   }
 
   template<typename T1, typename T2, typename T3>
   Matrix<T3> sub_ll_val(const Matrix<T1>& A, const T2 B) noexcept
   {
-    Matrix<T3> R(A.size());
+    Matrix<T3> result(A.size());
 
     const unsigned n = A.numel();
     for (unsigned k = 0; k < n; ++k)
-      R[0][k] = A[0][k] - B;
+      result.data()[k] = A.data()[k] - B;
 
-    return R;
+    return result;
   }
 
   template<typename T1, typename T2, typename T3>
   Matrix<T3> sub_rl_val(const Matrix<T1>& B, const T2 A) noexcept
   {
-    Matrix<T3> R(B.size());
+    Matrix<T3> result(B.size());
 
     const unsigned n = B.numel();
     for (unsigned k = 0; k < n; ++k)
-      R[0][k] = A - B[0][k];
+      result.data()[k] = A - B.data()[k];
 
-    return R;
+    return result;
   }
 
   template<typename T1, typename T3>
@@ -1470,15 +1158,15 @@ namespace Pinakas
   {
     std::random_device device;
     std::mt19937 generator(device());
-    std::uniform_real_distribution<> uniform_distribution(B.min_, B.max_);
+    std::uniform_real_distribution<> uniform_distribution(B.min_, B.max_ + std::is_integral<T1>::value);
 
-    Matrix<T3> R(A.size());
+    Matrix<T3> result(A.size());
 
     const unsigned n = A.numel();
     for (unsigned k = 0; k < n; ++k)
-      R[0][k] = A[0][k] - uniform_distribution(generator);
+      result.data()[k] = A.data()[k] - uniform_distribution(generator);
 
-    return R;
+    return result;
   }
 
   template<typename T1, typename T3>
@@ -1486,15 +1174,15 @@ namespace Pinakas
   {
     std::random_device device;
     std::mt19937 generator(device());
-    std::uniform_real_distribution<> uniform_distribution(B.min_, B.max_);
+    std::uniform_real_distribution<> uniform_distribution(B.min_, B.max_ + std::is_integral<T1>::value);
 
-    Matrix<T3> R(B.size());
+    Matrix<T3> result(B.size());
 
     const unsigned n = B.numel();
     for (unsigned k = 0; k < n; ++k)
-      R[0][k] = uniform_distribution(generator) - B[0][k];
+      result.data()[k] = uniform_distribution(generator) - B.data()[k];
 
-    return R;
+    return result;
   }
 
   template<typename T>
@@ -1502,7 +1190,7 @@ namespace Pinakas
   {
     const unsigned n = A.numel();
     for (unsigned k = 0; k < n; ++k)
-      A[0][k] = -A[0][k];
+      A.data()[k] = -A.data()[k];
 
     return A;
   }
@@ -1510,13 +1198,13 @@ namespace Pinakas
   template<typename T>
   Matrix<T> negate(const Matrix<T> A)
   {
-    Matrix<T> R(A.size());
+    Matrix<T> result(A.size());
 
     const unsigned n = A.numel();
     for (unsigned k = 0; k < n; ++k)
-      R[0][k] = -A[0][k];
+      result.data()[k] = -A.data()[k];
 
-    return R;
+    return result;
   }
 // --------------------------------------------------------------------------------------
   template<typename T1, typename T2>
@@ -1653,7 +1341,7 @@ namespace Pinakas
 
     const unsigned n = A.numel();
     for (unsigned k = 0; k < n; ++k)
-      A[0][k] /= B[0][k];
+      A.data()[k] /= B.data()[k];
 
     return A;
   }
@@ -1668,7 +1356,7 @@ namespace Pinakas
 
     const unsigned n = B.numel();
     for (unsigned k = 0; k < n; ++k)
-      B[0][k] = A[0][k] / B[0][k];
+      B.data()[k] = A.data()[k] / B.data()[k];
 
     return B;
   }
@@ -1680,7 +1368,7 @@ namespace Pinakas
 
     const unsigned n = A.numel();
     for (unsigned k = 0; k < n; ++k)
-      A[0][k] *= iB;
+      A.data()[k] *= iB;
 
     return A;
   }
@@ -1690,7 +1378,7 @@ namespace Pinakas
   {
     const unsigned n = B.numel();
     for (unsigned k = 0; k < n; ++k)
-      B[0][k] = A / B[0][k];
+      B.data()[k] = A / B.data()[k];
 
     return B;
   }
@@ -1700,11 +1388,11 @@ namespace Pinakas
   {
     std::random_device device;
     std::mt19937 generator(device());
-    std::uniform_real_distribution<> uniform_distribution(B.min_, B.max_);
+    std::uniform_real_distribution<> uniform_distribution(B.min_, B.max_ + std::is_integral<T>::value);
     
     const unsigned n = A.numel();
     for (unsigned k = 0; k < n; ++k)
-      A[0][k] /= uniform_distribution(generator);
+      A.data()[k] /= uniform_distribution(generator);
 
     return A;
   }
@@ -1714,11 +1402,11 @@ namespace Pinakas
   {
     std::random_device device;
     std::mt19937 generator(device());
-    std::uniform_real_distribution<> uniform_distribution(A.min_, A.max_);
+    std::uniform_real_distribution<> uniform_distribution(A.min_, A.max_ + std::is_integral<T>::value);
 
     const unsigned n = B.numel();
     for (unsigned k = 0; k < n; ++k)
-      B[0][k] = uniform_distribution(generator) / B[0][k];
+      B.data()[k] = uniform_distribution(generator) / B.data()[k];
 
     return B;
   }
@@ -1726,47 +1414,48 @@ namespace Pinakas
   template<typename T1, typename T2, typename T3>
   Matrix<T3> div_mat_sequ(const Matrix<T1>& A, const Matrix<T2>& B)
   {
-    if (A.size() != B.size()) {
+    if (A.size() != B.size())
+    {
       PINAKAS_ERROR("nonconformant arguments (A is %ux%u, B is %ux%u)", A.M(), A.N(), B.M(), B.N());
       return Matrix<T3>();
     }
 
-    Matrix<T3> R(A.size());
+    Matrix<T3> result(A.size());
 
     const T1* a = A.data();
     const T2* b = B.data();
-    T3* r = R.data();
+    T3* r = result.data();
 
     const unsigned n = A.numel();
     for (unsigned k = 0; k < n; ++k)
       r[k] = a[k] / b[k];
     
-    return R;
+    return result;
   }
 
   template<typename T1, typename T2, typename T3>
   Matrix<T3> div_ll_val(const Matrix<T1>& A, const T2 B) noexcept
   {
-    Matrix<T3> R(A.size());
+    Matrix<T3> result(A.size());
     const T1 iB = 1.0 / B;
 
     const unsigned n = A.numel();
     for (unsigned k = 0; k < n; ++k)
-      R[0][k] = A[0][k] * iB;
+      result.data()[k] = A.data()[k] * iB;
 
-    return R;
+    return result;
   }
 
   template<typename T1, typename T2, typename T3>
   Matrix<T3> div_rl_val(const Matrix<T1>& B, const T2 A) noexcept
   {
-    Matrix<T3> R(B.size());
+    Matrix<T3> result(B.size());
 
     const unsigned n = B.numel();
     for (unsigned k = 0; k < n; ++k)
-      R[0][k] = A / B[0][k];
+      result.data()[k] = A / B.data()[k];
 
-    return R;
+    return result;
   }
 
   template<typename T1, typename T3>
@@ -1774,15 +1463,15 @@ namespace Pinakas
   {
     std::random_device device;
     std::mt19937 generator(device());
-    std::uniform_real_distribution<> uniform_distribution(B.min_, B.max_);
+    std::uniform_real_distribution<> uniform_distribution(B.min_, B.max_ + std::is_integral<T1>::value);
 
-    Matrix<T3> R(A.size());
+    Matrix<T3> result(A.size());
 
     const unsigned n = A.numel();
     for (unsigned k = 0; k < n; ++k)
-      R[0][k] = A[0][k] / uniform_distribution(generator);
+      result.data()[k] = A.data()[k] / uniform_distribution(generator);
 
-    return R;
+    return result;
   }
 
   template<typename T1, typename T3>
@@ -1790,15 +1479,15 @@ namespace Pinakas
   {
     std::random_device device;
     std::mt19937 generator(device());
-    std::uniform_real_distribution<> uniform_distribution(A.min_, A.max_);
+    std::uniform_real_distribution<> uniform_distribution(A.min_, A.max_ + std::is_integral<T1>::value);
 
-    Matrix<T3> R(B.size());
+    Matrix<T3> result(B.size());
 
     const unsigned n = B.numel();
     for (unsigned k = 0; k < n; ++k)
-      R[0][k] = uniform_distribution(generator) / B[0][k];
+      result.data()[k] = uniform_distribution(generator) / B.data()[k];
 
-    return R;
+    return result;
   }
 // --------------------------------------------------------------------------------------
   template<typename T1, typename T2>
@@ -1923,7 +1612,7 @@ namespace Pinakas
 
     const unsigned n = A.numel();
     for (unsigned k = 0; k < n; ++k)
-      A[0][k] = std::pow(A[0][k], B[0][k]);
+      A.data()[k] = std::pow(A.data()[k], B.data()[k]);
 
     return A;
   }
@@ -1938,7 +1627,7 @@ namespace Pinakas
 
     const unsigned n = B.numel();
     for (unsigned k = 0; k < n; ++k)
-      B[0][k] = std::pow(A[0][k], B[0][k]);
+      B.data()[k] = std::pow(A.data()[k], B.data()[k]);
 
     return B;
   }
@@ -1948,7 +1637,7 @@ namespace Pinakas
   {
     const unsigned n = A.numel();
     for (unsigned k = 0; k < n; ++k)
-      A[0][k] = std::pow(A[0][k], B);
+      A.data()[k] = std::pow(A.data()[k], B);
 
     return A;
   }
@@ -1958,7 +1647,7 @@ namespace Pinakas
   {
     const unsigned n = B.numel();
     for (unsigned k = 0; k < n; ++k)
-      B[0][k] = std::pow(A, B[0][k]);
+      B.data()[k] = std::pow(A, B.data()[k]);
 
     return B;
   }
@@ -1971,37 +1660,37 @@ namespace Pinakas
       return Matrix<T3>();
     }
 
-    Matrix<T3> R(A.size());
+    Matrix<T3> result(A.size());
   
     const unsigned n = A.numel();
     for (unsigned k = 0; k < n; ++k)
-      R[0][k] = std::pow(A[0][k], B[0][k]);
+      result.data()[k] = std::pow(A.data()[k], B.data()[k]);
 
-    return R;
+    return result;
   }
 
   template<typename T1, typename T2, typename T3>
   Matrix<T3> pow_ll_val(const Matrix<T1>& A, const T2 B) noexcept
   {
-    Matrix<T3> R(A.size());
+    Matrix<T3> result(A.size());
 
     const unsigned n = A.numel();
     for (unsigned k = 0; k < n; ++k)
-      R[0][k] = std::pow(A[0][k], B);
+      result.data()[k] = std::pow(A.data()[k], B);
 
-    return R;
+    return result;
   }
 
   template<typename T1, typename T2, typename T3>
   Matrix<T3> pow_rl_val(const Matrix<T1>& B, const T2 A) noexcept
   {
-    Matrix<T3> R(B.size());
+    Matrix<T3> result(B.size());
 
     const unsigned n = B.numel();
     for (unsigned k = 0; k < n; ++k)
-      R[0][k] = std::pow(A, B[0][k]);
+      result.data()[k] = std::pow(A, B.data()[k]);
 
-    return R;
+    return result;
   }
 // --------------------------------------------------------------------------------------
   template<typename T1, typename T2>
@@ -2080,13 +1769,13 @@ namespace Pinakas
   Matrix<T> floor(const Matrix<T>& A)
   {
     static_assert(std::is_floating_point<T>::value, "T must be a floating-point type");
-    Matrix<T> R(A.size());
+    Matrix<T> result(A.size());
 
     const unsigned n = A.numel();
     for (unsigned k = 0; k < n; ++k)
-      R[0][k] = std::floor(A[0][k]);
+      result.data()[k] = std::floor(A.data()[k]);
 
-    return R;
+    return result;
   }
 
   template<typename T>
@@ -2095,7 +1784,7 @@ namespace Pinakas
     static_assert(std::is_floating_point<T>::value, "T must be a floating-point type");
     const unsigned n = A.numel();
     for (unsigned k = 0; k < n; ++k)
-      A[0][k] = std::floor(A[0][k]);
+      A.data()[k] = std::floor(A.data()[k]);
 
     return std::move(A);
   }
@@ -2104,13 +1793,13 @@ namespace Pinakas
   Matrix<T> round(const Matrix<T>& A)
   {
     static_assert(std::is_floating_point<T>::value, "T must be a floating-point type");
-    Matrix<T> R(A.size());
+    Matrix<T> result(A.size());
 
     const unsigned n = A.numel();
     for (unsigned k = 0; k < n; ++k)
-      R[0][k] = std::round(A[0][k]);
+      result.data()[k] = std::round(A.data()[k]);
 
-    return R;
+    return result;
   }
 
   template<typename T>
@@ -2120,7 +1809,7 @@ namespace Pinakas
     const unsigned n = A.numel();
     for (unsigned k = 0; k < n; ++k)
     {
-      A[0][k] = std::round(A[0][k]);
+      A.data()[k] = std::round(A.data()[k]);
     }
 
     return std::move(A);
@@ -2130,15 +1819,15 @@ namespace Pinakas
   Matrix<T> ceil(const Matrix<T>& A)
   {
     static_assert(std::is_floating_point<T>::value, "T must be a floating-point type");
-    Matrix<T> R(A.size());
+    Matrix<T> result(A.size());
 
     const unsigned n = A.numel();
     for (unsigned k = 0; k < n; ++k)
     {
-      R[0][k] = std::ceil(A[0][k]);
+      result.data()[k] = std::ceil(A.data()[k]);
     }
 
-    return R;
+    return result;
   }
 
   template<typename T>
@@ -2148,7 +1837,7 @@ namespace Pinakas
     const unsigned n = A.numel();
     for (unsigned k = 0; k < n; ++k)
     {
-      A[0][k] = std::round(A[0][k]);
+      A.data()[k] = std::round(A.data()[k]);
     }
 
     return std::move(A);
@@ -2291,11 +1980,11 @@ namespace Pinakas
   template<template<typename> class M1, typename T>
   Matrix<T> transpose(const M1<T>& A)
   {
-    Matrix<T> R(A.N(), A.M());
+    Matrix<T> result(A.N(), A.M());
     for (unsigned y = 0; y < A.M(); ++y)
       for (unsigned x = 0; x < A.N(); ++x)
-        R[x][y] = A[y][x];
-    return R;
+        result[x][y] = A[y][x];
+    return result;
   }
 
   template<typename T>
@@ -2309,23 +1998,23 @@ namespace Pinakas
   template<template<typename> class M1, typename T>
   Matrix<T> reshape(const M1<T>& A, const unsigned M, const unsigned N)
   {
-    Matrix<T> R;
+    Matrix<T> result;
 
     if (A.numel() != M * N)
     {
       PINAKAS_ERROR("can't reshape %ux%u into %ux%u)", A.M(), A.N(), M, N);
-      return R;
+      return result;
     }
 
-    R = Matrix<T>(M, N);
+    result = Matrix<T>(M, N);
 
     const unsigned n = A.numel();
     for (unsigned k = 0; k < n; ++k)
     {
-      R[0][k] = A[0][k];
+      result.data()[k] = A.data()[k];
     }
 
-    return R;
+    return result;
   }
 
   template<typename T>
@@ -2347,10 +2036,10 @@ namespace Pinakas
   template<template<typename> class M1, typename T>
   T min(const M1<T>& A) noexcept
   {
-    T minimum = A[0][0];
+    T minimum = A.data()[0];
     for (unsigned k = 1; k < A.numel(); ++k)
-      if (A[0][k] < minimum)
-        minimum = A[0][k];
+      if (A.data()[k] < minimum)
+        minimum = A.data()[k];
         
     return minimum;
   }
@@ -2358,10 +2047,10 @@ namespace Pinakas
   template<template<typename> class M1, typename T>
   T max(const M1<T>& A) noexcept
   {
-    T maximum = A[0][0];
+    T maximum = A.data()[0];
     for (unsigned k = 1; k < A.numel(); ++k)
-      if (A[0][k] > maximum)
-        maximum = A[0][k];
+      if (A.data()[k] > maximum)
+        maximum = A.data()[k];
 
     return maximum;
   }
@@ -2371,7 +2060,7 @@ namespace Pinakas
   {
     T summation = 0;
     for (unsigned k = 0; k < A.numel(); ++k)
-      summation += A[0][k];
+      summation += A.data()[k];
 
     return summation;
   }
@@ -2381,7 +2070,7 @@ namespace Pinakas
   {
     double temporary = 0;
     for (unsigned k = 0; k < A.numel(); ++k)
-      temporary += std::log(A[0][k]);
+      temporary += std::log(A.data()[k]);
 
     return std::exp(temporary);
   }
@@ -2391,7 +2080,7 @@ namespace Pinakas
   {
     double average = 0;
     for (unsigned k = 0; k < A.numel(); ++k)
-      average += A[0][k];
+      average += A.data()[k];
 
     return average/A.numel();
   }
@@ -2402,7 +2091,7 @@ namespace Pinakas
     const unsigned n = A.numel();
     double temporary = 0;
     for (unsigned k = 0; k < n; ++k)
-      temporary += A[0][k] * A[0][k];
+      temporary += A.data()[k] * A.data()[k];
     
     return std::sqrt(temporary);
   }
@@ -2412,7 +2101,7 @@ namespace Pinakas
   {
     double temporary = 0;
     for (unsigned k = 0; k < A.numel(); ++k)
-      temporary += std::log(A[0][k]);
+      temporary += std::log(A.data()[k]);
 
     return std::exp(temporary / A.numel());
   }
@@ -2441,7 +2130,8 @@ namespace Pinakas
       }
 
       // orthogonalize the remaining columns with respects to A's i'th column
-      for (unsigned k = i; k < N; ++k) {
+      for (unsigned k = i; k < N; ++k)
+      {
         // calculate Q's i'th orthonormal projection onto A's k'th unorthogonalized column
         double projection = 0;
         for (unsigned j = 0; j < M; ++j)
@@ -2449,8 +2139,12 @@ namespace Pinakas
 
         // orthogonalize A's k'th column by removing Q's i'th orthonormal projection onto A's k'th unorthogonalized column
         if (k != i) // skips if k == i because the projection would be 0
+        {
           for (unsigned j = 0; j < M; ++j)
+          {
             A[j][k] -= projection * Q[j][i];
+          }
+        }
       }
     }
 
@@ -2519,24 +2213,24 @@ namespace Pinakas
     Matrix<double> lin_y(1, n, 0);
 
     // set first and last values of the linearized data set
-    lin_x[0][0]   = data_x[0][0];
-    lin_y[0][0]   = data_y[0][0];
-    lin_x[0][n-1] = data_x[0][n-1];
-    lin_y[0][n-1] = data_y[0][n-1];
+    lin_x.data()[0]   = data_x.data()[0];
+    lin_y.data()[0]   = data_y.data()[0];
+    lin_x.data()[n-1] = data_x.data()[n-1];
+    lin_y.data()[n-1] = data_y.data()[n-1];
 
     // build linearly spaced x data and its associated y value
-    const double step = (data_x[0][n - 1] - data_x[0][0]) / (n - 1);
+    const double step = (data_x.data()[n - 1] - data_x.data()[0]) / (n - 1);
     for (unsigned k = 1; k < (n - 1); ++k)
     {
       // build linearly spaced x data
-      lin_x[0][k] = lin_x[0][k - 1] + step;
+      lin_x.data()[k] = lin_x.data()[k - 1] + step;
 
       // linearly interpolate y value
-      double x1 = data_x[0][k];
-      double y1 = data_y[0][k];
-      double x2 = data_x[0][k+1];
-      double y2 = data_y[0][k+1];
-      lin_y[0][k] = y1 + (lin_x[0][k] - x1) * (y2 - y1) / (x2 - x1);
+      double x1 = data_x.data()[k];
+      double y1 = data_y.data()[k];
+      double x2 = data_x.data()[k+1];
+      double y2 = data_y.data()[k+1];
+      lin_y.data()[k] = y1 + (lin_x.data()[k] - x1) * (y2 - y1) / (x2 - x1);
     }
 
     result[0] = std::move(lin_x);
@@ -2560,17 +2254,18 @@ namespace Pinakas
     const unsigned n = data_x.numel();
 
     // build linearly spaced x data and its associated y value
-    const double step = (data_x[0][n - 1] - data_x[0][0]) / (n - 1);
-    for (unsigned k = 1; k < (n - 1); ++k) {
+    const double step = (data_x.data()[n - 1] - data_x.data()[0]) / (n - 1);
+    for (unsigned k = 1; k < (n - 1); ++k)
+    {
       // store necessary data to linearly interpolate y value
-      double x1 = data_x[0][k];
-      double y1 = data_y[0][k];
-      double x2 = data_x[0][k+1];
-      double y2 = data_y[0][k+1];
+      double x1 = data_x.data()[k];
+      double y1 = data_y.data()[k];
+      double x2 = data_x.data()[k+1];
+      double y2 = data_y.data()[k+1];
 
       // build linearly spaced data
-      data_x[0][k] = data_x[0][k - 1] + step;
-      data_y[0][k] = y1 + (data_x[0][k] - x1) * (y2 - y1) / (x2 - x1);
+      data_x.data()[k] = data_x.data()[k - 1] + step;
+      data_y.data()[k] = y1 + (data_x.data()[k] - x1) * (y2 - y1) / (x2 - x1);
     }
 
     result[0] = std::move(data_x);
@@ -2581,7 +2276,7 @@ namespace Pinakas
   template<typename T>
   Matrix<T> linspace(const double x1, const double x2, const unsigned N)
   {
-    Matrix<T> R(1, N);
+    Matrix<T> result(1, N);
 
     const unsigned n = N - 1;
     const double step  = (x2 - x1) / (N - 1);
@@ -2589,65 +2284,73 @@ namespace Pinakas
     double temporary = x1;
     for (unsigned k = 1; k < n; ++k)
     {
-      // R[0][k] = std::round(temporary += step);
-      R[0][k] = temporary += step;
+      // result.data()[k] = std::round(temporary += step);
+      result.data()[k] = temporary += step;
     }
 
-    R[0][0] = x1;
-    R[0][n] = x2;
+    result.data()[0] = x1;
+    result.data()[n] = x2;
 
-    return R;
+    return result;
   }
 
   template<typename T>
   Matrix<T> iota(const unsigned n)
   {
-    Matrix<T> R(1, n);
+    Matrix<T> result(1, n);
 
     for (unsigned k = 0; k < n; ++k)
-      R[0][k] = k;
+    {
+      result.data()[k] = k;
+    }
 
-    return R;
+    return result;
   }
 
   template<typename T>
   Matrix<T> eye(const unsigned M, const unsigned N)
   {
-    Matrix<T> R(M, N, 0);
+    Matrix<T> result(M, N, 0);
 
     const unsigned n = std::min(M, N);
 
     for (unsigned k = 0; k < n; ++k)
-      R[k][k] = 1;
+      result[k][k] = 1;
     
-    return R;
+    return result;
   }
 
   Matrix<double> diff(const Matrix<double>& A, unsigned n)
   {
-    if (n) {
-      Matrix<double> R(A.M(), A.N() - 1);
-      for (unsigned y = 0; y < R.M(); ++y)
-        for (unsigned x = 0; x < R.N(); ++x)
-          R[y][x] = A[y][x + 1] - A[y][x];
+    if (n)
+    {
+      Matrix<double> result(A.M(), A.N() - 1);
+      for (unsigned y = 0; y < result.M(); ++y)
+      {
+        for (unsigned x = 0; x < result.N(); ++x)
+        {
+          result[y][x] = A[y][x + 1] - A[y][x];
+        }
+      }
 
-      return diff(R, n - 1);
+      return diff(result, n - 1);
     }
+
     return A;
   }
 
   template<typename T>
   Matrix<T> reverse(const Matrix<T>& A)
   {
-    Matrix<T> R(A.size());
+    Matrix<T> result(A.size());
 
     const unsigned n = A.numel();
     for (unsigned k = 0; k < n; ++k)
     {
-      R[0][k] = A[0][n-1 - k];
+      result.data()[k] = A.data()[n-1 - k];
     }
 
-    return R;
+    return result;
   }
 
   template<template<typename> class M1, typename T>
@@ -2657,7 +2360,7 @@ namespace Pinakas
     const unsigned n_2 = n >> 1;
     for (unsigned k = 0; k < n_2; ++k)
     {
-      std::swap(A[0][k], A[0][n-1 - k]);
+      std::swap(A.data()[k], A.data()[n-1 - k]);
     }
 
     return std::move(A);
@@ -2672,7 +2375,7 @@ namespace Pinakas
     Matrix<T3> convoluted(1, n1 + n2 - 1, 0);
     for (unsigned i = 0; i < n1; ++i)
       for (unsigned j = 0; j < n2; ++j)
-        convoluted[0][i + j] += A[0][i] * B[0][j];
+        convoluted.data()[i + j] += A.data()[i] * B.data()[j];
 
     return convoluted;
   }
@@ -2686,7 +2389,7 @@ namespace Pinakas
     Matrix<T3> result(1, n1 + n2 - 1, 0);
     for (unsigned i = 0; i < n1; ++i)
       for (unsigned j = 0; j < n2; ++j)
-        result[0][i + j] += A[0][n1-1 - i] * B[0][j];
+        result.data()[i + j] += A.data()[n1-1 - i] * B.data()[j];
 
     return result; 
   }
@@ -2699,7 +2402,7 @@ namespace Pinakas
     Matrix<T> result(1, 2*n - 1, 0);
     for (unsigned i = 0; i < n; ++i)
       for (unsigned j = 0; j < n; ++j)
-        result[0][i + j] += A[0][n-1 - i] * A[0][j];
+        result.data()[i + j] += A.data()[n-1 - i] * A.data()[j];
 
     return result;
   }
@@ -2708,26 +2411,26 @@ namespace Pinakas
   {
     const unsigned n = A.numel();
 
-    Matrix<double> R(1, n, 0);
+    Matrix<double> result(1, n, 0);
     for (unsigned i = 0; i < n; ++i)
       for (unsigned j = 0; j < n; ++j)
         if ((i+j - n+1) < n)
-          R[0][i+j - n+1] += A[0][n-1 - i] * A[0][j];
+          result.data()[i+j - n+1] += A.data()[n-1 - i] * A.data()[j];
 
-    return R;
+    return result;
   }
 
   Matrix<double> rxx(const Matrix<double>& A, const unsigned K)
   {
     const unsigned n = A.numel();
 
-    Matrix<double> R(1, K, 0);
+    Matrix<double> result(1, K, 0);
     for (unsigned i = 0; i < n; ++i)
       for (unsigned j = 0; j < n; ++j)
         if ((i+j - n+1) < K)
-          R[0][i+j - n+1] += A[0][n-1 - i] * A[0][j];
+          result.data()[i+j - n+1] += A.data()[n-1 - i] * A.data()[j];
 
-    return R;
+    return result;
   }
 
   Matrix<double> lpc(const Matrix<double>& A, const unsigned p)
@@ -2750,10 +2453,10 @@ namespace Pinakas
     {
       for (unsigned j = 0; j < p; ++j)
       {
-        autocorr_mat[j][i] = rxx_[0][(j > i) ? (j - i) : (i - j)];
+        autocorr_mat[j][i] = rxx_.data()[(j > i) ? (j - i) : (i - j)];
       }
 
-      autocorr_vec[0][i] = rxx_[0][i+1];
+      autocorr_vec.data()[i] = rxx_.data()[i+1];
     }
 
     result = div(autocorr_vec, autocorr_mat);
@@ -2769,7 +2472,7 @@ namespace Pinakas
     {
       for (unsigned j = 0; j < n; ++j)
       {
-        result[j][i] = A[0][(j > i) ? (j - i) : (i - j)];
+        result[j][i] = A.data()[(j > i) ? (j - i) : (i - j)];
       }
     }
 
@@ -2782,7 +2485,7 @@ namespace Pinakas
     for (unsigned k = 0; k < N; ++k)
     {
       const double temporary = (2 * M_PI * k)/(N - 1);
-      window[0][k] = 0.42 - 0.50 * std::cos(temporary) + 0.08 * std::cos(2 * temporary);
+      window.data()[k] = 0.42 - 0.50 * std::cos(temporary) + 0.08 * std::cos(2 * temporary);
     }
 
     return window;
@@ -2795,7 +2498,7 @@ namespace Pinakas
     for (unsigned k = 0; k < N; ++k)
     {
       const double temporary = (2 * M_PI * k)/(N - 1);
-      windowed[0][k] = signal[0][k] * (0.42 - 0.50 * std::cos(temporary) + 0.08 * std::cos(2 * temporary));
+      windowed.data()[k] = signal.data()[k] * (0.42 - 0.50 * std::cos(temporary) + 0.08 * std::cos(2 * temporary));
     }
 
     return windowed;
@@ -2807,7 +2510,7 @@ namespace Pinakas
     for (unsigned k = 0; k < N; ++k)
     {
       const double temporary = (2 * M_PI * k)/(N - 1);
-      signal[0][k] *= 0.42 - 0.50 * std::cos(temporary) + 0.08 * std::cos(2 * temporary);
+      signal.data()[k] *= 0.42 - 0.50 * std::cos(temporary) + 0.08 * std::cos(2 * temporary);
     }
 
     return std::move(signal);
@@ -2818,7 +2521,7 @@ namespace Pinakas
     Matrix<double> window(1, N);
     for (unsigned k = 0; k < N; ++k)
     {
-      window[0][k] = 0.54 - 0.46 * std::cos(2 * M_PI * k / (N - 1));
+      window.data()[k] = 0.54 - 0.46 * std::cos(2 * M_PI * k / (N - 1));
     }
 
     return window;
@@ -2830,7 +2533,7 @@ namespace Pinakas
     Matrix<double> windowed(1, N);
     for (unsigned k = 0; k < N; ++k)
     {
-      windowed[0][k] = signal[0][k] * (0.54 - 0.46 * std::cos(2 * M_PI * k / (N - 1)));
+      windowed.data()[k] = signal.data()[k] * (0.54 - 0.46 * std::cos(2 * M_PI * k / (N - 1)));
     }
 
     return windowed;
@@ -2841,7 +2544,7 @@ namespace Pinakas
     const unsigned n = signal.numel();
     for (unsigned k = 0; k < n; ++k)
     {
-      signal[0][k] *= 0.54 - 0.46 * std::cos(2 * M_PI * k / (n - 1));
+      signal.data()[k] *= 0.54 - 0.46 * std::cos(2 * M_PI * k / (n - 1));
     }
 
     return std::move(signal);
@@ -2852,7 +2555,7 @@ namespace Pinakas
     Matrix<double> window(1, N);
     for (unsigned k = 0; k < N; ++k)
     {
-      window[0][k] = 0.5 - 0.5 * std::cos(2 * M_PI * k / (N - 1));
+      window.data()[k] = 0.5 - 0.5 * std::cos(2 * M_PI * k / (N - 1));
     }
 
     return window;
@@ -2864,7 +2567,7 @@ namespace Pinakas
     Matrix<double> windowed(1, N);
     for (unsigned k = 0; k < N; ++k)
     {
-      windowed[0][k] = signal[0][k] * (0.5 - 0.5 * std::cos(2 * M_PI * k / (N - 1)));
+      windowed.data()[k] = signal.data()[k] * (0.5 - 0.5 * std::cos(2 * M_PI * k / (N - 1)));
     }
 
     return windowed;
@@ -2875,7 +2578,7 @@ namespace Pinakas
     const unsigned N = signal.numel();
     for (unsigned k = 0; k < N; ++k)
     {
-      signal[0][k] *= 0.5 - 0.5 * std::cos(2 * M_PI * k / (N - 1));
+      signal.data()[k] *= 0.5 - 0.5 * std::cos(2 * M_PI * k / (N - 1));
     }
 
     return std::move(signal);
@@ -2902,20 +2605,20 @@ namespace Pinakas
   template<typename T>
   Matrix<double> cos(Matrix<T>& A)
   {
-    Matrix<double> R(A.size());
+    Matrix<double> result(A.size());
 
     const unsigned n = A.numel();
     for (unsigned k = 0; k < n; ++k)
-      R[0][k] = std::cos(A[0][k]);
+      result.data()[k] = std::cos(A.data()[k]);
 
-    return R;
+    return result;
   }
 
   Matrix<double>&& cos(Matrix<double>&& A) noexcept
   {
     const unsigned n = A.numel();
     for (unsigned k = 0; k < n; ++k)
-      A[0][k] = std::cos(A[0][k]);
+      A.data()[k] = std::cos(A.data()[k]);
 
     return std::move(A);
   }
@@ -2923,20 +2626,20 @@ namespace Pinakas
   template<typename T>
   Matrix<double> sin(Matrix<T>& A)
   {
-    Matrix<double> R(A.size());
+    Matrix<double> result(A.size());
 
     const unsigned n = A.numel();
     for (unsigned k = 0; k < n; ++k)
-      R[0][k] = std::sin(A[0][k]);
+      result.data()[k] = std::sin(A.data()[k]);
 
-    return R;
+    return result;
   }
 
   Matrix<double>&& sin(Matrix<double>&& A) noexcept
   {
     const unsigned n = A.numel();
     for (unsigned k = 0; k < n; ++k)
-      A[0][k] = std::sin(A[0][k]);
+      A.data()[k] = std::sin(A.data()[k]);
 
     return std::move(A);
   }
@@ -2944,16 +2647,16 @@ namespace Pinakas
   template<typename T>
   Matrix<double> sinc(Matrix<T>& A)
   {
-    Matrix<double> R(A.size());
+    Matrix<double> result(A.size());
 
     const unsigned n = A.numel();
     for (unsigned k = 0; k < n; ++k)
     {
-      double temporary = M_PI * A[0][k];
-      R[0][k] = (temporary == 0) ? 1 : std::sin(temporary) / temporary;
+      double temporary = M_PI * A.data()[k];
+      result.data()[k] = (temporary == 0) ? 1 : std::sin(temporary) / temporary;
     }
 
-    return R;
+    return result;
   }
 
   Matrix<double>&& sinc(Matrix<double>&& A) noexcept
@@ -2961,8 +2664,8 @@ namespace Pinakas
     const unsigned n = A.numel();
     for (unsigned k = 0; k < n; ++k)
     {
-      double temporary = M_PI * A[0][k];
-      A[0][k] = (temporary == 0) ? 1 : std::sin(temporary) / temporary;
+      double temporary = M_PI * A.data()[k];
+      A.data()[k] = (temporary == 0) ? 1 : std::sin(temporary) / temporary;
     }
 
     return std::move(A);
@@ -2974,7 +2677,7 @@ namespace Pinakas
 
     for (unsigned k = 0; k < data.numel(); ++k)
     {
-      upsampled[0][k * L] = data[0][k];
+      upsampled.data()[k * L] = data.data()[k];
     }
 
     return upsampled;
@@ -2999,7 +2702,7 @@ namespace Pinakas
     for (signed int k = 0; k < signed(length); ++k)
     {
       double temporary = M_PI * (k - offset) * frequency;
-      impulse[0][k] = (temporary == 0) ? 1 : std::sin(temporary) / temporary;
+      impulse.data()[k] = (temporary == 0) ? 1 : std::sin(temporary) / temporary;
     }
 
     return impulse;
@@ -3094,8 +2797,8 @@ namespace Pinakas
     return resampled;
   }
 
-  template<template<typename> class M1, typename T>
-  std::ostream& operator<<(std::ostream& ostream, const M1<T>& A)
+  template<template<typename> class M, typename T, typename>
+  std::ostream& operator<<(std::ostream& ostream, const M<T>& A)
   {
     if (A.numel() != 0)
     {
@@ -3167,7 +2870,7 @@ namespace Pinakas
     {
       for (unsigned k = 0; k < data_set.x.numel(); ++k)
       {
-        file << data_set.x[0][k] << ' ' << data_set.y[0][k] << '\n';
+        file << data_set.x.data()[k] << ' ' << data_set.y.data()[k] << '\n';
       }
 
       // separate data sets
@@ -3222,53 +2925,53 @@ namespace Pinakas
   template<typename T>
   Matrix<double> abs(const Matrix<T>& A)
   {
-    Matrix<double> R(A.size());
+    Matrix<double> result(A.size());
 
     const unsigned n = A.numel();
     for (unsigned k = 0; k < n; ++k)
-      R[0][k] = std::abs(A[0][k]);
+      result.data()[k] = std::abs(A.data()[k]);
 
-    return R;
+    return result;
   }
   
   Matrix<double> real(const Matrix<complex>& A)
   {
-    Matrix<double> R(A.size());
+    Matrix<double> result(A.size());
 
     const unsigned n = A.numel();
     for (unsigned k = 0; k < n; ++k)
-      R[0][k] = std::real(A[0][k]);
+      result.data()[k] = std::real(A.data()[k]);
 
-    return R;
+    return result;
   }
   
   Matrix<double> imag(const Matrix<complex>& A)
   {
-    Matrix<double> R(A.size());
+    Matrix<double> result(A.size());
 
     const unsigned n = A.numel();
     for (unsigned k = 0; k < n; ++k)
-      R[0][k] = std::imag(A[0][k]);
+      result.data()[k] = std::imag(A.data()[k]);
 
-    return R;
+    return result;
   }
 
   Matrix<complex> conj(const Matrix<complex>& A)
   {
-    Matrix<complex> R(A.size());
+    Matrix<complex> result(A.size());
 
     const unsigned n = A.numel();
     for (unsigned k = 0; k < n; ++k)
-      R[0][k] = std::conj(A[0][k]);
+      result.data()[k] = std::conj(A.data()[k]);
 
-    return R;
+    return result;
   }
 
   Matrix<complex>&& conj(Matrix<complex>&& A)
   {
     const unsigned n = A.numel();
     for (unsigned k = 0; k < n; ++k)
-      A[0][k] = std::conj(A[0][k]);
+      A.data()[k] = std::conj(A.data()[k]);
 
     return std::move(A);
   }
@@ -3307,9 +3010,9 @@ namespace Pinakas
         for (unsigned a = l; a < N; a += n)
         {
           unsigned b = a + k;
-          complex temporary = signal[0][a] - signal[0][b];
-          signal[0][a] += signal[0][b];
-          signal[0][b]  = temporary * twiddle_factor;
+          complex temporary = signal.data()[a] - signal.data()[b];
+          signal.data()[a] += signal.data()[b];
+          signal.data()[b]  = temporary * twiddle_factor;
         }
         // Update the twiddle factor for the next butterfly operation
         twiddle_factor *= phiT;
@@ -3331,7 +3034,7 @@ namespace Pinakas
       // swap elements
       if (b > a)
       {
-        std::swap(signal[0][a], signal[0][b]);
+        std::swap(signal.data()[a], signal.data()[b]);
       }
     }
 

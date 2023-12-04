@@ -90,6 +90,12 @@ namespace Pinakas
 
   namespace Backend
   {
+    // template<typename T>
+    // auto get_random(Random range) -> std::enable_if<std::is_floating_point<T>::value == true, T>;
+    
+    // template<typename T>
+    // auto get_random(Random range) -> std::enable_if<std::is_floating_point<T>::value != true, T>;
+
     void error_print(const char* caller, const char* message) noexcept
     {
       static std::mutex mtx;
@@ -146,6 +152,10 @@ namespace Pinakas
 #   define PINAKAS_LOG_IF(condition, ...) void(0)
 # endif
   
+# if (not defined NDEBUG) or (defined PINAKAS_LOGGING)
+#   define PINAKAS_DEBUG_MODE
+# endif
+
     // gives the common type T1 and T2 can be implicitely converted to
     template<typename T1, typename T2>
     using appropriate_type = typename std::common_type<T1, T2>::type;
@@ -154,9 +164,11 @@ namespace Pinakas
     template<typename T1, typename T2>
     using if_no_loss = typename std::enable_if<std::is_same<appropriate_type<T1, T2>, T1>::value, T1>::type;
 
-    // enables an overload if T is a floating type
-    template<typename T>
-    using if_floating = typename std::enable_if<std::is_floating_point<T>::value, T>::type;
+    template<template<typename> class M, typename T>
+    using if_matrixlike = typename std::enable_if<std::is_same<M<T>, Matrix<T>>::value or std::is_same<M<T>, Slice<T>>::value>::type;
+
+    template<typename T1, typename T2>
+    using if_different = typename std::enable_if<not std::is_same<T1, T2>::value, decltype(T1()+T2())>::type;
   }
 // --------------------------------------------------------------------------------------
   template<typename T1, typename T2>
@@ -358,135 +370,41 @@ namespace Pinakas
   Matrix<complex> conj(const Matrix<complex>& A);
   Matrix<complex>&& conj(Matrix<complex>&& A);
 // --------------------------------------------------------------------------------------
-  Matrix<complex> fft(const Matrix<complex>& signal);
+  Matrix<complex>   fft(const Matrix<complex>& signal);
   Matrix<complex>&& fft(Matrix<complex>&& signal);
-  Matrix<complex> ifft(const Matrix<complex>& spectrum);
-  Matrix<complex> ifft(Matrix<complex>&& spectrum);
+  Matrix<complex>   ifft(const Matrix<complex>& spectrum);
+  Matrix<complex>   ifft(Matrix<complex>&& spectrum);
 // --Pinakas library: frontend forward declarations--------------------------------------
 // --Pinakas library: backend struct and class definitions-------------------------------
-    struct Size final {
+    struct Size final
+    {
       unsigned M, N, numel;
       inline bool operator==(const Size other) const noexcept;
       inline bool operator!=(const Size other) const noexcept;
     };
 
     template<typename T>
-    class Matrix final
-    {
-    public:
-      // destructor
-      ~Matrix() noexcept;
-      // empty constructor
-      Matrix() noexcept;
-      // empty MxN constructor 
-      explicit Matrix(const unsigned M, const unsigned N);
-      // random MxN constructor 
-      explicit Matrix(const unsigned M, const unsigned N, Random range);
-
-      // fill constructor
-      explicit Matrix(const unsigned M, const unsigned N, const T value);
-      // fill assignation
-      Matrix<T>& operator=(const T value) & noexcept;
-
-      // copy constructor
-      Matrix(const Matrix<T>& other);
-      // copy assignation
-      Matrix<T>& operator=(const Matrix<T>& other) &;
-
-      // move constructor
-      Matrix(Matrix<T>&& other) noexcept;
-      // move assignation
-      Matrix<T>& operator=(Matrix<T>&& other) & noexcept;
-
-      // converting constructor
-      template<typename T2>
-      Matrix(const Matrix<T2>& other);
-      // converting assignation
-      template<typename T2>
-      Matrix<T>& operator=(const Matrix<T2>& other) &;
-    public:
-      // indexing
-      inline T* operator[](const unsigned j) noexcept;
-      inline const T* operator[](const unsigned j) const noexcept;
-
-      // bound-checked flat-indexing
-      T& operator()(signed int k);
-      const T& operator()(signed int k) const;
-
-      // bound-checked indexing
-      T& operator()(signed int j, signed int i);
-      const T& operator()(signed int j, signed int i) const;
-    public:
-      // return matrix dimensions
-      inline Size size() const & noexcept;
-      inline unsigned numel() const & noexcept;
-      inline unsigned M() const & noexcept;
-      inline unsigned N() const & noexcept;
-      inline operator unsigned () const noexcept;     
-    private:
-      // matrix size information
-      Size size_;
-      // T[M * N] array
-        T* data_;
-      // allocates memory to data_
-      void allocate(const unsigned M, const unsigned N);
-    public:
-      // size-based constructor
-      inline explicit Matrix(const Size size);
-      // size-based constructor with specific value
-      inline explicit Matrix(const Size size, T value);
-      // size-based constructor with random values from a range
-      inline explicit Matrix(const Size size, const Random range);
-      // list-based constructor
-      Matrix(const List<T> values);
-      // 2D list-based constructor
-      Matrix(const List<const List<const T>> values);
-      // join matrix sideways constructor
-      Matrix(const List<const Matrix<T>> list);
-    public:
-      Slice<T> operator()(Range rows, Range cols) noexcept;
-      Slice<T> operator()(Range rows, signed int col) noexcept;
-      Slice<T> operator()(signed int row, Range cols) noexcept;
-      Slice<const T> operator()(Range rows, Range cols) const noexcept;
-      Slice<const T> operator()(Range rows, signed int col) const noexcept;
-      Slice<const T> operator()(signed int row, Range cols) const noexcept;
-    public: // container named requirements
-      using value_type = T;
-      using reference  = T&;
-      using iterator   = T*;
-      using const_iterator = const T*;
-      iterator begin(void) noexcept;
-      iterator end(void) noexcept;
-      const_iterator begin(void) const noexcept;
-      const_iterator end(void) const noexcept;
-      T* data(void) noexcept {return data_;}
-      const T* data(void) const noexcept {return data_;}
-    friend class Slice<T>;
-    friend Matrix<T>&& transpose<T>(Matrix<T>&& A);
-    friend Matrix<T>&& reshape<T>(Matrix<T>&& A, const unsigned M, const unsigned N);
-    };
-
-    template<typename T>
     class Slice final
     {
     public:
-      inline explicit Slice(T* matrix_data, const Size matrix_size, const Range rows, const Range cols) noexcept;
-      inline Slice(const Slice<T>& other) noexcept;
-      Slice<T>& operator=(const Slice<T>& other);
-      Slice<T>& operator=(const Matrix<T>& other);
+      inline explicit  Slice(T* matrix_data, const Size matrix_size, const Range rows, const Range cols) noexcept;
+      inline           Slice(const Slice<T>& other) noexcept;
+      inline Slice<T>& operator=(const Slice<T>& other);
+      inline Slice<T>& operator=(const Matrix<T>& other);
+      inline Slice<T>& operator=(T value);
       
-      inline Size size(void) const & noexcept;
-      inline unsigned numel(void) const & noexcept;
-      inline unsigned M(void) const & noexcept;
-      inline unsigned N(void) const & noexcept;
+      inline Size     size()  const & noexcept { return size_; }
+      inline unsigned numel() const & noexcept { return size_.numel; }
+      inline unsigned M()     const & noexcept { return size_.M; }
+      inline unsigned N()     const & noexcept { return size_.N; }
       // indexing
-      inline T* operator[](const unsigned j) noexcept;
-      inline const T* operator[](const unsigned j) const noexcept;
+      T*       operator[](const unsigned j)       noexcept { return matrix_data_ + (j*matrix_M_ + offset_); }
+      const T* operator[](const unsigned j) const noexcept { return matrix_data_ + (j*matrix_M_ + offset_); }
       // bound-checked flat-indexing
-      T& operator()(signed int k) noexcept;
+      T&       operator()(signed int k)       noexcept;
       const T& operator()(signed int k) const noexcept;
       // bound-checked indexing
-      T& operator()(signed int j, signed int i) noexcept;
+      T&       operator()(signed int j, signed int i)       noexcept;
       const T& operator()(signed int j, signed int i) const noexcept;
     private:
       T* matrix_data_;
@@ -497,25 +415,30 @@ namespace Pinakas
       template<typename T0>
       class Iterator
       {
+      public:
+        explicit Iterator(Slice<T>& slice, const int value) noexcept : slice_(slice), current_(value) {}
+        T0&  operator*() const noexcept
+        {
+          unsigned i = current_ % slice_.size_.N;
+          unsigned j = current_ / slice_.size_.N;
+          return slice_.matrix_data_[i + j*slice_.matrix_M_ + slice_.offset_];
+        }
+        void operator++()                            noexcept { ++current_;}
+        bool operator!=(const Iterator& other) const noexcept { return current_ != other.current_; }
       private:
         Slice<T>& slice_;
         signed int current_;
-      public:
-        inline explicit Iterator(Slice<T>& slice, const int value) noexcept;
-        inline T0& operator*() const noexcept;
-        inline void operator++() noexcept;
-        inline bool operator!=(const Iterator& other) const noexcept;
       };
     public:
-      inline Iterator<T> begin() noexcept;
-      inline Iterator<T> end() noexcept;
-      inline Iterator<const T> begin() const noexcept;
-      inline Iterator<const T> end() const noexcept;
+      Iterator<T>       begin()       noexcept { return Iterator<T>(*this, 0); }
+      Iterator<T>       end()         noexcept { return Iterator<T>(*this, size_.numel); }
+      Iterator<const T> begin() const noexcept { return Iterator<const T>(*this, 0); }
+      Iterator<const T> end()   const noexcept { return Iterator<const T>(*this, size_.numel); }
     };
 
     struct Random final
     {
-      Random(const double min, const double max) noexcept;
+      explicit Random(const double min, const double max) noexcept;
       const double min_;
       const double max_;
     };
@@ -524,7 +447,7 @@ namespace Pinakas
     {
     public:
       inline explicit Range(const unsigned stop) noexcept;
-      inline Range(const int start, const int stop) noexcept;
+      inline explicit Range(const int start, const int stop) noexcept;
       inline explicit Range(const int start, const int stop, const unsigned step) noexcept;
       int start;
       int stop;
@@ -546,6 +469,92 @@ namespace Pinakas
       inline Iterator end() const noexcept;
     };
 
+    template<typename T>
+    class Matrix final
+    {
+    static_assert(std::is_arithmetic<T>::value
+      or std::is_same<T, std::complex<float>>::value
+      or std::is_same<T, std::complex<double>>::value
+      or std::is_same<T, std::complex<long double>>::value,
+      "T must be an arithmetic or complex type");
+    public:
+      // destructor
+      ~Matrix() noexcept;
+      // empty constructor
+      Matrix() noexcept;
+      // empty MxN constructor 
+      explicit Matrix(const unsigned M, const unsigned N);
+      // random MxN constructor 
+      explicit Matrix(const unsigned M, const unsigned N, Random range);
+
+      // fill
+      explicit Matrix(const unsigned M, const unsigned N, const T value);
+      Matrix<T>& operator=(const T value) noexcept;
+
+      // copy
+      Matrix(const Matrix<T>& other);
+      Matrix<T>& operator=(const Matrix<T>& other);
+
+      // move
+      Matrix(Matrix<T>&& other) noexcept;
+      Matrix<T>& operator=(Matrix<T>&& other) noexcept;
+    public:
+      // indexing
+      inline       T* operator[](unsigned int j)       noexcept { return data_ + (j * size_.N); }
+      inline const T* operator[](unsigned int j) const noexcept { return data_ + (j * size_.N); }
+      // bound-checked flat-indexing
+      inline       T& operator()(signed int k)       noexcept;
+      inline const T& operator()(signed int k) const noexcept;
+      // bound-checked indexing
+      inline       T& operator()(signed int j, signed int i)       noexcept;
+      inline const T& operator()(signed int j, signed int i) const noexcept;
+    public:
+      Size             size()  const noexcept { return size_; }
+      unsigned         numel() const noexcept { return size_.numel; }
+      unsigned         M()     const noexcept { return size_.M; }
+      unsigned         N()     const noexcept { return size_.N; }
+      operator unsigned ()     const noexcept { return size_.numel; } 
+    private:
+      Size size_; // matrix size information
+      T*   data_; // T[M * N] array
+      
+      void allocate(const unsigned M, const unsigned N); // allocates memory to data_
+    public:
+      // size-based constructor
+      inline explicit Matrix(const Size size);
+      // size-based constructor with specific value
+      inline explicit Matrix(const Size size, T value);
+      // size-based constructor with random values from a range
+      inline explicit Matrix(const Size size, const Random range);
+      // list-based
+      Matrix(const List<T> values);
+      // 2D list-based
+      Matrix(const List<const List<const T>> values);
+      // join matrix sideways
+      Matrix(const List<const Matrix<T>> list);
+    public:
+      Slice<T>       operator()(Range rows, Range cols)           noexcept;
+      Slice<T>       operator()(Range rows, signed int col)       noexcept { return operator()(rows, {col, col}); }
+      Slice<T>       operator()(signed int row, Range cols)       noexcept { return operator()({row, row}, cols); }
+      Slice<const T> operator()(Range rows, Range cols)     const noexcept;
+      Slice<const T> operator()(Range rows, signed int col) const noexcept { return operator()(rows, {col, col}); }
+      Slice<const T> operator()(signed int row, Range cols) const noexcept { return operator()({row, row}, cols); }
+    public: // container named requirements
+      using value_type     = T;
+      using reference      = T&;
+      using iterator       = T*;
+      using const_iterator = const T*;
+      iterator       begin()       noexcept { return data_; }
+      iterator       end()         noexcept { return data_ + size_.numel; }
+      const_iterator begin() const noexcept { return data_; }
+      const_iterator end()   const noexcept { return data_ + size_.numel; }
+      T*             data()        noexcept { return data_;}
+      const T*       data()  const noexcept { return data_;}
+    friend class Slice<T>;
+    friend Matrix<T>&& transpose<T>(Matrix<T>&& A);
+    friend Matrix<T>&& reshape<T>(Matrix<T>&& A, const unsigned M, const unsigned N);
+    };
+
     struct Set final
     {
       Set(const char* name, const Matrix<double>& x, const Matrix<double>& y) noexcept;
@@ -559,51 +568,141 @@ namespace Pinakas
       const Matrix<double>& y;
     };
 // --Pinakas library: operator overloads forward declarations----------------------------
-
-    template<template<typename> class M1, typename T>
-    std::ostream& operator<<(std::ostream& ostream, const M1<T>& A);
+    template<template<typename> class M, typename T, typename = Backend::if_matrixlike<M, T>>
+    std::ostream& operator<<(std::ostream& ostream, const M<T>& A);
     std::ostream& operator<<(std::ostream& ostream, const Size size);
   // --------------------------------------------------------------------------------------
     template<typename T1, typename T2>
-    Matrix<T1>& operator+=(Matrix<T1>& A, const Matrix<T2>& B);
+    Matrix<T1>& operator+=(Matrix<T1>& A, const Matrix<T2>& B)
+    {
+      return add_mat_inplace(A, B);
+    }
+
     template<typename T>
-    Matrix<T>& operator+=(Matrix<T>& A, const Random B) noexcept;
+    Matrix<T>& operator+=(Matrix<T>& A, const Random B) noexcept
+    {
+      return add_rng_inplace(A, B);
+    }
+
     template<typename T1, typename T2>
-    Matrix<T1>& operator+=(Matrix<T1>& A, const T2 B) noexcept;
-    template<typename T1, typename T2, typename T3 = Backend::appropriate_type<T1, T2>>
-    Matrix<T3> operator+(const Matrix<T1>& A, const Matrix<T2>& B);
-    template<typename T>
-    Matrix<T> operator+(const Matrix<T>& A, const Matrix<T>& B);
-    template<typename T, typename T3 = Backend::appropriate_type<T, double>>
-    Matrix<T3> operator+(const Matrix<T>& A, const Random B) noexcept;
-    template<typename T, typename T3 = Backend::appropriate_type<T, double>>
-    Matrix<T3> operator+(const Random A, const Matrix<T>& B) noexcept;
-    template<typename T1, typename T2, typename T3 = Backend::appropriate_type<T1, T2>>
-    Matrix<T3> operator+(const Matrix<T1>& A, const T2 B) noexcept;
-    template<typename T1, typename T2, typename T3 = Backend::appropriate_type<T1, T2>>
-    Matrix<T3> operator+(const T1 A, const Matrix<T2>& B) noexcept;
-    template<typename T>
-    Matrix<T>& operator+(const Matrix<T>& A) noexcept;
-    template<typename T1, typename T2, typename T3 = Backend::if_no_loss<T2, T1>>
-    Matrix<T3>&& operator+(const Matrix<T1>& A, Matrix<T2>&& B);
-    template<typename T1, typename T2, typename T3 = Backend::if_no_loss<T1, T2>>
-    Matrix<T3>&& operator+(Matrix<T1>&& A, const Matrix<T2>& B);
+    Matrix<T1>& operator+=(Matrix<T1>& A, const T2 B) noexcept
+    {
+      return add_val_inplace(A, B);
+    }
+    
     template<typename T1, typename T2>
-    auto operator+(Matrix<T1>&& A, Matrix<T2>&& B) -> Matrix<Backend::if_no_loss<T2, T1>>&&;
+    auto operator+(const Matrix<T1>& A, const Matrix<T2>& B) -> Matrix<Backend::if_different<T1, T2>>
+    {
+      return add_mat_sequ(A, B);
+    }
+    
+    template<typename T>
+    Matrix<T> operator+(const Matrix<T>& A, const Matrix<T>& B)
+    {
+      return add_mat_sequ(A, B);
+    }
+
+    template<typename T>
+    auto operator+(const Matrix<T>& A, const Random B) noexcept -> Matrix<Backend::if_no_loss<T, double>>
+    {
+      return add_rng(A, B);
+    }
+
+    template<typename T>
+    auto operator+(const Random A, const Matrix<T>& B) noexcept -> Matrix<Backend::if_no_loss<T, double>>
+    {
+      return add_rng(B, A);
+    }
+
+    template<typename T>
+    Matrix<T> operator+(const Matrix<T>& A, const T B) noexcept
+    {
+      return add_val_sequ(A, B);
+    }
+
+    template<typename T1, typename T2, typename T3>
+    Matrix<T3> operator+(const Matrix<T1>& A, const T2 B) noexcept
+    {
+      return add_val_sequ(A, B);
+    }
+    
+    template<typename T>
+    Matrix<T> operator+(const T A, const Matrix<T>& B) noexcept
+    {
+      return add_val_sequ(B, A);
+    }
+    
+    template<typename T1, typename T2, typename T3>
+    Matrix<T3> operator+(const T1 A, const Matrix<T2>& B) noexcept
+    {
+      return add_val_sequ(B, A);
+    }
+
+    template<typename T>
+    Matrix<T> operator+(const Matrix<T>& A) noexcept
+    {
+      return A;
+    }
+
     template<typename T1, typename T2>
-    auto operator+(Matrix<T1>&& A, Matrix<T2>&& B) -> Matrix<Backend::if_no_loss<T1, T2>>&&;
+    auto operator+(const Matrix<T1>& A, Matrix<T2>&& B) -> Matrix<Backend::if_no_loss<T2, T1>>&&
+    {
+      return std::move(add_mat_inplace(B, A));
+    }
+    
+    template<typename T1, typename T2>
+    auto operator+(Matrix<T1>&& A, const Matrix<T2>& B) -> Matrix<Backend::if_no_loss<T1, T2>>&&
+    {
+      return std::move(add_mat_inplace(A, B));
+    }
+    
+    template<typename T1, typename T2>
+    auto operator+(Matrix<T1>&& A, Matrix<T2>&& B) -> Matrix<Backend::if_no_loss<T2, T1>>&&
+    {
+      return std::move(add_mat_inplace(B, A));
+    }
+
+    template<typename T1, typename T2>
+    auto operator+(Matrix<T1>&& A, Matrix<T2>&& B) -> Matrix<Backend::if_no_loss<T1, T2>>&&
+    {
+      return std::move(add_mat_inplace(A, B));
+    }
+    
     template<typename T>
-    Matrix<T>&& operator+(Matrix<T>&& A, Matrix<T>&& B);
-    template<typename T, typename T3 = Backend::if_no_loss<T, double>>
-    Matrix<T3>&& operator+(Matrix<T>&& A, const Random B) noexcept;
-    template<typename T, typename T3 = Backend::if_no_loss<T, double>>
-    Matrix<T3>&& operator+(const Random A, Matrix<T>&& B) noexcept;
-    template<typename T1, typename T2, typename T3 = Backend::if_no_loss<T2, T1>>
-    Matrix<T3>&& operator+(const T1 A, Matrix<T2>&& B) noexcept;
-    template<typename T1, typename T2, typename T3 = Backend::if_no_loss<T1, T2>>
-    Matrix<T3>&& operator+(Matrix<T1>&& A, const T2 B) noexcept;
+    Matrix<T>&& operator+(Matrix<T>&& A, Matrix<T>&& B)
+    {
+      return std::move(add_mat_inplace(A, B));
+    }
+
     template<typename T>
-    Matrix<T>&& operator+(Matrix<T>&& A) noexcept;
+    auto operator+(Matrix<T>&& A, const Random B) noexcept -> Matrix<Backend::if_no_loss<T, double>>&&
+    {
+      return std::move(add_rng_inplace(A, B));
+    }
+
+    template<typename T>
+    auto operator+(const Random A, Matrix<T>&& B) noexcept -> Matrix<Backend::if_no_loss<T, double>>&&
+    {
+      return std::move(add_rng_inplace(B, A));
+    }
+
+    template<typename T1, typename T2>
+    auto operator+(const T1 A, Matrix<T2>&& B) noexcept -> Matrix<Backend::if_no_loss<T2, T1>>&&
+    {
+      return std::move(add_val_inplace(B, A));
+    }
+
+    template<typename T1, typename T2>
+    auto operator+(Matrix<T1>&& A, const T2 B) noexcept -> Matrix<Backend::if_no_loss<T1, T2>>&&
+    {
+      return std::move(add_val_inplace(A, B));
+    }
+
+    template<typename T>
+    Matrix<T>&& operator+(Matrix<T>&& A) noexcept
+    {
+      return std::move(A);
+    }
   // --------------------------------------------------------------------------------------
     template<typename T1, typename T2>
     Matrix<T1>& operator-=(Matrix<T1>& A, const Matrix<T2>& B);
