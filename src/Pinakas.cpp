@@ -878,7 +878,7 @@ namespace Pinakas
   }
 // --------------------------------------------------------------------------------------
   template<typename T>
-  Slice<T>::Slice(T* matrix_data, const Size matrix_size, const Range rows, const Range cols) noexcept :
+  Slice<T>::Slice(T* matrix_data, Size matrix_size, Range rows, Range cols) noexcept :
     matrix_data_(matrix_data),
     matrix_M_(matrix_size.M),
     offset_(rows.start * matrix_size.N + cols.start),
@@ -1073,36 +1073,6 @@ namespace Pinakas
     stop(stop),
     step(((stop-start) >= 0) ? step : -signed(step))
   {}
-  
-  Range::Iterator::Iterator(const int value, const int step) noexcept :
-    current(value),
-    step(step)
-  {}
-  
-  int Range::Iterator::operator*() const noexcept
-  {
-    return current;
-  }
-
-  void Range::Iterator::operator++() noexcept
-  {
-    current += step;
-  }
-
-  bool Range::Iterator::operator!=(const Iterator& other) const noexcept
-  {           
-    return (step > 0) ? (current <= other.current) : (current >= other.current);
-  }
-  
-  Range::Iterator Range::begin() const noexcept
-  {
-    return Iterator(start, step);
-  }
-
-  Range::Iterator Range::end() const noexcept
-  {
-      return Iterator(stop, step);
-  }
 
   Set::Set(const char* name, const Matrix<double>& x, const Matrix<double>& y) noexcept :
     name{name},
@@ -2462,7 +2432,7 @@ namespace Pinakas
     return upsampled;
   }
 
-  Matrix<double> sinc_fir(const unsigned length, const double frequency)
+  Matrix<double> sinc_impulse(const unsigned length, const double frequency)
   {
     Matrix<double> impulse;
 
@@ -2480,7 +2450,7 @@ namespace Pinakas
     impulse = Matrix<double>(1, length);
     for (signed int k = 0; k < signed(length); ++k)
     {
-      double temporary = M_PI * (k - offset) * frequency;
+      const double temporary = M_PI * (k - offset) * frequency;
       impulse.data()[k] = (temporary == 0) ? 1 : std::sin(temporary) / temporary;
     }
 
@@ -2488,74 +2458,78 @@ namespace Pinakas
   }
 
   template<typename T>
-  Matrix<double> resample(const Matrix<T>& data, const unsigned L, const unsigned keep, const double alpha, const bool tail)
+  Matrix<double> resample(const Matrix<T>& data, unsigned L, unsigned reflect, float alpha, const bool tail)
   {
     static_assert(std::is_convertible<T, double>::value, "T must be convertible to double");
     Matrix<double> resampled;
 
-    if (data.N() < 2)
+    if (data.N() < 4)
     {
-      PINAKAS_ERROR("'data' must be atleast 2 element wide");
-      return resampled;
-    }
-    
-    if (L <= 1)
-    {
-      PINAKAS_ERROR("'L' must be at least 2");
-      return resampled;
-    }
-    
-    if (keep >= data.numel())
-    {
-      PINAKAS_ERROR("'keep' must be less than the number of elements in 'data'");
-      return resampled;
-    }
-    
-    if (alpha < (1.0/L))
-    {
-      PINAKAS_ERROR("'alpha' must be at least 1/L");
+      PINAKAS_ERROR("'data' must be atleast 4 element wide");
       return resampled;
     }
 
+#  if defined PINAKAS_DEBUG_MODE
+    if (L <= 1)
+    {
+      L = 2;
+      PINAKAS_WARNING("'L' must be at least 2, 2 used instead");
+    }
+    
+    if (reflect >= data.N())
+    {
+      reflect = 2;
+      PINAKAS_WARNING("'reflect' must be less than the width of 'data', 2 used instead");
+    }
+    
+    if (alpha < (1.0f/L))
+    {
+      alpha = 3.5f;
+      PINAKAS_WARNING("'alpha' must be at least 1/L, 3.5 used instead");
+    }
+# endif
+
     // design low-pass interpolation filter
-    const unsigned offset        = L * alpha; // offset to impulse center
+    const unsigned offset        = unsigned(L * alpha); // offset to impulse center
     const unsigned filter_length = 2 * offset + 1;
-    const Matrix<double> filter  = blackman(sinc_fir(filter_length, 1.0 / L));
+    static auto    filter_cached = blackman(sinc_impulse(filter_length, 1.0/L));
+    static auto    offset_cached = offset;
+    static auto    L_cached      = L;
+    if ((offset_cached != offset) || (L_cached != L))
+    {
+      filter_cached = blackman(sinc_impulse(filter_length, 1.0/L));
+      offset_cached = offset;
+      L_cached      = L;
+    }
 
     const unsigned N = data.N();
     const unsigned M = data.M();
 
     // indices to the first and last upsampled elements in the symetrically extended data
-    const unsigned first = L*keep;
+    const unsigned first = L*reflect;
     const unsigned last  = L*N + first - (tail ? 1 : L);
 
     // symetrically extended data
-    const unsigned extended_length = N + 2 * keep;
+    const unsigned extended_length = N + 2 * reflect;
     Matrix<double> extended(M, extended_length, 0);
 
-    // resampled data
-    resampled = Matrix<double> (M, last - first + 1, 0);
-    
-    // resample every row separately
-    for (unsigned m = 0; m < M; ++m)
+    resampled = Matrix<double>(M, last - first + 1, 0);
+    for (unsigned m = 0; m < M; ++m) // resample every row separately
     {
-      // store and upsample left symetrical data
       unsigned k = 0;
-      for (unsigned i = 0; i < keep; ++i)
+      for (unsigned i = 0; i < reflect; ++i, ++k) // store and upsample left symetrical data
       {
-        extended[m][k++] = 2*data[m][0] - data[m][keep - i];
+        extended[m][k] = 2*data[m][0] - data[m][reflect - i];
       }
 
-      // store and upsample data
-      for (unsigned i = 0; i < N; ++i)
+      for (unsigned i = 0; i < N; ++i, ++k)       // store and upsample data
       {
-        extended[m][k++] = data[m][i];
+        extended[m][k] = data[m][i];
       }
-        
-      // store and upsample right symetrical data
-      for (unsigned i = 0; i < keep; ++i)
-      {        
-        extended[m][k++] = 2*data[m][N-1] - data[m][N-2 - i];
+
+      for (unsigned i = 0; i < reflect; ++i, ++k) // store and upsample right symetrical data
+      {
+        extended[m][k] = 2*data[m][N-1] - data[m][N-2 - i];
       }
 
       // interpolate upsampled data using a cropped convolution
@@ -2563,11 +2537,11 @@ namespace Pinakas
       {
         for (unsigned j = 0; j < filter_length; ++j)
         {
-          unsigned k = i*L + j - offset;
+          k = i*L + j - offset;
           // skips if the index is not within the upsampled data range (cropping)
           if ((first <= k) && (k <= last))
           {
-            resampled[m][k - first] += extended[m][i] * filter[m][j];
+            resampled[m][k - first] += extended[m][i] * filter_cached[m][j];
           }
         }
       }

@@ -355,7 +355,7 @@ namespace Pinakas
 // --------------------------------------------------------------------------------------
   Matrix<double> sinc_impulse(const unsigned length, const double frequency);
   template<typename T>
-  Matrix<double> resample(const Matrix<T>& data, const unsigned L, const unsigned keep=2, const double alpha=3.5, const bool tail=false);
+  Matrix<double> resample(const Matrix<T>& data, unsigned L, unsigned reflect=2, float alpha=3.5, const bool tail=false);
 // --------------------------------------------------------------------------------------
   void plot(List<Set> data_sets, bool persistent = true, bool remove = true, bool pause = false, bool lines = true);
 // --------------------------------------------------------------------------------------
@@ -383,7 +383,7 @@ namespace Pinakas
     class Slice final
     {
     public:
-      inline explicit  Slice(T* matrix_data, const Size matrix_size, const Range rows, const Range cols) noexcept;
+      inline explicit  Slice(T* matrix_data, Size matrix_size, Range rows, Range cols) noexcept;
       inline           Slice(const Slice<T>& other) noexcept;
       inline Slice<T>& operator=(const Slice<T>& other);
       inline Slice<T>& operator=(const Matrix<T>& other);
@@ -450,19 +450,20 @@ namespace Pinakas
       int step;
     private:
       class Iterator
-      {
+      {  
       public:
-        inline explicit Iterator(const int value, const int step) noexcept;
-        inline int operator*() const noexcept;
-        inline void operator++() noexcept;
-        inline bool operator!=(const Iterator& other) const noexcept;
+        explicit Iterator(int value, int step)           noexcept : current(value), step(step) {}
+        int      operator*()                       const noexcept { return current; }
+        void     operator++()                            noexcept { current += step; }
+        bool     operator!=(const Iterator& other) const noexcept
+        { return (step > 0) ? (current <= other.current) : (current >= other.current); }
       private:
         int current;
         const int step;
       };
     public:
-      inline Iterator begin() const noexcept;
-      inline Iterator end() const noexcept;
+      Iterator begin() const noexcept { return Iterator(start, step); }
+      Iterator end()   const noexcept { return Iterator(stop,  step); }
     };
 
     template<typename T>
