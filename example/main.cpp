@@ -1,4 +1,3 @@
-#define NDEBUG
 #include "../src/Pinakas.cpp"
 #include <iostream>
 
@@ -12,7 +11,7 @@ int main()
   auto y_hi = resample(y_lo, 10);
   auto x_hi = linspace(x_lo(0), x_lo(-1), y_hi.numel());
 
-  plot({Set("lo", x_lo, y_lo), Set("hi", x_hi, y_hi)});
+  // plot({Set("lo", x_lo, y_lo), Set("hi", x_hi, y_hi)});
 
   CHRONOMETRO_MEASURE(5)
   {

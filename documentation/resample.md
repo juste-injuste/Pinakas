@@ -50,7 +50,7 @@ The function resamples data using the following steps:
 
 Reflecting the data at its edges increase the resampled data's quality at its edges. Passed 2 the benefit is essentially non-observable.
 
-The resulting data is of size `data.M()` by `L*data.N() + (1-L)*!tail`.
+The resulting data is of size `data.M()` by `L*data.N() - (tail ? 1 : L)`.
 
 ## Errors
 
