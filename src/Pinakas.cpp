@@ -441,6 +441,29 @@ namespace Pinakas
         data_[k] = other.data()[k];
       }
     }
+    else PINAKAS_ERROR("could not copy assign, self reference is not supported");
+
+    PINAKAS_LOG("copied %ux%u", other.size_.M, other.size_.N);
+  }
+
+  template<typename T>
+  Matrix<T>::Matrix(const Slice<T>& other)
+  {
+    if (this != static_cast<const void*>(&other))
+    {
+      // allocate memory
+      allocate(other.M(), other.N());
+
+      // store value
+      for (unsigned m = 0; m < size_.M; ++m)
+      {
+        for (unsigned n = 0; n < size_.N; ++n)
+        {
+          *this[m][n] = other[m][n];
+        }
+      }
+    }
+    else PINAKAS_ERROR("could not copy assign, self reference is not supported");
 
     PINAKAS_LOG("copied %ux%u", other.size_.M, other.size_.N);
   }
@@ -616,7 +639,7 @@ namespace Pinakas
   void Matrix<T>::allocate(const unsigned M, const unsigned N)
   {
     // validate sizes
-    if (!(M && N))
+    if ((M == 0) || (N == 0))
     {
       std::stringstream error_message;
       error_message << "error: allocate: dimensions are " << M << 'x' << N;
@@ -834,7 +857,8 @@ namespace Pinakas
     PINAKAS_LOG("copy assigned");
 
     // validate both matrices are not the same
-    if (this != &other) {
+    if (this != &other)
+    {
       // allocate memory if necessary
       if ((size_ != other.size_) ||!data_)
         allocate(other.size_.M, other.size_.N);
@@ -843,6 +867,35 @@ namespace Pinakas
       for (unsigned k = 0; k < size_.numel; ++k)
         data_[k] = other.data()[k];
     }
+    else PINAKAS_ERROR("could not copy assign, self reference is not supported");
+
+    return *this;
+  }
+  template<typename T>
+  Matrix<T>& Matrix<T>::operator=(const Slice<T>& other)
+  {
+    PINAKAS_LOG("copy assigned");
+
+    // validate both matrices are not the same
+    if (data_ != other.matrix_data_)
+    {
+      // allocate memory if necessary
+      if ((size_ != other.size_) || (data_ == nullptr))
+      {
+        allocate(other.size_.M, other.size_.N);
+      }
+
+      // store value
+      for (unsigned m = 0; m < size_.M; ++m)
+      {
+        for (unsigned n = 0; n < size_.N; ++n)
+        {
+          *this[m][n] = other[m][n];
+        }
+      }
+    }
+    else PINAKAS_ERROR("could not copy assign, self reference is not supported");
+    
     return *this;
   }
 
@@ -1522,60 +1575,68 @@ namespace Pinakas
     return std::move(pow_ll_val_inplace(A, B));
   }
 // --------------------------------------------------------------------------------------
-  template<typename T>
-  Matrix<T> floor(const Matrix<T>& A)
+  template<template<typename> class M, typename T>
+  Matrix<T> floor(const M<T>& A)
   {
     static_assert(std::is_floating_point<T>::value, "T must be a floating-point type");
     Matrix<T> result(A.size());
 
-    const unsigned n = A.numel();
-    for (unsigned k = 0; k < n; ++k)
-      result.data()[k] = std::floor(A.data()[k]);
-
-    return result;
-  }
-
-  template<typename T>
-  Matrix<T>&& floor(Matrix<T>&& A) noexcept
-  {
-    static_assert(std::is_floating_point<T>::value, "T must be a floating-point type");
-    const unsigned n = A.numel();
-    for (unsigned k = 0; k < n; ++k)
-      A.data()[k] = std::floor(A.data()[k]);
-
-    return std::move(A);
-  }
-// --------------------------------------------------------------------------------------
-  template<typename T>
-  Matrix<T> round(const Matrix<T>& A)
-  {
-    static_assert(std::is_floating_point<T>::value, "T must be a floating-point type");
-    Matrix<T> result(A.size());
-
-    const unsigned n = A.numel();
-    for (unsigned k = 0; k < n; ++k)
-      result.data()[k] = std::round(A.data()[k]);
-
-    return result;
-  }
-
-  template<typename T>
-  Matrix<T>&& round(Matrix<T>&& A) noexcept
-  {
-    static_assert(std::is_floating_point<T>::value, "T must be a floating-point type");
     const unsigned n = A.numel();
     for (unsigned k = 0; k < n; ++k)
     {
-      A.data()[k] = std::round(A.data()[k]);
+      result.data()[k] = std::floor(A.data()[k]);
+    }
+
+    return result;
+  }
+
+  template<template<typename> class M, typename T>
+  M<T>&& floor(M<T>&& A) noexcept
+  {
+    static_assert(std::is_floating_point<T>::value, "floor: T must be a floating-point type");
+    static_assert(not std::is_const<T>::value, "floor: T must not be const");
+
+    for (T& data : A)
+    {
+      data = std::floor(data);
     }
 
     return std::move(A);
   }
 // --------------------------------------------------------------------------------------
-  template<typename T>
-  Matrix<T> ceil(const Matrix<T>& A)
+  template<template<typename> class M, typename T>
+  Matrix<T> round(const M<T>& A)
   {
-    static_assert(std::is_floating_point<T>::value, "T must be a floating-point type");
+    static_assert(std::is_floating_point<T>::value, "round: T must be a floating-point type");
+    Matrix<T> result(A.size());
+
+    const unsigned n = A.numel();
+    for (unsigned k = 0; k < n; ++k)
+    {
+      result.data()[k] = std::round(A.data()[k]);
+    }
+
+    return result;
+  }
+
+  template<template<typename> class M, typename T>
+  M<T>&& round(M<T>&& A) noexcept
+  {
+    static_assert(std::is_floating_point<T>::value, "round: T must be a floating-point type");
+    static_assert(not std::is_const<T>::value, "round: T must not be const");
+
+    for (T& data : A)
+    {
+      data = std::round(data);
+    }
+
+    return std::move(A);
+  }
+// --------------------------------------------------------------------------------------
+  template<template<typename> class M, typename T>
+  Matrix<T> ceil(const M<T>& A)
+  {
+    static_assert(std::is_floating_point<T>::value, "ceil: T must be a floating-point type");
     Matrix<T> result(A.size());
 
     const unsigned n = A.numel();
@@ -1587,14 +1648,15 @@ namespace Pinakas
     return result;
   }
 
-  template<typename T>
-  Matrix<T>&& ceil(Matrix<T>&& A) noexcept
+  template<template<typename> class M, typename T>
+  M<T>&& ceil(M<T>&& A) noexcept
   {
-    static_assert(std::is_floating_point<T>::value, "T must be a floating-point type");
-    const unsigned n = A.numel();
-    for (unsigned k = 0; k < n; ++k)
+    static_assert(std::is_floating_point<T>::value, "ceil: T must be a floating-point type");
+    static_assert(not std::is_const<T>::value, "ceil: T must not be const");
+
+    for (T& data : A)
     {
-      A.data()[k] = std::round(A.data()[k]);
+      data = std::ceil(data);
     }
 
     return std::move(A);
@@ -2102,9 +2164,11 @@ namespace Pinakas
     return result;
   }
 
-  template<template<typename> class M1, typename T>
-  M1<T>&& reverse(M1<T>&& A) noexcept
+  template<template<typename> class M, typename T>
+  M<T>&& reverse(M<T>&& A) noexcept
   {
+    static_assert(not std::is_const<T>::value, "reverse: T must not be const");
+
     const unsigned n   = A.numel();
     const unsigned n_2 = n >> 1;
     for (unsigned k = 0; k < n_2; ++k)
@@ -2422,11 +2486,12 @@ namespace Pinakas
 // --------------------------------------------------------------------------------------
   Matrix<double> upsample(const Matrix<double>& data, const unsigned L)
   {
-    Matrix<double> upsampled(1, L * data.numel(), 0);
+    const unsigned n = data.numel();
+    Matrix<double> upsampled(1, L * n, 0);
 
-    for (unsigned k = 0; k < data.numel(); ++k)
+    for (unsigned k = 0, kL = 0; k < n; ++k, kL += L)
     {
-      upsampled.data()[k * L] = data.data()[k];
+      upsampled.data()[kL] = data.data()[k];
     }
 
     return upsampled;
@@ -2556,15 +2621,12 @@ namespace Pinakas
     if (A.numel() != 0)
     {
       unsigned max_len = 0;
-      for (unsigned y = 0; y < A.M(); ++y)
+      for (T data : A)
       {
-        for (unsigned x = 0; x < A.N(); ++x)
-        {
-          std::stringstream ss;
-          ss.copyfmt(ostream);
-          ss << A[y][x];
-          max_len = std::max(size_t(max_len), ss.str().length());
-        }
+        std::stringstream ss;
+        ss.copyfmt(ostream);
+        ss << data;
+        max_len = std::max(size_t(max_len), ss.str().length());
       }
       
       for (unsigned y = 0; y < A.M(); ++y)

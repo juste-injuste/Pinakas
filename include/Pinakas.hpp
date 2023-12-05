@@ -258,18 +258,18 @@ namespace Pinakas
   template<typename T1, typename T2, typename T3 = decltype(T1()+T2())>
   Matrix<T3> pow_rl_val(const Matrix<T1>& B, const T2 A) noexcept;
 // --------------------------------------------------------------------------------------
-  template<typename T>
-  Matrix<T> floor(const Matrix<T>& A);
-  template<typename T>
-  Matrix<T>&& floor(Matrix<T>&& A) noexcept;
-  template<typename T>
-  Matrix<T> round(const Matrix<T>& A);
-  template<typename T>
-  Matrix<T>&& round(Matrix<T>&& A) noexcept;
-  template<typename T>
-  Matrix<T> ceil(const Matrix<T>& A);
-  template<typename T>
-  Matrix<T>&& ceil(Matrix<T>&& A) noexcept;
+  template<template<typename> class M, typename T>
+  Matrix<T> floor(const M<T>& A);
+  template<template<typename> class M, typename T>
+  M<T>&& floor(M<T>&& A) noexcept;
+  template<template<typename> class M, typename T>
+  Matrix<T> round(const M<T>& A);
+  template<template<typename> class M, typename T>
+  M<T>&& round(M<T>&& A) noexcept;
+  template<template<typename> class M, typename T>
+  Matrix<T> ceil(const M<T>& A);
+  template<template<typename> class M, typename T>
+  M<T>&& ceil(M<T>&& A) noexcept;
 // --------------------------------------------------------------------------------------
   template<typename T1, typename T2>
   Matrix<double> mul(const Matrix<T1>& A, const Matrix<T2>& B);
@@ -430,6 +430,7 @@ namespace Pinakas
       Iterator<T>       end()         noexcept { return Iterator<T>(*this, size_.numel); }
       Iterator<const T> begin() const noexcept { return Iterator<const T>(*this, 0); }
       Iterator<const T> end()   const noexcept { return Iterator<const T>(*this, size_.numel); }
+    friend class Matrix<T>;
     };
 
     struct Random final
@@ -490,7 +491,9 @@ namespace Pinakas
 
       // copy
       Matrix(const Matrix<T>& other);
+      Matrix(const Slice<T>& other);
       Matrix<T>& operator=(const Matrix<T>& other);
+      Matrix<T>& operator=(const Slice<T>& other);
 
       // move
       Matrix(Matrix<T>&& other) noexcept;
