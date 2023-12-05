@@ -9,7 +9,397 @@ namespace Pinakas
 {
   namespace Backend
   {
+    template<typename T1, typename T2>
+    auto add_mat_inplace(Matrix<T1>& A, const Matrix<T2>& B) -> Matrix<T1>&
+    {
+      if ((A.M() != B.M()) || (A.N() != B.N()))
+      {
+        PINAKAS_ERROR("nonconformant arguments (A is %ux%u, B is %ux%u)", A.M(), A.N(), B.M(), B.N());
+        return A;
+      }
 
+      const unsigned n = A.numel();
+      for (unsigned k = 0; k < n; ++k)
+      {
+        A.data()[k] += B.data()[k];
+      }
+
+      return A;
+    }
+
+    template<typename T1, typename T2>
+    auto add_mat(const Matrix<T1>& A, const Matrix<T2>& B) -> Matrix<decltype(T1()+T2())>
+    {
+      Matrix<decltype(T1()+T2())> result;
+      if ((A.M() != B.M()) || (A.N() != B.N()))
+      {
+        PINAKAS_ERROR("nonconformant arguments (A is %ux%u, B is %ux%u)", A.M(), A.N(), B.M(), B.N());
+        return result;
+      }
+
+      result = Matrix<decltype(T1()+T2())>(A.M(), A.N());
+
+      const unsigned n = A.numel();
+      for (unsigned k = 0; k < n; ++k)
+      {
+        result.data()[k] = A.data()[k] + B.data()[k];
+      }
+      
+      return result;
+    }
+
+    template<typename T1, typename T2>
+    auto add_val_inplace(Matrix<T1>& A, const T2 B) noexcept -> Matrix<T1>&
+    {
+      for (T1& data : A)
+      {
+        data += B;
+      }
+
+      return A;
+    }
+
+    template<typename T1, typename T2>
+    auto add_val(const Matrix<T1>& A, const T2 B) noexcept -> Matrix<decltype(T1()+T2())>
+    {
+      Matrix<decltype(T1()+T2())> result(A.size());
+
+      const unsigned n = A.numel();
+      for (unsigned k = 0; k < n; ++k)
+      {
+        result.data()[k] = A.data()[k] + B;
+      }
+
+      return result;
+    }
+
+    template<typename T>
+    auto add_rng_inplace(Matrix<T>& A, Random B) noexcept -> Matrix<T>&
+    {
+      static std::random_device device;
+      static std::mt19937 generator(device());
+      std::uniform_real_distribution<float> uniform_distribution(B.min_, B.max_ + std::is_integral<T>::value);
+
+      for (T& data : A)
+      {
+        data += uniform_distribution(generator);
+      }
+
+      return A;
+    }
+
+    template<typename T>
+    auto add_rng(const Matrix<T>& A, Random B) noexcept -> Matrix<T>
+    {
+      static std::random_device device;
+      static std::mt19937 generator(device());
+      std::uniform_real_distribution<float> uniform_distribution(B.min_, B.max_ + std::is_integral<T>::value);
+      
+      Matrix<T> result(A.size());
+
+      const unsigned n = A.numel();
+      for (unsigned k = 0; k < n; ++k)
+      {
+        result.data()[k] = A.data()[k] + uniform_distribution(generator);
+      }
+
+      return result;
+    }
+  
+    template<typename T1, typename T2>
+    auto mul_mat_inplace(Matrix<T1>& A, const Matrix<T2>& B) -> Matrix<T1>&
+    {
+      if ((A.M() != B.M()) || (A.N() != B.N()))
+      {
+        PINAKAS_ERROR("nonconformant arguments (A is %ux%u, B is %ux%u)", A.M(), A.N(), B.M(), B.N());
+        return A;
+      }
+
+      const unsigned n = A.numel();
+      for (unsigned k = 0; k < n; ++k)
+      {
+        A.data()[k] *= B.data()[k];
+      }
+
+      return A;
+    }
+
+    template<typename T1, typename T2>
+    auto mul_mat(const Matrix<T1>& A, const Matrix<T2>& B) -> Matrix<decltype(T1()+T2())>
+    {
+      Matrix<decltype(T1()+T2())> result;
+      if ((A.M() != B.M()) || (A.N() != B.N()))
+      {
+        PINAKAS_ERROR("nonconformant arguments (A is %ux%u, B is %ux%u)", A.M(), A.N(), B.M(), B.N());
+        return result;
+      }
+
+      result = Matrix<decltype(T1()+T2())>(A.M(), A.N());
+
+      const unsigned n = A.numel();
+      for (unsigned k = 0; k < n; ++k)
+      {
+        result.data()[k] = A.data()[k] * B.data()[k];
+      }
+      
+      return result;
+    }
+
+    template<typename T1, typename T2>
+    auto mul_val_inplace(Matrix<T1>& A, const T2 B) noexcept -> Matrix<T1>&
+    {
+      for (T1& data : A)
+      {
+        data *= B;
+      }
+
+      return A;
+    }
+
+    template<typename T1, typename T2>
+    auto mul_val(const Matrix<T1>& A, const T2 B) noexcept -> Matrix<decltype(T1()+T2())>
+    {
+      Matrix<decltype(T1()+T2())> result(A.size());
+
+      const unsigned n = A.numel();
+      for (unsigned k = 0; k < n; ++k)
+      {
+        result.data()[k] = A.data()[k] * B;
+      }
+
+      return result;
+    }
+
+    template<typename T>
+    auto mul_rng_inplace(Matrix<T>& A, Random B) noexcept -> Matrix<T>&
+    {
+      static std::random_device device;
+      static std::mt19937 generator(device());
+      std::uniform_real_distribution<float> uniform_distribution(B.min_, B.max_ + std::is_integral<T>::value);
+
+      for (T& data : A)
+      {
+        data *= uniform_distribution(generator);
+      }
+
+      return A;
+    }
+
+    template<typename T>
+    auto mul_rng(const Matrix<T>& A, Random B) noexcept -> Matrix<T>
+    {
+      static std::random_device device;
+      static std::mt19937 generator(device());
+      std::uniform_real_distribution<float> uniform_distribution(B.min_, B.max_ + std::is_integral<T>::value);
+      
+      Matrix<T> result(A.size());
+
+      const unsigned n = A.numel();
+      for (unsigned k = 0; k < n; ++k)
+      {
+        result.data()[k] = A.data()[k] * uniform_distribution(generator);
+      }
+
+      return result;
+    }
+
+    template<typename T>
+    auto neg_inplace(Matrix<T>& A) noexcept -> Matrix<T>&
+    {
+      for (T& data : A)
+      {
+        data = -data;
+      }
+
+      return A;
+    }
+
+    template<typename T1, typename T2>
+    auto sub_ll_mat_inplace(Matrix<T1>& A, const Matrix<T2>& B) -> Matrix<T1>&
+    {
+      if ((A.M() != B.M()) || (A.N() != B.N()))
+      {
+        PINAKAS_ERROR("nonconformant arguments (A is %ux%u, B is %ux%u)", A.M(), A.N(), B.M(), B.N());
+        return A;
+      }
+
+      const unsigned n = A.numel();
+      for (unsigned k = 0; k < n; ++k)
+      {
+        A.data()[k] -= B.data()[k];
+      }
+
+      return A;
+    }
+
+    template<typename T1, typename T2>
+    auto sub_rl_mat_inplace(Matrix<T1>& B, const Matrix<T2>& A) -> Matrix<T1>&
+    {
+      if ((A.M() != B.M()) || (A.N() != B.N()))
+      {
+        PINAKAS_ERROR("nonconformant arguments (A is %ux%u, B is %ux%u)", A.M(), A.N(), B.M(), B.N());
+        return B;
+      }
+
+      const unsigned n = B.numel();
+      for (unsigned k = 0; k < n; ++k)
+      {
+        B.data()[k] = A.data()[k] - B.data()[k];
+      }
+
+      return B;
+    }
+
+    template<typename T1, typename T2>
+    auto sub_ll_val_inplace(Matrix<T1>& A, T2 B) noexcept -> Matrix<T1>&
+    {
+      for (T1& data : A)
+      {
+        data -= B;
+      }
+
+      return A;
+    }
+
+    template<typename T1, typename T2>
+    auto sub_rl_val_inplace(Matrix<T1>& B, T2 A) noexcept -> Matrix<T1>&
+    {
+      for (T1& data : B)
+      {
+        data = A - data;
+      }
+
+      return B;
+    }
+
+    template<typename T>
+    auto sub_ll_rng_inplace(Matrix<T>& A, Random B) noexcept -> Matrix<T>&
+    {
+      static std::random_device device;
+      static std::mt19937 generator(device());
+      std::uniform_real_distribution<float> uniform_distribution(B.min_, B.max_ + std::is_integral<T>::value);
+
+      for (T& data : A)
+      {
+        data -= uniform_distribution(generator);
+      }
+
+      return A;
+    }
+
+    template<typename T>
+    auto sub_rl_rng_inplace(Matrix<T>& B, Random A) noexcept -> Matrix<T>&
+    {
+      static std::random_device device;
+      static std::mt19937 generator(device());
+      std::uniform_real_distribution<float> uniform_distribution(A.min_, A.max_ + std::is_integral<T>::value);
+
+      for (T& data : B)
+      {
+        data = uniform_distribution(generator) - data;
+      }
+
+      return B;
+    }
+
+    template<typename T>
+    auto neg_mat(const Matrix<T> A) -> Matrix<T>
+    {
+      Matrix<T> result(A.size());
+
+      const unsigned n = A.numel();
+      for (unsigned k = 0; k < n; ++k)
+      {
+        result.data()[k] = -A.data()[k];
+      }
+
+      return result;
+    }
+
+    template<typename T1, typename T2>
+    auto sub_mat(const Matrix<T1>& A, const Matrix<T2>& B) -> Matrix<decltype(T1()-T2())>
+    {
+      Matrix<decltype(T1()-T2())> result;
+
+      if ((A.M() != B.M()) || (A.N() != B.N()))
+      {
+        PINAKAS_ERROR("nonconformant arguments (A is %ux%u, B is %ux%u)", A.M(), A.N(), B.M(), B.N());
+        return result;
+      }
+
+      result = Matrix<decltype(T1()-T2())>(A.M(), A.N());
+      const unsigned n = A.numel();
+      for (unsigned k = 0; k < n; ++k)
+      {
+        result.data()[k] = A.data()[k] - B.data()[k];
+      }
+      
+      return result;
+    }
+
+    template<typename T1, typename T2>
+    auto sub_ll_val(const Matrix<T1>& A, T2 B) noexcept -> Matrix<decltype(T1()-T2())>
+    {
+      Matrix<decltype(T1()-T2())> result(A.size());
+
+      const unsigned n = A.numel();
+      for (unsigned k = 0; k < n; ++k)
+      {
+        result.data()[k] = A.data()[k] - B;
+      }
+
+      return result;
+    }
+
+    template<typename T1, typename T2>
+    auto sub_rl_val(const Matrix<T1>& B, T2 A) noexcept -> Matrix<decltype(T1()-T2())>
+    {
+      Matrix<decltype(T1()-T2())> result(B.size());
+
+      const unsigned n = B.numel();
+      for (unsigned k = 0; k < n; ++k)
+      {
+        result.data()[k] = A - B.data()[k];
+      }
+
+      return result;
+    }
+
+    template<typename T>
+    auto sub_ll_rng(const Matrix<T>& A, Random B) noexcept -> Matrix<decltype(T()-float())>
+    {
+      static std::random_device device;
+      static std::mt19937 generator(device());
+      std::uniform_real_distribution<float> uniform_distribution(B.min_, B.max_ + std::is_integral<T>::value);
+
+      Matrix<decltype(T()-float())> result(A.size());
+
+      const unsigned n = A.numel();
+      for (unsigned k = 0; k < n; ++k)
+      {
+        result.data()[k] = A.data()[k] - uniform_distribution(generator);
+      }
+
+      return result;
+    }
+
+    template<typename T>
+    auto sub_rl_rng(const Matrix<T>& B, Random A) noexcept -> Matrix<decltype(T()-float())>
+    {
+      static std::random_device device;
+      static std::mt19937 generator(device());
+      std::uniform_real_distribution<float> uniform_distribution(A.min_, A.max_ + std::is_integral<T>::value);
+
+      Matrix<decltype(T()-float())> result(B.size());
+
+      const unsigned n = B.numel();
+      for (unsigned k = 0; k < n; ++k)
+      {
+        result.data()[k] = uniform_distribution(generator) - B.data()[k];
+      }
+
+      return result;
+    }
   }
 
   bool Size::operator==(const Size other) const noexcept
@@ -101,15 +491,15 @@ namespace Pinakas
   {}
 
   template<typename T>
-  Matrix<T>::Matrix(const unsigned M, const unsigned N, const Random range)
+  Matrix<T>::Matrix(const unsigned M, const unsigned N, Random range)
   {
     // allocate memory
     allocate(M, N);
 
     // random number generator
-    std::random_device device;
-    std::mt19937 generator(device());
-    std::uniform_real_distribution<> uniform_distribution(range.min_, range.max_ + std::is_integral<T>::value);
+    static std::random_device device;
+    static std::mt19937 generator(device());
+    std::uniform_real_distribution<float> uniform_distribution(range.min_, range.max_ + std::is_integral<T>::value);
 
     // assign random value to matrix
     for (unsigned k = 0; k < size_.numel; ++k)
@@ -121,7 +511,7 @@ namespace Pinakas
   }
 
   template<typename T>
-  Matrix<T>::Matrix(const Size size, const Random range) :
+  Matrix<T>::Matrix(const Size size, Random range) :
     Matrix(size.M, size.N, range)
   {}
 
@@ -726,610 +1116,7 @@ namespace Pinakas
     x{x_if_temp},
     y{y}
   {}
-// --------------------------------------------------------------------------------------
-  template<typename T1, typename T2>
-  Matrix<T1>& add_mat_inplace(Matrix<T1>& A, const Matrix<T2>& B)
-  {
-    if (A.size() != B.size())
-    {
-      PINAKAS_ERROR("nonconformant arguments (A is %ux%u, B is %ux%u)", A.M(), A.N(), B.M(), B.N());
-      return A;
-    }
-
-    const unsigned n = A.numel();
-    for (unsigned k = 0; k < n; ++k)
-      A.data()[k] += B.data()[k];
-
-    return A;
-  }
-
-  template<typename T1, typename T2>
-  Matrix<T1>& add_val_inplace(Matrix<T1>& A, const T2 B) noexcept
-  {
-    const unsigned n = A.numel();
-    for (unsigned k = 0; k < n; ++k)
-      A.data()[k] += B;
-
-    return A;
-  }
-
-  template<typename T>
-  Matrix<T>& add_rng_inplace(Matrix<T>& A, const Random B) noexcept
-  {
-    std::random_device device;
-    std::mt19937 generator(device());
-    std::uniform_real_distribution<> uniform_distribution(B.min_, B.max_ + std::is_integral<T>::value);
-
-    const unsigned n = A.numel();
-    for (unsigned k = 0; k < n; ++k)
-      A.data()[k] += uniform_distribution(generator);
-
-    return A;
-  }
-
-  template<typename T1, typename T2, typename T3>
-  Matrix<T3> add_mat_sequ(const Matrix<T1>& A, const Matrix<T2>& B)
-  {
-    Matrix<T3> result;
-    if (A.size() != B.size())
-    {
-      PINAKAS_ERROR("nonconformant arguments (A is %ux%u, B is %ux%u)", A.M(), A.N(), B.M(), B.N());
-      return result;
-    }
-
-    result = Matrix<T3>(A.size());
-
-    const T1* a = A.data();
-    const T2* b = B.data();
-    T3* r = result.data();
-
-    const unsigned n = A.numel();
-    for (unsigned k = 0; k < n; ++k)
-    {
-      r[k] = a[k] + b[k];
-    }
-    
-    return result;
-  }
-
-  template<typename T1, typename T2, typename T3>
-  Matrix<T3> add_val_sequ(const Matrix<T1>& A, const T2 B) noexcept
-  {
-    Matrix<T3> result(A.size());
-
-    const T1* a = A.data();
-    T3* r = result.data();
-
-    const unsigned n = A.numel();
-    for (unsigned k = 0; k < n; ++k)
-      r[k] = a[k] + B;
-
-    return result;
-  }
-
-  template<typename T1, typename T3>
-  Matrix<T3> add_rng(const Matrix<T1>& A, const Random B) noexcept
-  {
-    std::random_device device;
-    std::mt19937 generator(device());
-    std::uniform_real_distribution<> uniform_distribution(B.min_, B.max_ + std::is_integral<T1>::value);
-    
-    Matrix<T3> result(A.size());
-
-    const unsigned n = A.numel();
-    for (unsigned k = 0; k < n; ++k)
-      result.data()[k] = A.data()[k] + uniform_distribution(generator);
-
-    return result;
-  }
-// --------------------------------------------------------------------------------------
-  template<typename T1, typename T2>
-  Matrix<T1>& mul_mat_inplace(Matrix<T1>& A, const Matrix<T2>& B)
-  {
-    if (A.size() != B.size())
-    {
-      PINAKAS_ERROR("nonconformant arguments (A is %ux%u, B is %ux%u)", A.M(), A.N(), B.M(), B.N());
-      return A;
-    }
-
-    const unsigned n = A.numel();
-    for (unsigned k = 0; k < n; ++k)
-    {
-      A.data()[k] *= B.data()[k];
-    }
-
-    return A;
-  }
-
-  template<typename T1, typename T2>
-  Matrix<T1>& mul_val_inplace(Matrix<T1>& A, const T2 B) noexcept
-  {
-    const unsigned n = A.numel();
-    for (unsigned k = 0; k < n; ++k)
-      A.data()[k] *= B;
-
-    return A;
-  }
-
-  template<typename T>
-  Matrix<T>& mul_rng_inplace(Matrix<T>& A, const Random B) noexcept
-  {
-    std::random_device device;
-    std::mt19937 generator(device());
-    std::uniform_real_distribution<> uniform_distribution(B.min_, B.max_ + std::is_integral<T>::value);
-    
-    const unsigned n = A.numel();
-    for (unsigned k = 0; k < n; ++k)
-      A.data()[k] *= uniform_distribution(generator);
-
-    return A;
-  }
-
-  template<typename T1, typename T2, typename T3>
-  Matrix<T3> mul_mat_sequ(const Matrix<T1>& A, const Matrix<T2>& B)
-  {
-    if (A.size() != B.size())
-    {
-      PINAKAS_ERROR("nonconformant arguments (A is %ux%u, B is %ux%u)", A.M(), A.N(), B.M(), B.N());
-      return Matrix<T3>();
-    }
-
-    Matrix<T3> result(A.size());
-
-    const T1* a = A.data();
-    const T1* b = B.data();
-    T1* r = result.data();
-
-    const unsigned n = A.numel();
-    for (unsigned k = 0; k < n; ++k)
-      r[k] = a[k] * b[k];
-    
-    return result;
-  }
-
-  template<typename T1, typename T2, typename T3>
-  Matrix<T3> mul_val(const Matrix<T1>& A, const T2 B) noexcept
-  {
-    Matrix<T3> result(A.size());
-
-    const unsigned n = A.numel();
-    for (unsigned k = 0; k < n; ++k)
-      result.data()[k] = A.data()[k] * B;
-
-    return result;
-  }
-
-  template<typename T1, typename T3>
-  Matrix<T3> mul_rng(const Matrix<T1>& A, const Random B) noexcept
-  {
-    std::random_device device;
-    std::mt19937 generator(device());
-    std::uniform_real_distribution<> uniform_distribution(B.min_, B.max_ + std::is_integral<T1>::value);
-
-    Matrix<T3> result(A.size());
-
-    const unsigned n = A.numel();
-    for (unsigned k = 0; k < n; ++k)
-      result.data()[k] = A.data()[k] * uniform_distribution(generator);
-
-    return result;
-  }
-// --------------------------------------------------------------------------------------
-  template<typename T1, typename T2>
-  Matrix<T1>& operator*=(Matrix<T1>& A, const Matrix<T2>& B)
-  {
-    return mul_mat_inplace(A, B);
-  }
-
-  template<typename T>
-  Matrix<T>& operator*=(Matrix<T>& A, const Random B) noexcept
-  {
-    return mul_rng_inplace(A, B);
-  }
-
-  template<typename T1, typename T2>
-  Matrix<T1>& operator*=(Matrix<T1>& A, const T2 B) noexcept
-  {
-    return mul_val_inplace(A, B);
-  }
-  
-  template<typename T1, typename T2, typename T3>
-  Matrix<T3> operator*(const Matrix<T1>& A, const Matrix<T2>& B)
-  {
-    return mul_mat_sequ(A, B);
-  }
-  
-  template<typename T>
-  Matrix<T> operator*(const Matrix<T>& A, const Matrix<T>& B)
-  {
-    #ifdef PARALLILOS_USE_PARALLELISM
-      // return mul_mat_simd(A, B);
-    #else
-      return mul_mat_sequ(A, B);
-    #endif
-  }
-
-  template<typename T, typename T3>
-  Matrix<T3> operator*(const Matrix<T>& A, const Random B) noexcept
-  {
-    return mul_rng(A, B);
-  }
-
-  template<typename T, typename T3>
-  Matrix<T3> operator*(const Random A, const Matrix<T>& B) noexcept
-  {
-    return mul_rng(B, A);
-  }
-  
-  template<typename T1, typename T2, typename T3>
-  Matrix<T3> operator*(const Matrix<T1>& A, const T2 B) noexcept
-  {
-    return mul_val(A, B);
-  }
-  
-  template<typename T1, typename T2, typename T3>
-  Matrix<T3> operator*(const T1 A, const Matrix<T2>& B) noexcept
-  {
-    return mul_val(B, A);
-  }
-
-  template<typename T1, typename T2, typename T3>
-  Matrix<T3>&& operator*(const Matrix<T1>& A, Matrix<T2>&& B)
-  {
-    return std::move(mul_mat_inplace(B, A));
-  }
-  
-  template<typename T1, typename T2, typename T3>
-  Matrix<T3>&& operator*(Matrix<T1>&& A, const Matrix<T2>& B)
-  {
-    return std::move(mul_mat_inplace(A, B));
-  }
-  
-  template<typename T1, typename T2>
-  auto operator*(Matrix<T1>&& A, Matrix<T2>&& B) -> Matrix<Backend::if_no_loss<T2, T1>>&&
-  {
-    return std::move(mul_mat_inplace(B, A));
-  }
-  
-  template<typename T1, typename T2>
-  auto operator*(Matrix<T1>&& A, Matrix<T2>&& B) -> Matrix<Backend::if_no_loss<T1, T2>>&&
-  {
-    return std::move(mul_mat_inplace(A, B));
-  }
-  
-  template<typename T>
-  Matrix<T>&& operator*(Matrix<T>&& A, Matrix<T>&& B)
-  {
-    return std::move(mul_mat_inplace(A, B));
-  }
-
-  template<typename T, typename T3>
-  Matrix<T3>&& operator*(Matrix<T>&& A, const Random B) noexcept
-  {
-    return std::move(mul_rng_inplace(A, B));
-  }
-
-  template<typename T, typename T3>
-  Matrix<T3>&& operator*(const Random A, Matrix<T>&& B) noexcept
-  {
-    return std::move(mul_rng_inplace(B, A));
-  }
-  
-  template<typename T1, typename T2, typename T3>
-  Matrix<T3>&& operator*(const T1 A, Matrix<T2>&& B) noexcept
-  {
-    return std::move(mul_val_inplace(B, A));
-  }
-
-  template<typename T1, typename T2, typename T3>
-  Matrix<T3>&& operator*(Matrix<T1>&& A, const T2 B) noexcept
-  {
-    return std::move(mul_val_inplace(A, B));
-  }
-// --------------------------------------------------------------------------------------
-  template<typename T1, typename T2>
-  Matrix<T1>& sub_ll_mat_inplace(Matrix<T1>& A, const Matrix<T2>& B)
-  {
-    if (A.size() != B.size())
-    {
-      PINAKAS_ERROR("nonconformant arguments (A is %ux%u, B is %ux%u)", A.M(), A.N(), B.M(), B.N());
-      return A;
-    }
-
-    const unsigned n = A.numel();
-    for (unsigned k = 0; k < n; ++k)
-      A.data()[k] -= B.data()[k];
-
-    return A;
-  }
-
-  template<typename T1, typename T2>
-  Matrix<T1>& sub_rl_mat_inplace(Matrix<T1>& B, const Matrix<T2>& A)
-  {
-    if (A.size() != B.size())
-    {
-      PINAKAS_ERROR("nonconformant arguments (A is %ux%u, B is %ux%u)", A.M(), A.N(), B.M(), B.N());
-      return B;
-    }
-
-    const unsigned n = B.numel();
-    for (unsigned k = 0; k < n; ++k)
-      B.data()[k] = A.data()[k] - B.data()[k];
-
-    return B;
-  }
-
-  template<typename T1, typename T2>
-  Matrix<T1>& sub_ll_val_inplace(Matrix<T1>& A, const T2 B) noexcept
-  {
-    const unsigned n = A.numel();
-    for (unsigned k = 0; k < n; ++k)
-      A.data()[k] -= B;
-
-    return A;
-  }
-
-  template<typename T1, typename T2>
-  Matrix<T1>& sub_rl_val_inplace(Matrix<T1>& B, const T2 A) noexcept
-  {
-    const unsigned n = B.numel();
-    for (unsigned k = 0; k < n; ++k)
-      B.data()[k] = A - B.data()[k];
-
-    return B;
-  }
-
-  template<typename T>
-  Matrix<T>& sub_ll_rng_inplace(Matrix<T>& A, const Random B) noexcept
-  {
-    std::random_device device;
-    std::mt19937 generator(device());
-    std::uniform_real_distribution<> uniform_distribution(B.min_, B.max_ + std::is_integral<T>::value);
-
-    const unsigned n = A.numel();
-    for (unsigned k = 0; k < n; ++k)
-      A.data()[k] -= uniform_distribution(generator);
-
-    return A;
-  }
-
-  template<typename T>
-  Matrix<T>& sub_rl_rng_inplace(Matrix<T>& B, const Random A) noexcept
-  {
-    std::random_device device;
-    std::mt19937 generator(device());
-    std::uniform_real_distribution<> uniform_distribution(B.min_, B.max_ + std::is_integral<T>::value);
-
-    const unsigned n = B.numel();
-    for (unsigned k = 0; k < n; ++k)
-      B.data()[k] = uniform_distribution(generator) - B.data()[k];
-
-    return B;
-  }
-
-  template<typename T1, typename T2, typename T3>
-  Matrix<T3> sub_mat_sequ(const Matrix<T1>& A, const Matrix<T2>& B)
-  {
-    if (A.size() != B.size())
-    {
-      PINAKAS_ERROR("nonconformant arguments (A is %ux%u, B is %ux%u)", A.M(), A.N(), B.M(), B.N());
-      return Matrix<T3>();
-    }
-
-    Matrix<T3> result(A.size());
-
-    const T1* a = A.data();
-    const T1* b = B.data();
-    T1* r = result.data();
-
-    const unsigned n = A.numel();
-    for (unsigned k = 0; k < n; ++k)
-      r[k] = a[k] - b[k];
-    
-    return result;
-  }
-
-  template<typename T1, typename T2, typename T3>
-  Matrix<T3> sub_ll_val(const Matrix<T1>& A, const T2 B) noexcept
-  {
-    Matrix<T3> result(A.size());
-
-    const unsigned n = A.numel();
-    for (unsigned k = 0; k < n; ++k)
-      result.data()[k] = A.data()[k] - B;
-
-    return result;
-  }
-
-  template<typename T1, typename T2, typename T3>
-  Matrix<T3> sub_rl_val(const Matrix<T1>& B, const T2 A) noexcept
-  {
-    Matrix<T3> result(B.size());
-
-    const unsigned n = B.numel();
-    for (unsigned k = 0; k < n; ++k)
-      result.data()[k] = A - B.data()[k];
-
-    return result;
-  }
-
-  template<typename T1, typename T3>
-  Matrix<T3> sub_ll_rng(const Matrix<T1>& A, const Random B) noexcept
-  {
-    std::random_device device;
-    std::mt19937 generator(device());
-    std::uniform_real_distribution<> uniform_distribution(B.min_, B.max_ + std::is_integral<T1>::value);
-
-    Matrix<T3> result(A.size());
-
-    const unsigned n = A.numel();
-    for (unsigned k = 0; k < n; ++k)
-      result.data()[k] = A.data()[k] - uniform_distribution(generator);
-
-    return result;
-  }
-
-  template<typename T1, typename T3>
-  Matrix<T3> sub_rl_rng(const Matrix<T1>& B, const Random A) noexcept
-  {
-    std::random_device device;
-    std::mt19937 generator(device());
-    std::uniform_real_distribution<> uniform_distribution(B.min_, B.max_ + std::is_integral<T1>::value);
-
-    Matrix<T3> result(B.size());
-
-    const unsigned n = B.numel();
-    for (unsigned k = 0; k < n; ++k)
-      result.data()[k] = uniform_distribution(generator) - B.data()[k];
-
-    return result;
-  }
-
-  template<typename T>
-  Matrix<T>& negate_inplace(Matrix<T>& A) noexcept
-  {
-    const unsigned n = A.numel();
-    for (unsigned k = 0; k < n; ++k)
-      A.data()[k] = -A.data()[k];
-
-    return A;
-  }
-
-  template<typename T>
-  Matrix<T> negate(const Matrix<T> A)
-  {
-    Matrix<T> result(A.size());
-
-    const unsigned n = A.numel();
-    for (unsigned k = 0; k < n; ++k)
-      result.data()[k] = -A.data()[k];
-
-    return result;
-  }
-// --------------------------------------------------------------------------------------
-  template<typename T1, typename T2>
-  Matrix<T1>& operator-=(Matrix<T1>& A, const Matrix<T2>& B)
-  {
-    return sub_ll_mat_inplace(A, B);
-  }
-  
-  template<typename T>
-  Matrix<T>& operator-=(Matrix<T>& A, const Random B) noexcept
-  {
-    return sub_ll_rng_inplace(A, B);
-  }
-
-  template<typename T1, typename T2>
-  Matrix<T1>& operator-=(Matrix<T1>& A, const T2 B) noexcept
-  {
-    return sub_ll_val_inplace(A, B);
-  }
-  
-  template<typename T1, typename T2, typename T3>
-  Matrix<T3> operator-(const Matrix<T1>& A, const Matrix<T2>& B)
-  {
-    return sub_mat_sequ(A, B);
-  }
-  
-  template<typename T>
-  Matrix<T> operator-(const Matrix<T>& A, const Matrix<T>& B)
-  {
-    #ifdef PARALLILOS_USE_PARALLELISM
-      // return sub_mat_simd(A, B);
-    #else
-      return sub_mat_sequ(A, B);
-    #endif
-  }
-
-  template<typename T, typename T3>
-  Matrix<T3> operator-(const Matrix<T>& A, const Random B) noexcept
-  {
-    return sub_ll_rng(A, B);
-  }
-
-  template<typename T, typename T3>
-  Matrix<T3> operator-(const Random A, const Matrix<T>& B) noexcept
-  {
-    return sub_rl_rng(B, A);
-  }
-  
-  template<typename T1, typename T2, typename T3>
-  Matrix<T3> operator-(const Matrix<T1>& A, const T2 B) noexcept
-  {
-    return sub_ll_val(A, B);
-  }
-  
-  template<typename T1, typename T2, typename T3>
-  Matrix<T3> operator-(const T1 A, const Matrix<T2>& B) noexcept
-  {
-    return sub_rl_val(B, A);
-  }
-
-  template<typename T1, typename T2, typename T3>
-  Matrix<T3>&& operator-(const Matrix<T1>& A, Matrix<T2>&& B)
-  {
-    return std::move(sub_rl_mat_inplace(B, A));
-  }
-  
-  template<typename T1, typename T2, typename T3>
-  Matrix<T3>&& operator-(Matrix<T1>&& A, const Matrix<T2>& B)
-  {
-    return std::move(sub_ll_mat_inplace(A, B));
-  }
-  
-  template<typename T1, typename T2>
-  auto operator-(Matrix<T1>&& A, Matrix<T2>&& B) -> Matrix<Backend::if_no_loss<T2, T1>>&&
-  {
-    return std::move(sub_rl_mat_inplace(B, A));
-  }
-  
-  template<typename T1, typename T2>
-  auto operator-(Matrix<T1>&& A, Matrix<T2>&& B) -> Matrix<Backend::if_no_loss<T1, T2>>&&
-  {
-    return std::move(sub_ll_mat_inplace(A, B));
-  }
-  
-  template<typename T>
-  Matrix<T>&& operator-(Matrix<T>&& A, Matrix<T>&& B)
-  {
-    return std::move(sub_ll_mat_inplace(A, B));
-  }
-
-  template<typename T, typename T3>
-  Matrix<T3>&& operator-(Matrix<T>&& A, const Random B) noexcept
-  {
-    return std::move(sub_ll_rng_inplace(A, B));
-  }
-
-  template<typename T, typename T3>
-  Matrix<T3>&& operator-(const Random A, Matrix<T>&& B) noexcept
-  {
-    return std::move(sub_rl_rng_inplace(B, A));
-  }
-  
-  template<typename T1, typename T2, typename T3>
-  Matrix<T3>&& operator-(const T1 A, Matrix<T2>&& B) noexcept
-  {
-    return std::move(sub_rl_val_inplace(B, A));
-  }
-
-  template<typename T1, typename T2, typename T3>
-  Matrix<T3>&& operator-(Matrix<T1>&& A, const T2 B) noexcept
-  {
-    return std::move(sub_ll_val_inplace(A, B));
-  }
-  
-  template<typename T>
-  Matrix<T>& operator-(const Matrix<T>& A)
-  {
-    return negate(A);
-  }
-
-  template<typename T>
-  Matrix<T>&& operator-(Matrix<T>&& A) noexcept
-  {
-    return std::move(negate_inplace(A));
-  }
+//----------------------------------------------------------------------------------------------------------------------
 // --------------------------------------------------------------------------------------
   template<typename T1, typename T2>
   Matrix<T1>& div_ll_mat_inplace(Matrix<T1>& A, const Matrix<T2>& B)
@@ -1384,11 +1171,11 @@ namespace Pinakas
   }
 
   template<typename T>
-  Matrix<T>& div_ll_rng_inplace(Matrix<T>& A, const Random B) noexcept
+  Matrix<T>& div_ll_rng_inplace(Matrix<T>& A, Random B) noexcept
   {
-    std::random_device device;
-    std::mt19937 generator(device());
-    std::uniform_real_distribution<> uniform_distribution(B.min_, B.max_ + std::is_integral<T>::value);
+    static std::random_device device;
+    static std::mt19937 generator(device());
+    std::uniform_real_distribution<float> uniform_distribution(B.min_, B.max_ + std::is_integral<T>::value);
     
     const unsigned n = A.numel();
     for (unsigned k = 0; k < n; ++k)
@@ -1398,11 +1185,11 @@ namespace Pinakas
   }
 
   template<typename T>
-  Matrix<T>& div_rl_rng_inplace(Matrix<T>& B, const Random A) noexcept
+  Matrix<T>& div_rl_rng_inplace(Matrix<T>& B, Random A) noexcept
   {
-    std::random_device device;
-    std::mt19937 generator(device());
-    std::uniform_real_distribution<> uniform_distribution(A.min_, A.max_ + std::is_integral<T>::value);
+    static std::random_device device;
+    static std::mt19937 generator(device());
+    std::uniform_real_distribution<float> uniform_distribution(A.min_, A.max_ + std::is_integral<T>::value);
 
     const unsigned n = B.numel();
     for (unsigned k = 0; k < n; ++k)
@@ -1412,7 +1199,7 @@ namespace Pinakas
   }
 
   template<typename T1, typename T2, typename T3>
-  Matrix<T3> div_mat_sequ(const Matrix<T1>& A, const Matrix<T2>& B)
+  Matrix<T3> div_mat(const Matrix<T1>& A, const Matrix<T2>& B)
   {
     if (A.size() != B.size())
     {
@@ -1459,11 +1246,11 @@ namespace Pinakas
   }
 
   template<typename T1, typename T3>
-  Matrix<T3> div_ll_rng(const Matrix<T1>& A, const Random B) noexcept
+  Matrix<T3> div_ll_rng(const Matrix<T1>& A, Random B) noexcept
   {
-    std::random_device device;
-    std::mt19937 generator(device());
-    std::uniform_real_distribution<> uniform_distribution(B.min_, B.max_ + std::is_integral<T1>::value);
+    static std::random_device device;
+    static std::mt19937 generator(device());
+    std::uniform_real_distribution<float> uniform_distribution(B.min_, B.max_ + std::is_integral<T1>::value);
 
     Matrix<T3> result(A.size());
 
@@ -1475,11 +1262,11 @@ namespace Pinakas
   }
 
   template<typename T1, typename T3>
-  Matrix<T3> div_rl_rng(const Matrix<T1>& B, const Random A) noexcept
+  Matrix<T3> div_rl_rng(const Matrix<T1>& B, Random A) noexcept
   {
-    std::random_device device;
-    std::mt19937 generator(device());
-    std::uniform_real_distribution<> uniform_distribution(A.min_, A.max_ + std::is_integral<T1>::value);
+    static std::random_device device;
+    static std::mt19937 generator(device());
+    std::uniform_real_distribution<float> uniform_distribution(A.min_, A.max_ + std::is_integral<T1>::value);
 
     Matrix<T3> result(B.size());
 
@@ -1497,7 +1284,7 @@ namespace Pinakas
   }
   
   template<typename T>
-  Matrix<T>& operator/=(Matrix<T>& A, const Random B) noexcept
+  Matrix<T>& operator/=(Matrix<T>& A, Random B) noexcept
   {
     return div_ll_rng_inplace(A, B);
   }
@@ -1511,7 +1298,7 @@ namespace Pinakas
   template<typename T1, typename T2, typename T3>
   Matrix<T3> operator/(const Matrix<T1>& A, const Matrix<T2>& B)
   {
-    return div_mat_sequ(A, B);
+    return div_mat(A, B);
   }
   
   template<typename T>
@@ -1520,18 +1307,18 @@ namespace Pinakas
     #ifdef PARALLILOS_USE_PARALLELISM
       // return div_mat_simd(A, B);
     #else
-      return div_mat_sequ(A, B);
+      return div_mat(A, B);
     #endif
   }
 
   template<typename T, typename T3>
-  Matrix<T3> operator/(const Matrix<T>& A, const Random B) noexcept
+  Matrix<T3> operator/(const Matrix<T>& A, Random B) noexcept
   {
     return div_ll_rng(A, B);
   }
 
   template<typename T, typename T3>
-  Matrix<T3> operator/(const Random A, const Matrix<T>& B) noexcept
+  Matrix<T3> operator/(Random A, const Matrix<T>& B) noexcept
   {
     return div_rl_rng(B, A);
   }
@@ -1579,13 +1366,13 @@ namespace Pinakas
   }
 
   template<typename T, typename T3>
-  Matrix<T3>&& operator/(Matrix<T>&& A, const Random B) noexcept
+  Matrix<T3>&& operator/(Matrix<T>&& A, Random B) noexcept
   {
     return std::move(div_ll_rng_inplace(A, B));
   }
 
   template<typename T, typename T3>
-  Matrix<T3>&& operator/(const Random A, Matrix<T>&& B) noexcept
+  Matrix<T3>&& operator/(Random A, Matrix<T>&& B) noexcept
   {
     return std::move(div_rl_rng_inplace(B, A));
   }
@@ -1871,7 +1658,7 @@ namespace Pinakas
   }
 
   template<typename T>
-  Matrix<T> div_sequ(const Matrix<T>& b, Matrix<T> A)
+  Matrix<T> div(const Matrix<T>& b, Matrix<T> A)
   {
     Matrix<double> x;
 
@@ -1967,14 +1754,6 @@ namespace Pinakas
     }
 
     return x;
-  }
-
-  template<typename T>
-  Matrix<T> div(const Matrix<T>& b, Matrix<T> A)
-  {
-    static_assert(std::is_convertible<T, double>::value, "T must be convertible to double");
-
-    return div_sequ(b, A);
   }
 // --------------------------------------------------------------------------------------
   template<template<typename> class M1, typename T>
@@ -3041,13 +2820,13 @@ namespace Pinakas
     return std::move(signal);
   }
 
-  Matrix<complex> ifft(const Matrix<complex>& spectrum)
-  {
-    return conj(fft(conj(spectrum))) / spectrum.numel();
-  }
+  // Matrix<complex> ifft(const Matrix<complex>& spectrum)
+  // {
+  //   return conj(fft(conj(spectrum))) / spectrum.numel();
+  // }
 
-  Matrix<complex> ifft(Matrix<complex>&& spectrum)
-  {
-    return conj(fft(conj(std::move(spectrum)))) / spectrum.numel();
-  }
+  // Matrix<complex> ifft(Matrix<complex>&& spectrum)
+  // {
+  //   return conj(fft(conj(std::move(spectrum)))) / spectrum.numel();
+  // }
 }

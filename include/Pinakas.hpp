@@ -156,73 +156,69 @@ namespace Pinakas
 #   define PINAKAS_DEBUG_MODE
 # endif
 
-    // gives the common type T1 and T2 can be implicitely converted to
-    template<typename T1, typename T2>
-    using appropriate_type = typename std::common_type<T1, T2>::type;
-
     // enables an overload if there is no loss of precision when casting T2 as T1
     template<typename T1, typename T2>
-    using if_no_loss = typename std::enable_if<std::is_same<appropriate_type<T1, T2>, T1>::value, T1>::type;
+    using if_no_loss = typename std::enable_if<std::is_same<decltype(T1()+T2()), T1>::value, T1>::type;
 
     template<template<typename> class M, typename T>
     using if_matrixlike = typename std::enable_if<std::is_same<M<T>, Matrix<T>>::value or std::is_same<M<T>, Slice<T>>::value>::type;
 
     template<typename T1, typename T2>
-    using if_different = typename std::enable_if<not std::is_same<T1, T2>::value, decltype(T1()+T2())>::type;
+    auto add_mat_inplace(Matrix<T1>& A, const Matrix<T2>& B) -> Matrix<T1>&;
+    template<typename T1, typename T2>
+    auto add_val_inplace(Matrix<T1>& A, T2 B) noexcept       -> Matrix<T1>&;
+    template<typename T>
+    auto add_rng_inplace(Matrix<T>& A, Random B) noexcept    -> Matrix<T>&;
+
+    template<typename T1, typename T2>
+    auto add_mat(const Matrix<T1>& A, const Matrix<T2>& B)   -> Matrix<decltype(T1()+T2())>;
+    template<typename T1, typename T2>
+    auto add_val(const Matrix<T1>& A, T2 B) noexcept         -> Matrix<decltype(T1()+T2())>;
+    template<typename T>
+    auto add_rng(const Matrix<T>& A, Random B) noexcept      -> Matrix<T>;
+
+    template<typename T1, typename T2>
+    auto mul_mat_inplace(Matrix<T1>& A, const Matrix<T2>& B) -> Matrix<T1>&;
+    template<typename T1, typename T2>
+    auto mul_val_inplace(Matrix<T1>& A, T2 B) noexcept       -> Matrix<T1>&;
+    template<typename T>
+    auto mul_rng_inplace(Matrix<T>& A, Random B) noexcept    -> Matrix<T>&;
+
+    template<typename T1, typename T2>
+    auto mul_mat(const Matrix<T1>& A, const Matrix<T2>& B)   -> Matrix<decltype(T1()+T2())>;
+    template<typename T1, typename T2>
+    auto mul_val(const Matrix<T1>& A, T2 B) noexcept         -> Matrix<decltype(T1()+T2())>;
+    template<typename T>
+    auto mul_rng(const Matrix<T>& A, Random B) noexcept      -> Matrix<T>;
+
+    template<typename T>
+    auto neg_inplace(Matrix<T>& A) noexcept -> Matrix<T>&;
+    template<typename T1, typename T2>
+    auto sub_ll_mat_inplace(Matrix<T1>& A, const Matrix<T2>& B) -> Matrix<T1>&;
+    template<typename T1, typename T2>
+    auto sub_rl_mat_inplace(Matrix<T1>& B, const Matrix<T2>& A) -> Matrix<T1>&;
+    template<typename T1, typename T2>
+    auto sub_ll_val_inplace(Matrix<T1>& A, T2 B) noexcept -> Matrix<T1>&;
+    template<typename T1, typename T2>
+    auto sub_rl_val_inplace(Matrix<T1>& B, T2 A) noexcept -> Matrix<T1>&;
+    template<typename T>
+    auto sub_ll_rng_inplace(Matrix<T>& A, Random B) noexcept -> Matrix<T>&;
+    template<typename T>
+    auto sub_rl_rng_inplace(Matrix<T>& B, Random A) noexcept -> Matrix<T>&;
+
+    template<typename T>
+    auto neg_mat(const Matrix<T> A) -> Matrix<T>;
+    template<typename T1, typename T2>
+    auto sub_mat(const Matrix<T1>& A, const Matrix<T2>& B) -> Matrix<decltype(T1()-T2())>;
+    template<typename T1, typename T2>
+    auto sub_ll_val(const Matrix<T1>& A, T2 B) noexcept -> Matrix<decltype(T1()-T2())>;
+    template<typename T1, typename T2>
+    auto sub_rl_val(const Matrix<T1>& B, T2 A) noexcept -> Matrix<decltype(T1()-T2())>;
+    template<typename T>
+    auto sub_ll_rng(const Matrix<T>& A, Random B) noexcept -> Matrix<decltype(T()-float())>;
+    template<typename T>
+    auto sub_rl_rng(const Matrix<T>& B, Random A) noexcept -> Matrix<decltype(T()-float())>;
   }
-// --------------------------------------------------------------------------------------
-  template<typename T1, typename T2>
-  Matrix<T1>& add_mat_inplace(Matrix<T1>& A, const Matrix<T2>& B);
-  template<typename T1, typename T2>
-  Matrix<T1>& add_val_inplace(Matrix<T1>& A, const T2 B) noexcept;
-  template<typename T>
-  Matrix<T>& add_rng_inplace(Matrix<T>& A, const Random B) noexcept;
-  template<typename T1, typename T2, typename T3 = Backend::appropriate_type<T1, T2>>
-  Matrix<T3> add_mat_sequ(const Matrix<T1>& A, const Matrix<T2>& B);
-  template<typename T1, typename T2, typename T3 = Backend::appropriate_type<T1, T2>>
-  Matrix<T3> add_val_sequ(const Matrix<T1>& A, const T2 B) noexcept;
-  template<typename T1, typename T3 = Backend::appropriate_type<T1, double>>
-  Matrix<T3> add_rng(const Matrix<T1>& A, const Random B) noexcept;
-// --------------------------------------------------------------------------------------
-  template<typename T1, typename T2>
-  Matrix<T1>& mul_mat_inplace(Matrix<T1>& A, const Matrix<T2>& B);
-  template<typename T1, typename T2>
-  Matrix<T1>& mul_val_inplace(Matrix<T1>& A, const T2 B) noexcept;
-  template<typename T>
-  Matrix<T>& mul_rng_inplace(Matrix<T>& A, const Random B) noexcept;
-  template<typename T1, typename T2, typename T3 = Backend::appropriate_type<T1, T2>>
-  Matrix<T3> mul_mat_sequ(const Matrix<T1>& A, const Matrix<T2>& B);
-  template<typename T1, typename T2, typename T3 = Backend::appropriate_type<T1, T2>>
-  Matrix<T3> mul_val(const Matrix<T1>& A, const T2 B) noexcept;
-  template<typename T1, typename T3 = Backend::appropriate_type<T1, double>>
-  Matrix<T3> mul_rng(const Matrix<T1>& A, const Random B) noexcept;
-// --------------------------------------------------------------------------------------
-  template<typename T1, typename T2>
-  Matrix<T1>& sub_ll_mat_inplace(Matrix<T1>& A, const Matrix<T2>& B);
-  template<typename T1, typename T2>
-  Matrix<T1>& sub_rl_mat_inplace(Matrix<T1>& B, const Matrix<T2>& A);
-  template<typename T1, typename T2>
-  Matrix<T1>& sub_ll_val_inplace(Matrix<T1>& A, const T2 B) noexcept;
-  template<typename T1, typename T2>
-  Matrix<T1>& sub_rl_val_inplace(Matrix<T1>& B, const T2 A) noexcept;
-  template<typename T>
-  Matrix<T>& sub_ll_rng_inplace(Matrix<T>& A, const Random B) noexcept;
-  template<typename T>
-  Matrix<T>& sub_rl_rng_inplace(Matrix<T>& B, const Random A) noexcept;
-  template<typename T1, typename T2, typename T3 = Backend::appropriate_type<T1, T2>>
-  Matrix<T3> sub_mat_sequ(const Matrix<T1>& A, const Matrix<T2>& B);
-  template<typename T1, typename T2, typename T3 = Backend::appropriate_type<T1, T2>>
-  Matrix<T3> sub_ll_val(const Matrix<T1>& A, const T2 B) noexcept;
-  template<typename T1, typename T2, typename T3 = Backend::appropriate_type<T1, T2>>
-  Matrix<T3> sub_rl_val(const Matrix<T1>& B, const T2 A) noexcept;
-  template<typename T1, typename T3 = Backend::appropriate_type<T1, double>>
-  Matrix<T3> sub_ll_rng(const Matrix<T1>& A, const Random B) noexcept;
-  template<typename T1, typename T3 = Backend::appropriate_type<T1, double>>
-  Matrix<T3> sub_rl_rng(const Matrix<T1>& B, const Random A) noexcept;
-  template<typename T>
-  Matrix<T>& negate_inplace(Matrix<T>& A) noexcept;
-  template<typename T>
-  Matrix<T> negate(const Matrix<T> A);
 // --------------------------------------------------------------------------------------
   template<typename T1, typename T2>
   Matrix<T1>& div_ll_mat_inplace(Matrix<T1>& A, const Matrix<T2>& B);
@@ -236,15 +232,15 @@ namespace Pinakas
   Matrix<T>& div_ll_rng_inplace(Matrix<T>& A, const Random B) noexcept;
   template<typename T>
   Matrix<T>& div_rl_rng_inplace(Matrix<T>& B, const Random A) noexcept;
-  template<typename T1, typename T2, typename T3 = Backend::appropriate_type<T1, T2>>
-  Matrix<T3> div_mat_sequ(const Matrix<T1>& A, const Matrix<T2>& B);
-  template<typename T1, typename T2, typename T3 = Backend::appropriate_type<T1, T2>>
+  template<typename T1, typename T2, typename T3 = decltype(T1()+T2())>
+  Matrix<T3> div_mat(const Matrix<T1>& A, const Matrix<T2>& B);
+  template<typename T1, typename T2, typename T3 = decltype(T1()+T2())>
   Matrix<T3> div_ll_val(const Matrix<T1>& A, const T2 B) noexcept;
-  template<typename T1, typename T2, typename T3 = Backend::appropriate_type<T1, T2>>
+  template<typename T1, typename T2, typename T3 = decltype(T1()+T2())>
   Matrix<T3> div_rl_val(const Matrix<T1>& B, const T2 A) noexcept;
-  template<typename T1, typename T3 = Backend::appropriate_type<T1, double>>
+  template<typename T1, typename T3 = decltype(T1()+double())>
   Matrix<T3> div_ll_rng(const Matrix<T1>& A, const Random B) noexcept;
-  template<typename T1, typename T3 = Backend::appropriate_type<T1, double>>
+  template<typename T1, typename T3 = decltype(T1()+double())>
   Matrix<T3> div_rl_rng(const Matrix<T1>& B, const Random A) noexcept;
 // --------------------------------------------------------------------------------------
   template<typename T1, typename T2>
@@ -255,11 +251,11 @@ namespace Pinakas
   Matrix<T1>& pow_ll_val_inplace(Matrix<T1>& A, const T2 B) noexcept;
   template<typename T1, typename T2>
   Matrix<T1>& pow_rl_val_inplace(Matrix<T1>& B, const T2 A) noexcept;
-  template<typename T1, typename T2, typename T3 = Backend::appropriate_type<T1, T2>>
+  template<typename T1, typename T2, typename T3 = decltype(T1()+T2())>
   Matrix<T3> pow_mat(const Matrix<T1>& A, const Matrix<T2>& B);
-  template<typename T1, typename T2, typename T3 = Backend::appropriate_type<T1, T2>>
+  template<typename T1, typename T2, typename T3 = decltype(T1()+T2())>
   Matrix<T3> pow_ll_val(const Matrix<T1>& A, const T2 B) noexcept;
-  template<typename T1, typename T2, typename T3 = Backend::appropriate_type<T1, T2>>
+  template<typename T1, typename T2, typename T3 = decltype(T1()+T2())>
   Matrix<T3> pow_rl_val(const Matrix<T1>& B, const T2 A) noexcept;
 // --------------------------------------------------------------------------------------
   template<typename T>
@@ -325,9 +321,9 @@ namespace Pinakas
 // --------------------------------------------------------------------------------------
   Matrix<double> diff(const Matrix<double>& A, unsigned n = 1);
 // --------------------------------------------------------------------------------------
-  template<typename T1, typename T2, typename T3 = Backend::appropriate_type<T1, T2>>
+  template<typename T1, typename T2, typename T3 = decltype(T1()+T2())>
   Matrix<T3> conv(const Matrix<T1>& A, const Matrix<T2>& B);
-  template<typename T1, typename T2, typename T3 = Backend::appropriate_type<T1, T2>>
+  template<typename T1, typename T2, typename T3 = decltype(T1()+T2())>
   Matrix<T3> corr(const Matrix<T1>& A, const Matrix<T2>& B);
   template<typename T>
   Matrix<T> corr(const Matrix<T>& A);
@@ -571,216 +567,222 @@ namespace Pinakas
     template<template<typename> class M, typename T, typename = Backend::if_matrixlike<M, T>>
     std::ostream& operator<<(std::ostream& ostream, const M<T>& A);
     std::ostream& operator<<(std::ostream& ostream, const Size size);
-  // --------------------------------------------------------------------------------------
+//----------------------------------------------------------------------------------------------------------------------
+    template<typename T>
+    Matrix<T> operator+(const Matrix<T>& A) noexcept { return A; }
+
+    template<typename T>
+    Matrix<T>&& operator+(Matrix<T>&& A) noexcept { return std::move(A); }
+
     template<typename T1, typename T2>
     Matrix<T1>& operator+=(Matrix<T1>& A, const Matrix<T2>& B)
-    {
-      return add_mat_inplace(A, B);
-    }
-
-    template<typename T>
-    Matrix<T>& operator+=(Matrix<T>& A, const Random B) noexcept
-    {
-      return add_rng_inplace(A, B);
-    }
-
-    template<typename T1, typename T2>
-    Matrix<T1>& operator+=(Matrix<T1>& A, const T2 B) noexcept
-    {
-      return add_val_inplace(A, B);
-    }
+    { return Backend::add_mat_inplace(A, B); }
     
     template<typename T1, typename T2>
-    auto operator+(const Matrix<T1>& A, const Matrix<T2>& B) -> Matrix<Backend::if_different<T1, T2>>
-    {
-      return add_mat_sequ(A, B);
-    }
-    
-    template<typename T>
-    Matrix<T> operator+(const Matrix<T>& A, const Matrix<T>& B)
-    {
-      return add_mat_sequ(A, B);
-    }
-
-    template<typename T>
-    auto operator+(const Matrix<T>& A, const Random B) noexcept -> Matrix<Backend::if_no_loss<T, double>>
-    {
-      return add_rng(A, B);
-    }
-
-    template<typename T>
-    auto operator+(const Random A, const Matrix<T>& B) noexcept -> Matrix<Backend::if_no_loss<T, double>>
-    {
-      return add_rng(B, A);
-    }
-
-    template<typename T>
-    Matrix<T> operator+(const Matrix<T>& A, const T B) noexcept
-    {
-      return add_val_sequ(A, B);
-    }
-
-    template<typename T1, typename T2, typename T3>
-    Matrix<T3> operator+(const Matrix<T1>& A, const T2 B) noexcept
-    {
-      return add_val_sequ(A, B);
-    }
-    
-    template<typename T>
-    Matrix<T> operator+(const T A, const Matrix<T>& B) noexcept
-    {
-      return add_val_sequ(B, A);
-    }
-    
-    template<typename T1, typename T2, typename T3>
-    Matrix<T3> operator+(const T1 A, const Matrix<T2>& B) noexcept
-    {
-      return add_val_sequ(B, A);
-    }
-
-    template<typename T>
-    Matrix<T> operator+(const Matrix<T>& A) noexcept
-    {
-      return A;
-    }
+    auto operator+(const Matrix<T1>& A, const Matrix<T2>& B) -> Matrix<decltype(T1()+T2())>
+    { return Backend::add_mat(A, B); }
 
     template<typename T1, typename T2>
     auto operator+(const Matrix<T1>& A, Matrix<T2>&& B) -> Matrix<Backend::if_no_loss<T2, T1>>&&
-    {
-      return std::move(add_mat_inplace(B, A));
-    }
+    { return std::move(Backend::add_mat_inplace(B, A)); }
     
     template<typename T1, typename T2>
     auto operator+(Matrix<T1>&& A, const Matrix<T2>& B) -> Matrix<Backend::if_no_loss<T1, T2>>&&
-    {
-      return std::move(add_mat_inplace(A, B));
-    }
+    { return std::move(Backend::add_mat_inplace(A, B)); }
     
     template<typename T1, typename T2>
     auto operator+(Matrix<T1>&& A, Matrix<T2>&& B) -> Matrix<Backend::if_no_loss<T2, T1>>&&
-    {
-      return std::move(add_mat_inplace(B, A));
-    }
+    {  return std::move(Backend::add_mat_inplace(B, A)); }
 
     template<typename T1, typename T2>
     auto operator+(Matrix<T1>&& A, Matrix<T2>&& B) -> Matrix<Backend::if_no_loss<T1, T2>>&&
-    {
-      return std::move(add_mat_inplace(A, B));
-    }
+    { return std::move(Backend::add_mat_inplace(A, B)); }
     
     template<typename T>
-    Matrix<T>&& operator+(Matrix<T>&& A, Matrix<T>&& B)
-    {
-      return std::move(add_mat_inplace(A, B));
-    }
+    auto operator+(Matrix<T>&& A, Matrix<T>&& B) -> Matrix<T>&&
+    { return std::move(Backend::add_mat_inplace(A, B)); }
 
     template<typename T>
-    auto operator+(Matrix<T>&& A, const Random B) noexcept -> Matrix<Backend::if_no_loss<T, double>>&&
-    {
-      return std::move(add_rng_inplace(A, B));
-    }
+    Matrix<T>& operator+=(Matrix<T>& A, const Random B) noexcept
+    { return Backend::add_rng_inplace(A, B); }
 
     template<typename T>
-    auto operator+(const Random A, Matrix<T>&& B) noexcept -> Matrix<Backend::if_no_loss<T, double>>&&
-    {
-      return std::move(add_rng_inplace(B, A));
-    }
+    auto operator+(const Matrix<T>& A, Random B) noexcept -> Matrix<T>
+    { return Backend::add_rng(A, B); }
+
+    template<typename T>
+    auto operator+(Matrix<T>&& A, Random B) noexcept -> Matrix<T>&&
+    { return std::move(Backend::add_rng_inplace(A, B)); }
+
+    template<typename T>
+    auto operator+(Random A, const Matrix<T>& B) noexcept -> Matrix<T>
+    { return Backend::add_rng(B, A); }
+
+    template<typename T>
+    auto operator+(Random A, Matrix<T>&& B) noexcept -> Matrix<T>&&
+    { return std::move(Backend::add_rng_inplace(B, A)); }
 
     template<typename T1, typename T2>
-    auto operator+(const T1 A, Matrix<T2>&& B) noexcept -> Matrix<Backend::if_no_loss<T2, T1>>&&
-    {
-      return std::move(add_val_inplace(B, A));
-    }
+    Matrix<T1>& operator+=(Matrix<T1>& A, const T2 B) noexcept
+    { return Backend::add_val_inplace(A, B); }
+
+    template<typename T1, typename T2>
+    auto operator+(const Matrix<T1>& A, const T2 B) noexcept -> Matrix<decltype(T1()+T2())>
+    { return Backend::add_val(A, B); }
 
     template<typename T1, typename T2>
     auto operator+(Matrix<T1>&& A, const T2 B) noexcept -> Matrix<Backend::if_no_loss<T1, T2>>&&
-    {
-      return std::move(add_val_inplace(A, B));
-    }
+    { return std::move(Backend::add_val_inplace(A, B)); }
+
+    template<typename T1, typename T2>
+    auto operator+(const T1 A, const Matrix<T2>& B) noexcept -> Matrix<decltype(T1()+T2())>
+    { return Backend::add_val(B, A); }
+
+    template<typename T1, typename T2>
+    auto operator+(const T1 A, Matrix<T2>&& B) noexcept -> Matrix<Backend::if_no_loss<T2, T1>>&&
+    { return std::move(Backend::add_val_inplace(B, A)); }
+//----------------------------------------------------------------------------------------------------------------------
+    template<typename T1, typename T2>
+    Matrix<T1>& operator*=(Matrix<T1>& A, const Matrix<T2>& B)
+    { return Backend::mul_mat_inplace(A, B); }
+    
+    template<typename T1, typename T2>
+    auto operator*(const Matrix<T1>& A, const Matrix<T2>& B) -> Matrix<decltype(T1()*T2())>
+    { return Backend::mul_mat(A, B); }
+
+    template<typename T1, typename T2>
+    auto operator*(const Matrix<T1>& A, Matrix<T2>&& B) -> Matrix<Backend::if_no_loss<T2, T1>>&&
+    { return std::move(Backend::mul_mat_inplace(B, A)); }
+    
+    template<typename T1, typename T2>
+    auto operator*(Matrix<T1>&& A, const Matrix<T2>& B) -> Matrix<Backend::if_no_loss<T1, T2>>&&
+    { return std::move(Backend::mul_mat_inplace(A, B)); }
+    
+    template<typename T1, typename T2>
+    auto operator*(Matrix<T1>&& A, Matrix<T2>&& B) -> Matrix<Backend::if_no_loss<T2, T1>>&&
+    {  return std::move(Backend::mul_mat_inplace(B, A)); }
+
+    template<typename T1, typename T2>
+    auto operator*(Matrix<T1>&& A, Matrix<T2>&& B) -> Matrix<Backend::if_no_loss<T1, T2>>&&
+    { return std::move(Backend::mul_mat_inplace(A, B)); }
+    
+    template<typename T>
+    auto operator*(Matrix<T>&& A, Matrix<T>&& B) -> Matrix<T>&&
+    { return std::move(Backend::mul_mat_inplace(A, B)); }
 
     template<typename T>
-    Matrix<T>&& operator+(Matrix<T>&& A) noexcept
-    {
-      return std::move(A);
-    }
-  // --------------------------------------------------------------------------------------
-    template<typename T1, typename T2>
-    Matrix<T1>& operator-=(Matrix<T1>& A, const Matrix<T2>& B);
+    Matrix<T>& operator*=(Matrix<T>& A, const Random B) noexcept
+    { return Backend::mul_rng_inplace(A, B); }
+
     template<typename T>
-    Matrix<T>& operator-=(Matrix<T>& A, const Random B) noexcept;
-    template<typename T1, typename T2>
-    Matrix<T1>& operator-=(Matrix<T1>& A, const T2 B) noexcept;
-    template<typename T1, typename T2, typename T3 = Backend::appropriate_type<T1, T2>>
-    Matrix<T3> operator-(const Matrix<T1>& A, const Matrix<T2>& B);
+    auto operator*(const Matrix<T>& A, Random B) noexcept -> Matrix<T>
+    { return Backend::mul_rng(A, B); }
+
     template<typename T>
-    Matrix<T> operator-(const Matrix<T>& A, const Matrix<T>& B);
-    template<typename T, typename T3 = Backend::appropriate_type<T, double>>
-    Matrix<T3> operator-(const Matrix<T>& A, const Random B) noexcept;
-    template<typename T, typename T3 = Backend::appropriate_type<T, double>>
-    Matrix<T3> operator-(const Random A, const Matrix<T>& B) noexcept;
-    template<typename T1, typename T2, typename T3 = Backend::appropriate_type<T1, T2>>
-    Matrix<T3> operator-(const Matrix<T1>& A, const T2 B) noexcept;
-    template<typename T1, typename T2, typename T3 = Backend::appropriate_type<T1, T2>>
-    Matrix<T3> operator-(const T1 A, const Matrix<T2>& B) noexcept;
-    template<typename T1, typename T2, typename T3 = Backend::if_no_loss<T2, T1>>
-    Matrix<T3>&& operator-(const Matrix<T1>& A, Matrix<T2>&& B);
-    template<typename T1, typename T2, typename T3 = Backend::if_no_loss<T1, T2>>
-    Matrix<T3>&& operator-(Matrix<T1>&& A, const Matrix<T2>& B);
-    template<typename T1, typename T2>
-    auto operator-(Matrix<T1>&& A, Matrix<T2>&& B) -> Matrix<Backend::if_no_loss<T2, T1>>&&;
-    template<typename T1, typename T2>
-    auto operator-(Matrix<T1>&& A, Matrix<T2>&& B) -> Matrix<Backend::if_no_loss<T1, T2>>&&;
+    auto operator*(Matrix<T>&& A, Random B) noexcept -> Matrix<T>&&
+    { return std::move(Backend::mul_rng_inplace(A, B)); }
+
     template<typename T>
-    Matrix<T>&& operator-(Matrix<T>&& A, Matrix<T>&& B);
-    template<typename T, typename T3 = Backend::if_no_loss<T, double>>
-    Matrix<T3>&& operator-(Matrix<T>&& A, const Random B) noexcept;
-    template<typename T, typename T3 = Backend::if_no_loss<T, double>>
-    Matrix<T3>&& operator-(const Random A, Matrix<T>&& B) noexcept;
-    template<typename T1, typename T2, typename T3 = Backend::if_no_loss<T2, T1>>
-    Matrix<T3>&& operator-(const T1 A, Matrix<T2>&& B) noexcept;
-    template<typename T1, typename T2, typename T3 = Backend::if_no_loss<T1, T2>>
-    Matrix<T3>&& operator-(Matrix<T1>&& A, const T2 B) noexcept;
+    auto operator*(Random A, const Matrix<T>& B) noexcept -> Matrix<T>
+    { return Backend::mul_rng(B, A); }
+
     template<typename T>
-    Matrix<T>& operator-(const Matrix<T>& A);
-    template<typename T>
-    Matrix<T>&& operator-(Matrix<T>&& A) noexcept;
-  // --------------------------------------------------------------------------------------
+    auto operator*(Random A, Matrix<T>&& B) noexcept -> Matrix<T>&&
+    { return std::move(Backend::mul_rng_inplace(B, A)); }
+
     template<typename T1, typename T2>
-    Matrix<T1>& operator*=(Matrix<T1>& A, const Matrix<T2>& B);
-    template<typename T>
-    Matrix<T>& operator*=(Matrix<T>& A, const Random B) noexcept;
+    Matrix<T1>& operator*=(Matrix<T1>& A, const T2 B) noexcept
+    { return Backend::mul_val_inplace(A, B); }
+
     template<typename T1, typename T2>
-    Matrix<T1>& operator*=(Matrix<T1>& A, const T2 B) noexcept;
-    template<typename T1, typename T2, typename T3 = Backend::appropriate_type<T1, T2>>
-    Matrix<T3> operator*(const Matrix<T1>& A, const Matrix<T2>& B);
-    template<typename T>
-    Matrix<T> operator*(const Matrix<T>& A, const Matrix<T>& B);
-    template<typename T, typename T3 = Backend::appropriate_type<T, double>>
-    Matrix<T3> operator*(const Matrix<T>& A, const Random B) noexcept;
-    template<typename T, typename T3 = Backend::appropriate_type<T, double>>
-    Matrix<T3> operator*(const Random A, const Matrix<T>& B) noexcept;
-    template<typename T1, typename T2, typename T3 = Backend::appropriate_type<T1, T2>>
-    Matrix<T3> operator*(const Matrix<T1>& A, const T2 B) noexcept;
-    template<typename T1, typename T2, typename T3 = Backend::appropriate_type<T1, T2>>
-    Matrix<T3> operator*(const T1 A, const Matrix<T2>& B) noexcept;
-    template<typename T1, typename T2, typename T3 = Backend::if_no_loss<T2, T1>>
-    Matrix<T3>&& operator*(const Matrix<T1>& A, Matrix<T2>&& B);
-    template<typename T1, typename T2, typename T3 = Backend::if_no_loss<T1, T2>>
-    Matrix<T3>&& operator*(Matrix<T1>&& A, const Matrix<T2>& B);
+    auto operator*(const Matrix<T1>& A, const T2 B) noexcept -> Matrix<decltype(T1()*T2())>
+    { return Backend::mul_val(A, B); }
+
     template<typename T1, typename T2>
-    auto operator*(Matrix<T1>&& A, Matrix<T2>&& B) -> Matrix<Backend::if_no_loss<T2, T1>>&&;
+    auto operator*(Matrix<T1>&& A, const T2 B) noexcept -> Matrix<Backend::if_no_loss<T1, T2>>&&
+    { return std::move(Backend::mul_val_inplace(A, B)); }
+
     template<typename T1, typename T2>
-    auto operator*(Matrix<T1>&& A, Matrix<T2>&& B) -> Matrix<Backend::if_no_loss<T1, T2>>&&;
+    auto operator*(const T1 A, const Matrix<T2>& B) noexcept -> Matrix<decltype(T1()*T2())>
+    { return Backend::mul_val(B, A); }
+
+    template<typename T1, typename T2>
+    auto operator*(const T1 A, Matrix<T2>&& B) noexcept -> Matrix<Backend::if_no_loss<T2, T1>>&&
+    { return std::move(Backend::mul_val_inplace(B, A)); } 
+//----------------------------------------------------------------------------------------------------------------------
     template<typename T>
-    Matrix<T>&& operator*(Matrix<T>&& A, Matrix<T>&& B);
-    template<typename T, typename T3 = Backend::if_no_loss<T, double>>
-    Matrix<T3>&& operator*(Matrix<T>&& A, const Random B) noexcept;
-    template<typename T, typename T3 = Backend::if_no_loss<T, double>>
-    Matrix<T3>&& operator*(const Random A, Matrix<T>&& B) noexcept;
-    template<typename T1, typename T2, typename T3 = Backend::if_no_loss<T2, T1>>
-    Matrix<T3>&& operator*(const T1 A, Matrix<T2>&& B) noexcept;
-    template<typename T1, typename T2, typename T3 = Backend::if_no_loss<T1, T2>>
-    Matrix<T3>&& operator*(Matrix<T1>&& A, const T2 B) noexcept;
+    Matrix<T> operator-(const Matrix<T>& A) noexcept { return Backend::neg_mat(A); }
+
+    template<typename T>
+    Matrix<T>&& operator-(Matrix<T>&& A) noexcept { return std::move(Backend::neg_inplace(A)); }
+
+    template<typename T1, typename T2>
+    Matrix<T1>& operator-=(Matrix<T1>& A, const Matrix<T2>& B)
+    { return Backend::sub_ll_mat_inplace(A, B); }
+    
+    template<typename T1, typename T2>
+    auto operator-(const Matrix<T1>& A, const Matrix<T2>& B) -> Matrix<decltype(T1()-T2())>
+    { return Backend::sub_mat(A, B); }
+
+    template<typename T1, typename T2>
+    auto operator-(const Matrix<T1>& A, Matrix<T2>&& B) -> Matrix<Backend::if_no_loss<T2, T1>>&&
+    { return std::move(Backend::sub_rl_mat_inplace(B, A)); }
+    
+    template<typename T1, typename T2>
+    auto operator-(Matrix<T1>&& A, const Matrix<T2>& B) -> Matrix<Backend::if_no_loss<T1, T2>>&&
+    { return std::move(Backend::sub_ll_mat_inplace(A, B)); }
+    
+    template<typename T1, typename T2>
+    auto operator-(Matrix<T1>&& A, Matrix<T2>&& B) -> Matrix<Backend::if_no_loss<T2, T1>>&&
+    {  return std::move(Backend::sub_rl_mat_inplace(B, A)); }
+
+    template<typename T1, typename T2>
+    auto operator-(Matrix<T1>&& A, Matrix<T2>&& B) -> Matrix<Backend::if_no_loss<T1, T2>>&&
+    { return std::move(Backend::sub_ll_mat_inplace(A, B)); }
+    
+    template<typename T>
+    auto operator-(Matrix<T>&& A, Matrix<T>&& B) -> Matrix<T>&&
+    { return std::move(Backend::sub_ll_mat_inplace(A, B)); }
+
+    template<typename T>
+    Matrix<T>& operator-=(Matrix<T>& A, Random B) noexcept
+    { return Backend::sub_ll_rng_inplace(A, B); }
+
+    template<typename T>
+    auto operator-(const Matrix<T>& A, Random B) noexcept -> Matrix<T>
+    { return Backend::sub_ll_rng(A, B); }
+
+    template<typename T>
+    auto operator-(Matrix<T>&& A, Random B) noexcept -> Matrix<T>&&
+    { return std::move(Backend::sub_ll_rng_inplace(A, B)); }
+
+    template<typename T>
+    auto operator-(Random A, const Matrix<T>& B) noexcept -> Matrix<T>
+    { return Backend::sub_rl_rng(B, A); }
+
+    template<typename T>
+    auto operator-(Random A, Matrix<T>&& B) noexcept -> Matrix<T>&&
+    { return std::move(Backend::sub_rl_rng_inplace(B, A)); }
+
+    template<typename T1, typename T2>
+    Matrix<T1>& operator-=(Matrix<T1>& A, T2 B) noexcept
+    { return Backend::sub_ll_val_inplace(A, B); }
+
+    template<typename T1, typename T2>
+    auto operator-(const Matrix<T1>& A, T2 B) noexcept -> Matrix<decltype(T1()-T2())>
+    { return Backend::sub_ll_val(A, B); }
+
+    template<typename T1, typename T2>
+    auto operator-(Matrix<T1>&& A, T2 B) noexcept -> Matrix<Backend::if_no_loss<T1, T2>>&&
+    { return std::move(Backend::sub_ll_val_inplace(A, B)); }
+
+    template<typename T1, typename T2>
+    auto operator-(T1 A, const Matrix<T2>& B) noexcept -> Matrix<decltype(T1()-T2())>
+    { return Backend::sub_rl_val(B, A); }
+
+    template<typename T1, typename T2>
+    auto operator-(T1 A, Matrix<T2>&& B) noexcept -> Matrix<Backend::if_no_loss<T2, T1>>&&
+    { return std::move(Backend::sub_rl_val_inplace(B, A)); }
   // --------------------------------------------------------------------------------------
     template<typename T1, typename T2>
     Matrix<T1>& operator/=(Matrix<T1>& A, const Matrix<T2>& B);
@@ -788,17 +790,17 @@ namespace Pinakas
     Matrix<T>& operator/=(Matrix<T>& A, const Random B) noexcept;
     template<typename T1, typename T2>
     Matrix<T1>& operator/=(Matrix<T1>& A, const T2 B) noexcept;
-    template<typename T1, typename T2, typename T3 = Backend::appropriate_type<T1, T2>>
+    template<typename T1, typename T2, typename T3 = decltype(T1()+T2())>
     Matrix<T3> operator/(const Matrix<T1>& A, const Matrix<T2>& B);
     template<typename T>
     Matrix<T> operator/(const Matrix<T>& A, const Matrix<T>& B);
-    template<typename T, typename T3 = Backend::appropriate_type<T, double>>
+    template<typename T, typename T3 = decltype(T()+double())>
     Matrix<T3> operator/(const Matrix<T>& A, const Random B) noexcept;
-    template<typename T, typename T3 = Backend::appropriate_type<T, double>>
+    template<typename T, typename T3 = decltype(T()+double())>
     Matrix<T3> operator/(const Random A, const Matrix<T>& B) noexcept;
-    template<typename T1, typename T2, typename T3 = Backend::appropriate_type<T1, T2>>
+    template<typename T1, typename T2, typename T3 = decltype(T1()+T2())>
     Matrix<T3> operator/(const Matrix<T1>& A, const T2 B) noexcept;
-    template<typename T1, typename T2, typename T3 = Backend::appropriate_type<T1, T2>>
+    template<typename T1, typename T2, typename T3 = decltype(T1()+T2())>
     Matrix<T3> operator/(const T1 A, const Matrix<T2>& B) noexcept;
     template<typename T1, typename T2, typename T3 = Backend::if_no_loss<T2, T1>>
     Matrix<T3>&& operator/(const Matrix<T1>& A, Matrix<T2>&& B);
@@ -823,11 +825,11 @@ namespace Pinakas
     Matrix<T1>& operator^=(Matrix<T1>& A, const Matrix<T2>& B);
     template<typename T1, typename T2>
     Matrix<T1>& operator^=(Matrix<T1>& A, const T2 B) noexcept;
-    template<typename T1, typename T2, typename T3 = Backend::appropriate_type<T1, T2>>
+    template<typename T1, typename T2, typename T3 = decltype(T1()+T2())>
     Matrix<T3> operator^(const Matrix<T1>& A, const Matrix<T2>& B);
-    template<typename T1, typename T2, typename T3 = Backend::appropriate_type<T1, T2>>
+    template<typename T1, typename T2, typename T3 = decltype(T1()+T2())>
     Matrix<T3> operator^(const Matrix<T1>& A, const T2 B) noexcept;
-    template<typename T1, typename T2, typename T3 = Backend::appropriate_type<T1, T2>>
+    template<typename T1, typename T2, typename T3 = decltype(T1()+T2())>
     Matrix<T3> operator^(const T1 A, const Matrix<T2>& B) noexcept;
     template<typename T1, typename T2, typename T3 = Backend::if_no_loss<T2, T1>>
     Matrix<T3>&& operator^(const Matrix<T1>& A, Matrix<T2>&& B);
