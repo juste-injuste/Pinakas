@@ -7,10 +7,10 @@
 // --Pinakas library: backend forward declaration----------------------------------------
 namespace Pinakas
 {
-  namespace Backend
+  namespace _backend
   {
     template<typename T1, typename T2>
-    auto add_mat_inplace(Matrix<T1>& A, const Matrix<T2>& B) -> Matrix<T1>&
+    auto _add_mat_inplace(Matrix<T1>& A, const Matrix<T2>& B) -> Matrix<T1>&
     {
       if ((A.M() != B.M()) || (A.N() != B.N()))
       {
@@ -28,7 +28,7 @@ namespace Pinakas
     }
 
     template<typename T1, typename T2>
-    auto add_mat(const Matrix<T1>& A, const Matrix<T2>& B) -> Matrix<decltype(T1()+T2())>
+    auto _add_mat(const Matrix<T1>& A, const Matrix<T2>& B) -> Matrix<decltype(T1()+T2())>
     {
       Matrix<decltype(T1()+T2())> result;
       if ((A.M() != B.M()) || (A.N() != B.N()))
@@ -49,7 +49,7 @@ namespace Pinakas
     }
 
     template<typename T1, typename T2>
-    auto add_val_inplace(Matrix<T1>& A, const T2 B) noexcept -> Matrix<T1>&
+    auto _add_val_inplace(Matrix<T1>& A, const T2 B) noexcept -> Matrix<T1>&
     {
       for (T1& data : A)
       {
@@ -60,7 +60,7 @@ namespace Pinakas
     }
 
     template<typename T1, typename T2>
-    auto add_val(const Matrix<T1>& A, const T2 B) noexcept -> Matrix<decltype(T1()+T2())>
+    auto _add_val(const Matrix<T1>& A, const T2 B) noexcept -> Matrix<decltype(T1()+T2())>
     {
       Matrix<decltype(T1()+T2())> result(A.size());
 
@@ -74,7 +74,7 @@ namespace Pinakas
     }
 
     template<typename T>
-    auto add_rng_inplace(Matrix<T>& A, Random B) noexcept -> Matrix<T>&
+    auto _add_rng_inplace(Matrix<T>& A, Random B) noexcept -> Matrix<T>&
     {
       static std::random_device device;
       static std::mt19937 generator(device());
@@ -89,7 +89,7 @@ namespace Pinakas
     }
 
     template<typename T>
-    auto add_rng(const Matrix<T>& A, Random B) noexcept -> Matrix<T>
+    auto _add_rng(const Matrix<T>& A, Random B) noexcept -> Matrix<T>
     {
       static std::random_device device;
       static std::mt19937 generator(device());
@@ -107,7 +107,7 @@ namespace Pinakas
     }
   
     template<typename T1, typename T2>
-    auto mul_mat_inplace(Matrix<T1>& A, const Matrix<T2>& B) -> Matrix<T1>&
+    auto _mul_mat_inplace(Matrix<T1>& A, const Matrix<T2>& B) -> Matrix<T1>&
     {
       if ((A.M() != B.M()) || (A.N() != B.N()))
       {
@@ -125,7 +125,7 @@ namespace Pinakas
     }
 
     template<typename T1, typename T2>
-    auto mul_mat(const Matrix<T1>& A, const Matrix<T2>& B) -> Matrix<decltype(T1()+T2())>
+    auto _mul_mat(const Matrix<T1>& A, const Matrix<T2>& B) -> Matrix<decltype(T1()+T2())>
     {
       Matrix<decltype(T1()+T2())> result;
       if ((A.M() != B.M()) || (A.N() != B.N()))
@@ -146,7 +146,7 @@ namespace Pinakas
     }
 
     template<typename T1, typename T2>
-    auto mul_val_inplace(Matrix<T1>& A, const T2 B) noexcept -> Matrix<T1>&
+    auto _mul_val_inplace(Matrix<T1>& A, const T2 B) noexcept -> Matrix<T1>&
     {
       for (T1& data : A)
       {
@@ -157,7 +157,7 @@ namespace Pinakas
     }
 
     template<typename T1, typename T2>
-    auto mul_val(const Matrix<T1>& A, const T2 B) noexcept -> Matrix<decltype(T1()+T2())>
+    auto _mul_val(const Matrix<T1>& A, const T2 B) noexcept -> Matrix<decltype(T1()+T2())>
     {
       Matrix<decltype(T1()+T2())> result(A.size());
 
@@ -171,7 +171,7 @@ namespace Pinakas
     }
 
     template<typename T>
-    auto mul_rng_inplace(Matrix<T>& A, Random B) noexcept -> Matrix<T>&
+    auto _mul_rng_inplace(Matrix<T>& A, Random B) noexcept -> Matrix<T>&
     {
       static std::random_device device;
       static std::mt19937 generator(device());
@@ -186,7 +186,7 @@ namespace Pinakas
     }
 
     template<typename T>
-    auto mul_rng(const Matrix<T>& A, Random B) noexcept -> Matrix<T>
+    auto _mul_rng(const Matrix<T>& A, Random B) noexcept -> Matrix<T>
     {
       static std::random_device device;
       static std::mt19937 generator(device());
@@ -204,7 +204,7 @@ namespace Pinakas
     }
 
     template<typename T>
-    auto neg_inplace(Matrix<T>& A) noexcept -> Matrix<T>&
+    auto _neg_inplace(Matrix<T>& A) noexcept -> Matrix<T>&
     {
       for (T& data : A)
       {
@@ -215,7 +215,7 @@ namespace Pinakas
     }
 
     template<typename T1, typename T2>
-    auto sub_ll_mat_inplace(Matrix<T1>& A, const Matrix<T2>& B) -> Matrix<T1>&
+    auto _sub_ll_mat_inplace(Matrix<T1>& A, const Matrix<T2>& B) -> Matrix<T1>&
     {
       if ((A.M() != B.M()) || (A.N() != B.N()))
       {
@@ -233,7 +233,7 @@ namespace Pinakas
     }
 
     template<typename T1, typename T2>
-    auto sub_rl_mat_inplace(Matrix<T1>& B, const Matrix<T2>& A) -> Matrix<T1>&
+    auto _sub_rl_mat_inplace(Matrix<T1>& B, const Matrix<T2>& A) -> Matrix<T1>&
     {
       if ((A.M() != B.M()) || (A.N() != B.N()))
       {
@@ -251,7 +251,7 @@ namespace Pinakas
     }
 
     template<typename T1, typename T2>
-    auto sub_ll_val_inplace(Matrix<T1>& A, T2 B) noexcept -> Matrix<T1>&
+    auto _sub_ll_val_inplace(Matrix<T1>& A, T2 B) noexcept -> Matrix<T1>&
     {
       for (T1& data : A)
       {
@@ -262,7 +262,7 @@ namespace Pinakas
     }
 
     template<typename T1, typename T2>
-    auto sub_rl_val_inplace(Matrix<T1>& B, T2 A) noexcept -> Matrix<T1>&
+    auto _sub_rl_val_inplace(Matrix<T1>& B, T2 A) noexcept -> Matrix<T1>&
     {
       for (T1& data : B)
       {
@@ -273,7 +273,7 @@ namespace Pinakas
     }
 
     template<typename T>
-    auto sub_ll_rng_inplace(Matrix<T>& A, Random B) noexcept -> Matrix<T>&
+    auto _sub_ll_rng_inplace(Matrix<T>& A, Random B) noexcept -> Matrix<T>&
     {
       static std::random_device device;
       static std::mt19937 generator(device());
@@ -288,7 +288,7 @@ namespace Pinakas
     }
 
     template<typename T>
-    auto sub_rl_rng_inplace(Matrix<T>& B, Random A) noexcept -> Matrix<T>&
+    auto _sub_rl_rng_inplace(Matrix<T>& B, Random A) noexcept -> Matrix<T>&
     {
       static std::random_device device;
       static std::mt19937 generator(device());
@@ -303,7 +303,7 @@ namespace Pinakas
     }
 
     template<typename T>
-    auto neg_mat(const Matrix<T> A) -> Matrix<T>
+    auto _neg_mat(const Matrix<T> A) -> Matrix<T>
     {
       Matrix<T> result(A.size());
 
@@ -317,7 +317,7 @@ namespace Pinakas
     }
 
     template<typename T1, typename T2>
-    auto sub_mat(const Matrix<T1>& A, const Matrix<T2>& B) -> Matrix<decltype(T1()-T2())>
+    auto _sub_mat(const Matrix<T1>& A, const Matrix<T2>& B) -> Matrix<decltype(T1()-T2())>
     {
       Matrix<decltype(T1()-T2())> result;
 
@@ -338,7 +338,7 @@ namespace Pinakas
     }
 
     template<typename T1, typename T2>
-    auto sub_ll_val(const Matrix<T1>& A, T2 B) noexcept -> Matrix<decltype(T1()-T2())>
+    auto _sub_ll_val(const Matrix<T1>& A, T2 B) noexcept -> Matrix<decltype(T1()-T2())>
     {
       Matrix<decltype(T1()-T2())> result(A.size());
 
@@ -352,7 +352,7 @@ namespace Pinakas
     }
 
     template<typename T1, typename T2>
-    auto sub_rl_val(const Matrix<T1>& B, T2 A) noexcept -> Matrix<decltype(T1()-T2())>
+    auto _sub_rl_val(const Matrix<T1>& B, T2 A) noexcept -> Matrix<decltype(T1()-T2())>
     {
       Matrix<decltype(T1()-T2())> result(B.size());
 
@@ -366,7 +366,7 @@ namespace Pinakas
     }
 
     template<typename T>
-    auto sub_ll_rng(const Matrix<T>& A, Random B) noexcept -> Matrix<decltype(T()-float())>
+    auto _sub_ll_rng(const Matrix<T>& A, Random B) noexcept -> Matrix<decltype(T()-float())>
     {
       static std::random_device device;
       static std::mt19937 generator(device());
@@ -384,7 +384,7 @@ namespace Pinakas
     }
 
     template<typename T>
-    auto sub_rl_rng(const Matrix<T>& B, Random A) noexcept -> Matrix<decltype(T()-float())>
+    auto _sub_rl_rng(const Matrix<T>& B, Random A) noexcept -> Matrix<decltype(T()-float())>
     {
       static std::random_device device;
       static std::mt19937 generator(device());
@@ -1142,7 +1142,7 @@ namespace Pinakas
 //----------------------------------------------------------------------------------------------------------------------
 // --------------------------------------------------------------------------------------
   template<typename T1, typename T2>
-  Matrix<T1>& div_ll_mat_inplace(Matrix<T1>& A, const Matrix<T2>& B)
+  Matrix<T1>& _div_ll_mat_inplace(Matrix<T1>& A, const Matrix<T2>& B)
   {
     if (A.size() != B.size()) {
       PINAKAS_ERROR("nonconformant arguments (A is %ux%u, B is %ux%u)", A.M(), A.N(), B.M(), B.N());
@@ -1157,7 +1157,7 @@ namespace Pinakas
   }
 
   template<typename T1, typename T2>
-  Matrix<T1>& div_rl_mat_inplace(Matrix<T1>& B, const Matrix<T2>& A)
+  Matrix<T1>& _div_rl_mat_inplace(Matrix<T1>& B, const Matrix<T2>& A)
   {
     if (A.size() != B.size()) {
       PINAKAS_ERROR("nonconformant arguments (A is %ux%u, B is %ux%u)", A.M(), A.N(), B.M(), B.N());
@@ -1172,7 +1172,7 @@ namespace Pinakas
   }
 
   template<typename T1, typename T2>
-  Matrix<T1>& div_ll_val_inplace(Matrix<T1>& A, const T2 B) noexcept
+  Matrix<T1>& _div_ll_val_inplace(Matrix<T1>& A, const T2 B) noexcept
   {
     const T1 iB = 1.0 / B;
 
@@ -1184,7 +1184,7 @@ namespace Pinakas
   }
 
   template<typename T1, typename T2>
-  Matrix<T1>& div_rl_val_inplace(Matrix<T1>& B, const T2 A) noexcept
+  Matrix<T1>& _div_rl_val_inplace(Matrix<T1>& B, const T2 A) noexcept
   {
     const unsigned n = B.numel();
     for (unsigned k = 0; k < n; ++k)
@@ -1194,7 +1194,7 @@ namespace Pinakas
   }
 
   template<typename T>
-  Matrix<T>& div_ll_rng_inplace(Matrix<T>& A, Random B) noexcept
+  Matrix<T>& _div_ll_rng_inplace(Matrix<T>& A, Random B) noexcept
   {
     static std::random_device device;
     static std::mt19937 generator(device());
@@ -1208,7 +1208,7 @@ namespace Pinakas
   }
 
   template<typename T>
-  Matrix<T>& div_rl_rng_inplace(Matrix<T>& B, Random A) noexcept
+  Matrix<T>& _div_rl_rng_inplace(Matrix<T>& B, Random A) noexcept
   {
     static std::random_device device;
     static std::mt19937 generator(device());
@@ -1222,7 +1222,7 @@ namespace Pinakas
   }
 
   template<typename T1, typename T2, typename T3>
-  Matrix<T3> div_mat(const Matrix<T1>& A, const Matrix<T2>& B)
+  Matrix<T3> _div_mat(const Matrix<T1>& A, const Matrix<T2>& B)
   {
     if (A.size() != B.size())
     {
@@ -1244,7 +1244,7 @@ namespace Pinakas
   }
 
   template<typename T1, typename T2, typename T3>
-  Matrix<T3> div_ll_val(const Matrix<T1>& A, const T2 B) noexcept
+  Matrix<T3> _div_ll_val(const Matrix<T1>& A, const T2 B) noexcept
   {
     Matrix<T3> result(A.size());
     const T1 iB = 1.0 / B;
@@ -1257,7 +1257,7 @@ namespace Pinakas
   }
 
   template<typename T1, typename T2, typename T3>
-  Matrix<T3> div_rl_val(const Matrix<T1>& B, const T2 A) noexcept
+  Matrix<T3> _div_rl_val(const Matrix<T1>& B, const T2 A) noexcept
   {
     Matrix<T3> result(B.size());
 
@@ -1269,7 +1269,7 @@ namespace Pinakas
   }
 
   template<typename T1, typename T3>
-  Matrix<T3> div_ll_rng(const Matrix<T1>& A, Random B) noexcept
+  Matrix<T3> _div_ll_rng(const Matrix<T1>& A, Random B) noexcept
   {
     static std::random_device device;
     static std::mt19937 generator(device());
@@ -1285,7 +1285,7 @@ namespace Pinakas
   }
 
   template<typename T1, typename T3>
-  Matrix<T3> div_rl_rng(const Matrix<T1>& B, Random A) noexcept
+  Matrix<T3> _div_rl_rng(const Matrix<T1>& B, Random A) noexcept
   {
     static std::random_device device;
     static std::mt19937 generator(device());
@@ -1303,25 +1303,25 @@ namespace Pinakas
   template<typename T1, typename T2>
   Matrix<T1>& operator/=(Matrix<T1>& A, const Matrix<T2>& B)
   {
-    return div_ll_mat_inplace(A, B);
+    return _div_ll_mat_inplace(A, B);
   }
   
   template<typename T>
   Matrix<T>& operator/=(Matrix<T>& A, Random B) noexcept
   {
-    return div_ll_rng_inplace(A, B);
+    return _div_ll_rng_inplace(A, B);
   }
 
   template<typename T1, typename T2>
   Matrix<T1>& operator/=(Matrix<T1>& A, const T2 B) noexcept
   {
-    return div_ll_val_inplace(A, B);
+    return _div_ll_val_inplace(A, B);
   }
   
   template<typename T1, typename T2, typename T3>
   Matrix<T3> operator/(const Matrix<T1>& A, const Matrix<T2>& B)
   {
-    return div_mat(A, B);
+    return _div_mat(A, B);
   }
   
   template<typename T>
@@ -1330,90 +1330,90 @@ namespace Pinakas
     #ifdef PARALLILOS_USE_PARALLELISM
       // return div_mat_simd(A, B);
     #else
-      return div_mat(A, B);
+      return _div_mat(A, B);
     #endif
   }
 
   template<typename T, typename T3>
   Matrix<T3> operator/(const Matrix<T>& A, Random B) noexcept
   {
-    return div_ll_rng(A, B);
+    return _div_ll_rng(A, B);
   }
 
   template<typename T, typename T3>
   Matrix<T3> operator/(Random A, const Matrix<T>& B) noexcept
   {
-    return div_rl_rng(B, A);
+    return _div_rl_rng(B, A);
   }
   
   template<typename T1, typename T2, typename T3>
   Matrix<T3> operator/(const Matrix<T1>& A, const T2 B) noexcept
   {
-    return div_ll_val(A, B);
+    return _div_ll_val(A, B);
   }
   
   template<typename T1, typename T2, typename T3>
   Matrix<T3> operator/(const T1 A, const Matrix<T2>& B) noexcept
   {
-    return div_rl_val(B, A);
+    return _div_rl_val(B, A);
   }
 
   template<typename T1, typename T2, typename T3>
   Matrix<T3>&& operator/(const Matrix<T1>& A, Matrix<T2>&& B)
   {
-    return std::move(div_rl_mat_inplace(B, A));
+    return std::move(_div_rl_mat_inplace(B, A));
   }
   
   template<typename T1, typename T2, typename T3>
   Matrix<T3>&& operator/(Matrix<T1>&& A, const Matrix<T2>& B)
   {
-    return std::move(div_ll_mat_inplace(A, B));
+    return std::move(_div_ll_mat_inplace(A, B));
   }
   
   template<typename T1, typename T2>
-  auto operator/(Matrix<T1>&& A, Matrix<T2>&& B) -> Matrix<Backend::if_no_loss<T2, T1>>&&
+  auto operator/(Matrix<T1>&& A, Matrix<T2>&& B) -> Matrix<_backend::if_no_loss<T2, T1>>&&
   {
-    return std::move(div_rl_mat_inplace(B, A));
+    return std::move(_div_rl_mat_inplace(B, A));
   }
   
   template<typename T1, typename T2>
-  auto operator/(Matrix<T1>&& A, Matrix<T2>&& B) -> Matrix<Backend::if_no_loss<T1, T2>>&&
+  auto operator/(Matrix<T1>&& A, Matrix<T2>&& B) -> Matrix<_backend::if_no_loss<T1, T2>>&&
   {
-    return std::move(div_ll_mat_inplace(A, B));
+    return std::move(_div_ll_mat_inplace(A, B));
   }
   
   template<typename T>
   Matrix<T>&& operator/(Matrix<T>&& A, Matrix<T>&& B)
   {
-    return std::move(div_ll_mat_inplace(A, B));
+    return std::move(_div_ll_mat_inplace(A, B));
   }
 
   template<typename T, typename T3>
   Matrix<T3>&& operator/(Matrix<T>&& A, Random B) noexcept
   {
-    return std::move(div_ll_rng_inplace(A, B));
+    return std::move(_div_ll_rng_inplace(A, B));
   }
 
   template<typename T, typename T3>
   Matrix<T3>&& operator/(Random A, Matrix<T>&& B) noexcept
   {
-    return std::move(div_rl_rng_inplace(B, A));
+    return std::move(_div_rl_rng_inplace(B, A));
   }
   
   template<typename T1, typename T2, typename T3>
   Matrix<T3>&& operator/(const T1 A, Matrix<T2>&& B) noexcept
   {
-    return std::move(div_rl_val_inplace(B, A));
+    return std::move(_div_rl_val_inplace(B, A));
   }
 
   template<typename T1, typename T2, typename T3>
   Matrix<T3>&& operator/(Matrix<T1>&& A, const T2 B) noexcept
   {
-    return std::move(div_ll_val_inplace(A, B));
+    return std::move(_div_ll_val_inplace(A, B));
   }
 // --------------------------------------------------------------------------------------
   template<typename T1, typename T2>
-  Matrix<T1>& pow_ll_mat_inplace(Matrix<T1>& A, const Matrix<T2>& B)
+  Matrix<T1>& _pow_ll_mat_inplace(Matrix<T1>& A, const Matrix<T2>& B)
   {
     if (A.size() != B.size()) {
       PINAKAS_ERROR("nonconformant arguments (A is %ux%u, B is %ux%u)", A.M(), A.N(), B.M(), B.N());
@@ -1428,7 +1428,7 @@ namespace Pinakas
   }
 
   template<typename T1, typename T2>
-  Matrix<T1>& pow_rl_mat_inplace(Matrix<T1>& B, const Matrix<T2>& A)
+  Matrix<T1>& _pow_rl_mat_inplace(Matrix<T1>& B, const Matrix<T2>& A)
   {
     if (A.size() != B.size()) {
       PINAKAS_ERROR("nonconformant arguments (A is %ux%u, B is %ux%u)", A.M(), A.N(), B.M(), B.N());
@@ -1443,7 +1443,7 @@ namespace Pinakas
   }
 
   template<typename T1, typename T2>
-  Matrix<T1>& pow_ll_val_inplace(Matrix<T1>& A, const T2 B) noexcept
+  Matrix<T1>& _pow_ll_val_inplace(Matrix<T1>& A, const T2 B) noexcept
   {
     const unsigned n = A.numel();
     for (unsigned k = 0; k < n; ++k)
@@ -1453,7 +1453,7 @@ namespace Pinakas
   }
 
   template<typename T1, typename T2>
-  Matrix<T1>& pow_rl_val_inplace(Matrix<T1>& B, const T2 A) noexcept
+  Matrix<T1>& _pow_rl_val_inplace(Matrix<T1>& B, const T2 A) noexcept
   {
     const unsigned n = B.numel();
     for (unsigned k = 0; k < n; ++k)
@@ -1463,7 +1463,7 @@ namespace Pinakas
   }
 
   template<typename T1, typename T2, typename T3>
-  Matrix<T3> pow_mat(const Matrix<T1>& A, const Matrix<T2>& B)
+  Matrix<T3> _pow_mat(const Matrix<T1>& A, const Matrix<T2>& B)
   {
     if (A.size() != B.size()) {
       PINAKAS_ERROR("nonconformant arguments (A is %ux%u, B is %ux%u)", A.M(), A.N(), B.M(), B.N());
@@ -1480,7 +1480,7 @@ namespace Pinakas
   }
 
   template<typename T1, typename T2, typename T3>
-  Matrix<T3> pow_ll_val(const Matrix<T1>& A, const T2 B) noexcept
+  Matrix<T3> _pow_ll_val(const Matrix<T1>& A, const T2 B) noexcept
   {
     Matrix<T3> result(A.size());
 
@@ -1492,7 +1492,7 @@ namespace Pinakas
   }
 
   template<typename T1, typename T2, typename T3>
-  Matrix<T3> pow_rl_val(const Matrix<T1>& B, const T2 A) noexcept
+  Matrix<T3> _pow_rl_val(const Matrix<T1>& B, const T2 A) noexcept
   {
     Matrix<T3> result(B.size());
 
@@ -1506,73 +1506,73 @@ namespace Pinakas
   template<typename T1, typename T2>
   Matrix<T1>& operator^=(Matrix<T1>& A, const Matrix<T2>& B)
   {
-    return pow_ll_mat_inplace(A, B);
+    return _pow_ll_mat_inplace(A, B);
   }
 
   template<typename T1, typename T2>
   Matrix<T1>& operator^=(Matrix<T1>& A, const T2 B) noexcept
   {
-    return pow_ll_val_inplace(A, B);
+    return _pow_ll_val_inplace(A, B);
   }
   
   template<typename T1, typename T2, typename T3>
   Matrix<T3> operator^(const Matrix<T1>& A, const Matrix<T2>& B)
   {
-    return pow_mat(A, B);
+    return _pow_mat(A, B);
   }
 
   template<typename T1, typename T2, typename T3>
   Matrix<T3> operator^(const Matrix<T1>& A, const T2 B) noexcept
   {
-    return pow_ll_val(A, B);
+    return _pow_ll_val(A, B);
   }
   
   template<typename T1, typename T2, typename T3>
   Matrix<T3> operator^(const T1 A, const Matrix<T2>& B) noexcept
   {
-    return pow_rl_val(B, A);
+    return _pow_rl_val(B, A);
   }
 
   template<typename T1, typename T2, typename T3>
   Matrix<T3>&& operator^(const Matrix<T1>& A, Matrix<T2>&& B)
   {
-    return std::move(pow_rl_mat_inplace(B, A));
+    return std::move(_pow_rl_mat_inplace(B, A));
   }
   
   template<typename T1, typename T2, typename T3>
   Matrix<T3>&& operator^(Matrix<T1>&& A, const Matrix<T2>& B)
   {
-    return std::move(pow_ll_mat_inplace(A, B));
+    return std::move(_pow_ll_mat_inplace(A, B));
   }
   
   template<typename T1, typename T2>
-  auto operator^(Matrix<T1>&& A, Matrix<T2>&& B) -> Matrix<Backend::if_no_loss<T2, T1>>&&
+  auto operator^(Matrix<T1>&& A, Matrix<T2>&& B) -> Matrix<_backend::if_no_loss<T2, T1>>&&
   {
-    return std::move(pow_rl_mat_inplace(B, A));
+    return std::move(_pow_rl_mat_inplace(B, A));
   }
   
   template<typename T1, typename T2>
-  auto operator^(Matrix<T1>&& A, Matrix<T2>&& B) -> Matrix<Backend::if_no_loss<T1, T2>>&&
+  auto operator^(Matrix<T1>&& A, Matrix<T2>&& B) -> Matrix<_backend::if_no_loss<T1, T2>>&&
   {
-    return std::move(pow_ll_mat_inplace(A, B));
+    return std::move(_pow_ll_mat_inplace(A, B));
   }
   
   template<typename T>
   Matrix<T>&& operator^(Matrix<T>&& A, Matrix<T>&& B)
   {
-    return std::move(pow_ll_mat_inplace(A, B));
+    return std::move(_pow_ll_mat_inplace(A, B));
   }
   
   template<typename T1, typename T2, typename T3>
   Matrix<T3>&& operator^(const T1 A, Matrix<T2>&& B) noexcept
   {
-    return std::move(pow_rl_val_inplace(B, A));
+    return std::move(_pow_rl_val_inplace(B, A));
   }
 
   template<typename T1, typename T2, typename T3>
   Matrix<T3>&& operator^(Matrix<T1>&& A, const T2 B) noexcept
   {
-    return std::move(pow_ll_val_inplace(A, B));
+    return std::move(_pow_ll_val_inplace(A, B));
   }
 // --------------------------------------------------------------------------------------
   template<template<typename> class M, typename T>
@@ -1788,8 +1788,8 @@ namespace Pinakas
     return x;
   }
 // --------------------------------------------------------------------------------------
-  template<template<typename> class M1, typename T>
-  Matrix<T> transpose(const M1<T>& A)
+  template<typename T>
+  auto transpose(const Matrix<T>& A) -> Matrix<T>
   {
     Matrix<T> result(A.N(), A.M());
     for (unsigned y = 0; y < A.M(); ++y)
@@ -1799,15 +1799,15 @@ namespace Pinakas
   }
 
   template<typename T>
-  Matrix<T>&& transpose(Matrix<T>&& A)
+  auto transpose(Matrix<T>&& A) -> Matrix<T>&&
   {
     std::swap(A.size_.M, A.size_.N);
 
     return std::move(A);
   }
 
-  template<template<typename> class M1, typename T>
-  Matrix<T> reshape(const M1<T>& A, const unsigned M, const unsigned N)
+  template<typename T>
+  auto reshape(const Matrix<T>& A, const unsigned M, const unsigned N) -> Matrix<T>
   {
     Matrix<T> result;
 
@@ -1829,61 +1829,83 @@ namespace Pinakas
   }
 
   template<typename T>
-  Matrix<T>&& reshape(Matrix<T>&& A, const unsigned M, const unsigned N)
+  auto reshape(Matrix<T>&& A, const unsigned M, const unsigned N) -> Matrix<T>&&
   {
     if (A.size_.numel != M*N)
     {
       PINAKAS_ERROR("can't reshape %ux%u into %ux%u)", A.M(), A.N(), M, N);
-      goto exit;
+      return std::move(A);
     }
 
     A.size_.M = M;
     A.size_.N = N;
 
-  exit:
     return std::move(A);
   }
 // --------------------------------------------------------------------------------------
-  template<template<typename> class M1, typename T>
-  T min(const M1<T>& A) noexcept
+  template<template<typename> class M, typename T>
+  T min(const M<T>& A) noexcept
   {
-    T minimum = A.data()[0];
-    for (unsigned k = 1; k < A.numel(); ++k)
-      if (A.data()[k] < minimum)
-        minimum = A.data()[k];
+    T result = A[0][0];
+
+    for (T data : A)
+    {
+      if (data < result)
+      {
+        result = data;
+      }
+    }
         
-    return minimum;
+    return result;
   }
   
-  template<template<typename> class M1, typename T>
-  T max(const M1<T>& A) noexcept
+  template<template<typename> class M, typename T>
+  T max(const M<T>& A) noexcept
   {
-    T maximum = A.data()[0];
-    for (unsigned k = 1; k < A.numel(); ++k)
-      if (A.data()[k] > maximum)
-        maximum = A.data()[k];
+    T result = A[0][0];
 
-    return maximum;
+    for (T data : A)
+    {
+      if (data > result)
+      {
+        result = data;
+      }
+    }
+
+    return result;
   }
   
-  template<template<typename> class M1, typename T>
-  T sum(const M1<T>& A) noexcept
+  template<template<typename> class M, typename T>
+  T sum(const M<T>& A) noexcept
   {
-    T summation = 0;
-    for (unsigned k = 0; k < A.numel(); ++k)
-      summation += A.data()[k];
+    T result = 0;
 
-    return summation;
+    for (T data : A)
+    {
+      result += data;
+    }
+
+    return result;
   }
 
-  template<template<typename> class M1, typename T>
-  double prod(const M1<T>& A) noexcept
+  template<template<typename> class M, typename T>
+  double prod(const M<T>& A) noexcept
   {
-    double temporary = 0;
-    for (unsigned k = 0; k < A.numel(); ++k)
-      temporary += std::log(A.data()[k]);
+    // double result = 0;
+    // for (T data : A)
+    // {
+    //   result += std::log(data);
+    // }
+    // return std::exp(result);
 
-    return std::exp(temporary);
+    double result = 1;
+
+    for (T data : A)
+    {
+      result *= data;
+    }
+
+    return result;
   }
 
   template<template<typename> class M1, typename T>
@@ -2020,8 +2042,7 @@ namespace Pinakas
 
     const unsigned n = data_x.numel();
 
-    Matrix<double> lin_x(1, n, 0);
-    Matrix<double> lin_y(1, n, 0);
+    Matrix<double> lin_x(1, n, 0), lin_y(1, n, 0);
 
     // set first and last values of the linearized data set
     lin_x.data()[0]   = data_x.data()[0];
@@ -2030,11 +2051,11 @@ namespace Pinakas
     lin_y.data()[n-1] = data_y.data()[n-1];
 
     // build linearly spaced x data and its associated y value
-    const double step = (data_x.data()[n - 1] - data_x.data()[0]) / (n - 1);
+    const double step = (data_x.data()[n-1] - data_x.data()[0]) / (n - 1);
     for (unsigned k = 1; k < (n - 1); ++k)
     {
       // build linearly spaced x data
-      lin_x.data()[k] = lin_x.data()[k - 1] + step;
+      lin_x.data()[k] = lin_x.data()[k-1] + step;
 
       // linearly interpolate y value
       double x1 = data_x.data()[k];
@@ -2089,18 +2110,29 @@ namespace Pinakas
   {
     Matrix<T> result(1, N);
 
-    const unsigned n = N - 1;
-    const double step  = (x2 - x1) / (N - 1);
+    const auto nm1   = N - 1;
+    const auto step  = (x2 - x1) / nm1;
+    auto temporary   = x1;
 
-    double temporary = x1;
-    for (unsigned k = 1; k < n; ++k)
+    if (std::is_floating_point<T>::value)
     {
-      // result.data()[k] = std::round(temporary += step);
-      result.data()[k] = temporary += step;
+      for (unsigned k = 1; k < nm1; ++k)
+      {
+        temporary       += step;
+        result.data()[k] = temporary;
+      }
+    }
+    else
+    {
+      for (unsigned k = 1; k < nm1; ++k)
+      {
+        temporary       += step;
+        result.data()[k] = std::round(temporary);
+      }
     }
 
-    result.data()[0] = x1;
-    result.data()[n] = x2;
+    result.data()[0]   = x1;
+    result.data()[nm1] = x2;
 
     return result;
   }
@@ -2123,10 +2155,11 @@ namespace Pinakas
   {
     Matrix<T> result(M, N, 0);
 
-    const unsigned n = std::min(M, N);
-
+    const auto n = std::min(M, N);
     for (unsigned k = 0; k < n; ++k)
+    {
       result[k][k] = 1;
+    }
     
     return result;
   }
@@ -2164,6 +2197,20 @@ namespace Pinakas
     return result;
   }
 
+  template<typename T>
+  Matrix<T> reverse(const Slice<T>& A)
+  {
+    Matrix<T> result(A.size());
+
+    const unsigned n = A.numel();
+    for (unsigned k = 0; k < n; ++k)
+    {
+      result.data()[k] = A[0][n-1 - k];
+    }
+
+    return result;
+  }
+
   template<template<typename> class M, typename T>
   M<T>&& reverse(M<T>&& A) noexcept
   {
@@ -2179,18 +2226,35 @@ namespace Pinakas
     return std::move(A);
   }
 // --------------------------------------------------------------------------------------
-  template<typename T1, typename T2, typename T3>
-  Matrix<T3> conv(const Matrix<T1>& A, const Matrix<T2>& B)
+  template<typename T1, typename T2>
+  auto conv(const Matrix<T1>& A, const Matrix<T2>& B) -> Matrix<decltype(T1()*T2())>
   {
-    const unsigned n1 = A.numel();
-    const unsigned n2 = B.numel();
+    Matrix<decltype(T1()*T2())> result;
 
-    Matrix<T3> convoluted(1, n1 + n2 - 1, 0);
-    for (unsigned i = 0; i < n1; ++i)
-      for (unsigned j = 0; j < n2; ++j)
-        convoluted.data()[i + j] += A.data()[i] * B.data()[j];
+    if (A.M() != B.M())
+    {
+      PINAKAS_ERROR("vertical dimensions mismatch (%u vs %u)", A.M(), B.M());
+      return result;
+    }
 
-    return convoluted;
+    const unsigned M   = A.M();
+    const unsigned N_A = A.N();
+    const unsigned N_B = B.N();
+
+    result = Matrix<decltype(T1()*T2())>(1, N_A+N_B-1, 0);
+
+    for (unsigned m = 0; m < M; ++m)
+    {
+      for (unsigned i = 0; i < N_A; ++i)
+      {
+        for (unsigned j = 0; j < N_B; ++j)
+        {
+          result[m][i + j] += A[m][i] * B[m][j];
+        }
+      }
+    }
+
+    return result;
   }
 
   template<typename T1, typename T2, typename T3>
@@ -2332,6 +2396,7 @@ namespace Pinakas
   Matrix<double> hamming(const unsigned N)
   {
     Matrix<double> window(1, N);
+
     for (unsigned k = 0; k < N; ++k)
     {
       window.data()[k] = 0.54 - 0.46 * std::cos(2 * M_PI * k / (N - 1));
@@ -2397,10 +2462,10 @@ namespace Pinakas
     return std::move(signal);
   }
 // --------------------------------------------------------------------------------------
-  double newton(const std::function<double(double)> function,
-                const double tol,
-                const unsigned max_iteration,
-                const double seed) noexcept
+  double newton(std::function<double(double)> function,
+    double tol,
+    unsigned max_iteration,
+    double seed) noexcept
   {
     const double half_tol = tol * 0.5;
 
@@ -2429,9 +2494,10 @@ namespace Pinakas
 
   Matrix<double>&& cos(Matrix<double>&& A) noexcept
   {
-    const unsigned n = A.numel();
-    for (unsigned k = 0; k < n; ++k)
-      A.data()[k] = std::cos(A.data()[k]);
+    for (auto& value : A)
+    {
+      value = std::cos(value);
+    }
 
     return std::move(A);
   }
@@ -2450,9 +2516,10 @@ namespace Pinakas
 
   Matrix<double>&& sin(Matrix<double>&& A) noexcept
   {
-    const unsigned n = A.numel();
-    for (unsigned k = 0; k < n; ++k)
-      A.data()[k] = std::sin(A.data()[k]);
+    for (auto& value : A)
+    {
+      value = std::sin(value);
+    }
 
     return std::move(A);
   }
@@ -2620,24 +2687,34 @@ namespace Pinakas
   {
     if (A.numel() != 0)
     {
-      unsigned max_len = 0;
-      for (T data : A)
+      if (A.M() != 1)
       {
-        std::stringstream ss;
-        ss.copyfmt(ostream);
-        ss << data;
-        max_len = std::max(size_t(max_len), ss.str().length());
-      }
-      
-      for (unsigned y = 0; y < A.M(); ++y)
-      {
-        for (unsigned x = 0; x < A.N(); ++x)
+        unsigned max_len = 0;
+        for (T data : A)
         {
-          ostream << std::setw(max_len + 1) << A[y][x];
+          std::stringstream ss;
+          ss.copyfmt(ostream);
+          ss << data;
+          max_len = std::max(size_t(max_len), ss.str().length());
         }
-
-        ostream << '\n';
+      
+        for (unsigned y = 0; y < A.M(); ++y)
+        {
+          for (unsigned x = 0; x < A.N(); ++x)
+          {
+            ostream << std::setw(max_len + 1) << A[y][x];
+          }
+        }
       }
+      else
+      {
+        for (T data : A)
+        {
+          ostream << data << ' ';
+        }
+      }
+
+      ostream << '\n';
     }
 
     return ostream;

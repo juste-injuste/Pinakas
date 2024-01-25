@@ -1,15 +1,19 @@
+#undef NDEBUG
 #include "../src/Pinakas.cpp"
 #include <iostream>
+#include "../include/Chronometro.hpp"
 
 int main()
 {
-  using namespace Pinakas;
-  
-  auto m = Matrix<float>(3, 3, Random(0, 10));
-  auto s = m(Range{0, 1}, Range{0, 1});
+  // using namespace Pinakas;
 
-  m = s;
+  auto x_lo = Pinakas::linspace(0, 3, 15);
+  auto y_lo = (x_lo^2) + Pinakas::sin(x_lo*5) - x_lo/2;
 
-  std::cout << m;
-  std::cout << floor(m);
+  auto y_hi = Pinakas::resample(y_lo, 10);
+  auto x_hi = Pinakas::linspace(x_lo(0), x_lo(-1), y_hi.numel());
+
+  Pinakas::plot({Pinakas::Set("lo", x_lo, y_lo), Pinakas::Set("hi", x_hi, y_hi)});
+
+  std::cout << x_hi;
 }
