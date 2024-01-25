@@ -54,13 +54,13 @@ The resulting data is of size `data.M()` by `L*data.N() - (tail ? 1 : L)`.
 
 ## Errors
 
-`'data' must be atleast 4 element wide` if rows do not contain enough elements.
+* `'data' must be atleast 4 element wide` if rows do not contain enough elements.
 
 ## Warnings
 
-`'L' must be at least 2, 2 used instead` when an invalid resampling factor is used.<br>
-`'reflect' must be less than the width of 'data', 2 used instead` when an invalid amount of reflected data is used.<br>
-`'alpha' must be at least 1/L, 3.5 used instead` when an invalid filter length factor is used.<br>
+* `'L' must be at least 2, 2 used instead` when an invalid resampling factor is used.
+* `'reflect' must be less than the width of 'data', 2 used instead` when an invalid amount of reflected data is used.
+* `'alpha' must be at least 1/L, 3.5 used instead` when an invalid filter length factor is used.
 
 ## Performance
 
