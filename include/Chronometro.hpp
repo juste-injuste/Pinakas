@@ -92,32 +92,40 @@ namespace Chronometro
   class Measure final
   {
   public:
-    inline Measure() noexcept = default;
-    inline Measure(size_t n) noexcept;
-    inline Measure(size_t n, const char* lap_format) noexcept;
-    inline Measure(size_t n, const char* lap_format, const char* total_format) noexcept;
-    inline size_t   operator*() noexcept;
-    inline void     operator++() noexcept;
-    inline bool     operator!=(const Measure&) noexcept;
-    inline          operator bool() noexcept;
-    inline Measure& begin() noexcept;
-    inline Measure  end() noexcept;
+    Measure() noexcept = default;
+    Measure(unsigned n) noexcept :
+      iterations(n) {}
+    Measure(unsigned n, const char* lap_format) noexcept :
+      iterations(n), lap_format(lap_format) {}
+    Measure(unsigned n, const char* lap_format, const char* total_format) noexcept :
+      iterations(n), lap_format(lap_format), total_format(total_format) {}
+    unsigned    operator*()          const noexcept { return iterations - iterations_left; }
+    inline void operator++()               noexcept;
+    bool        operator!=(const Measure&) noexcept { return operator bool(); }
+    inline      operator bool()            noexcept;
+    Measure&    begin()                    noexcept { return *this; }
+    Measure     end()                const noexcept { return Measure{0}; }
   private:
-    Stopwatch    stopwatch;
-    const size_t iterations      = 1;
-    size_t       iterations_left = iterations;
-    const char*  lap_format      = nullptr;
-    const char*  total_format    = "total elapsed time: %ms";
+    Stopwatch      stopwatch;
+    const unsigned iterations      = 1;
+    unsigned       iterations_left = iterations;
+    const char*    lap_format      = nullptr;
+    const char*    total_format    = "total elapsed time: %ms";
   };
+
+# define CHRONOMETRO_ONLY_EVERY_MS(n)
 
   namespace Global
   {
     std::ostream out{std::cout.rdbuf()}; // output ostream
     std::ostream wrn{std::cerr.rdbuf()}; // warning ostream
   }
-
-  std::ostream& operator << (std::ostream& ostream, const Time time) noexcept;
 // --Chronometro library: backend forward declaration-------------------------------------------------------------------
+  inline namespace Operators
+  {
+    std::ostream& operator<<(std::ostream& ostream, const Time time) noexcept;
+  }
+  
   namespace Backend
   {
     std::string format_string(const Time time, std::string format, const size_t iteration = 0) noexcept;
@@ -223,26 +231,6 @@ namespace Chronometro
     }
     else CHRONOMETRO_SW_WARNING("is already unpaused");
   }
-  
-  Measure::Measure(size_t n) noexcept :
-    iterations(n)
-  {}
-  
-  Measure::Measure(size_t n, const char* lap_format) noexcept :
-    iterations(n),
-    lap_format{lap_format}
-  {}
-  
-  Measure::Measure(size_t n, const char* lap_format, const char* total_format) noexcept :
-    iterations(n),
-    lap_format{lap_format},
-    total_format{total_format}
-  {}
-  
-  size_t Measure::operator*() noexcept
-  {
-    return iterations - iterations_left;
-  }
 
   void Measure::operator++() noexcept
   {
@@ -258,11 +246,6 @@ namespace Chronometro
     --iterations_left;
 
     stopwatch.unpause();
-  }
-
-  bool Measure::operator!=(const Measure&) noexcept
-  {
-    return operator bool();
   }
 
   Measure::operator bool() noexcept
@@ -281,52 +264,60 @@ namespace Chronometro
     return false;
   }
 
-  Measure& Measure::begin() noexcept
-  {
-    return *this;
-  }
-
-  Measure Measure::end() noexcept
-  {
-    return Measure{0};
-  }
-
-  std::ostream& operator << (std::ostream& ostream, const Time time) noexcept
-  {
-    // 10 h < duration
-    if (time.nanoseconds > 36000000000000)
-    {
-      return ostream << Backend::format_string(time, "elapsed time: %h") << std::endl;
-    }
-
-    // 10 min < duration <= 10 h
-    if (time.nanoseconds > 600000000000)
-    {
-      return ostream << Backend::format_string(time, "elapsed time: %min") << std::endl;
-    }
-
-    // 10 s < duration <= 10 m
-    if (time.nanoseconds > 10000000000)
-    {
-      return ostream << Backend::format_string(time, "elapsed time: %s") << std::endl;
-    }
-
-    // 10 ms < duration <= 10 s
-    if (time.nanoseconds > 10000000)
-    {
-      return ostream << Backend::format_string(time, "elapsed time: %ms") << std::endl;
-    }
-
-    // 10 us < duration <= 10 ms
-    if (time.nanoseconds > 10000)
-    {
-      return ostream << Backend::format_string(time, "elapsed time: %us") << std::endl;
-    }
-
-    // duration <= 10 us
-    return ostream << Backend::format_string(time, "elapsed time: %ns") << std::endl;
-  }
+# undef  CHRONOMETRO_ONLY_EVERY_MS
+# define CHRONOMETRO_ONLY_EVERY_MS(n)                               \
+    if ([]{                                                         \
+      static_assert(n > 0, "n must be a non-zero positive number"); \
+      using clock = std::chrono::high_resolution_clock;             \
+      static clock::time_point previous = {};                       \
+      auto target = std::chrono::nanoseconds{n*1000000};            \
+      if ((clock::now() - previous) > target)                       \
+      {                                                             \
+        previous = clock::now();                                    \
+        return true;                                                \
+      }                                                             \
+      return false;                                                 \
+    }())
 // --Chronometro library: backend definitions---------------------------------------------------------------------------
+  inline namespace Operators
+  {
+    std::ostream& operator << (std::ostream& ostream, const Time time) noexcept
+    {
+      // 10 h < duration
+      if (time.nanoseconds > 36000000000000)
+      {
+        return ostream << Backend::format_string(time, "elapsed time: %h") << std::endl;
+      }
+
+      // 10 min < duration <= 10 h
+      if (time.nanoseconds > 600000000000)
+      {
+        return ostream << Backend::format_string(time, "elapsed time: %min") << std::endl;
+      }
+
+      // 10 s < duration <= 10 m
+      if (time.nanoseconds > 10000000000)
+      {
+        return ostream << Backend::format_string(time, "elapsed time: %s") << std::endl;
+      }
+
+      // 10 ms < duration <= 10 s
+      if (time.nanoseconds > 10000000)
+      {
+        return ostream << Backend::format_string(time, "elapsed time: %ms") << std::endl;
+      }
+
+      // 10 us < duration <= 10 ms
+      if (time.nanoseconds > 10000)
+      {
+        return ostream << Backend::format_string(time, "elapsed time: %us") << std::endl;
+      }
+
+      // duration <= 10 us
+      return ostream << Backend::format_string(time, "elapsed time: %ns") << std::endl;
+    }
+  }
+  
   namespace Backend
   {
     std::string format_string(const Time time, std::string format, const size_t iteration) noexcept
@@ -375,20 +366,6 @@ namespace Chronometro
       
       return format;
     }
-
-#   define CHRONOMETRO_ONLY_EVERY_MS(n)                               \
-      if ([]{                                                         \
-        static_assert(n > 0, "n must be a non-zero positive number"); \
-        using clock = std::chrono::high_resolution_clock;             \
-        static clock::time_point previous = {};                       \
-        auto target = std::chrono::nanoseconds{n*1000000};            \
-        if ((clock::now() - previous) > target)                       \
-        {                                                             \
-          previous = clock::now();                                    \
-          return true;                                                \
-        }                                                             \
-        return false;                                                 \
-      }())
   }
 }
 #endif
