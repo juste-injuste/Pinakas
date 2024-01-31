@@ -286,11 +286,11 @@ namespace Pinakas
   template<typename T>
   auto transpose(const Matrix<T>& A) -> Matrix<T>;
   template<typename T>
-  auto transpose(Matrix<T>&& A)      -> Matrix<T>&&;
+  auto transpose(Matrix<T>&& A) noexcept -> Matrix<T>&&;
   template<typename T>
-  auto reshape(const Matrix<T>& A, const unsigned M, const unsigned N) -> Matrix<T>;
+  auto reshape(const Matrix<T>& A, unsigned M, unsigned N) -> Matrix<T>;
   template<typename T>
-  auto reshape(Matrix<T>&& A, const unsigned M, const unsigned N)      -> Matrix<T>&&;
+  auto reshape(Matrix<T>&& A, unsigned M, unsigned N) noexcept -> Matrix<T>&&;
 // --------------------------------------------------------------------------------------
   template<template<typename> class M, typename T>
   T min(const M<T>& A) noexcept;
@@ -330,29 +330,29 @@ namespace Pinakas
   Matrix<T3>     corr(const Matrix<T1>& A, const Matrix<T2>& B);
   template<typename T>
   Matrix<T>      corr(const Matrix<T>& A);
-  Matrix<double> rxx(const Matrix<double>& A);
-  Matrix<double> rxx(const Matrix<double>& A, const unsigned K);
+  Matrix<double> Rxx(const Matrix<double>& A);
+  Matrix<double> Rxx(const Matrix<double>& A, const unsigned K);
   Matrix<double> lpc(const Matrix<double>& A, const unsigned p);
   Matrix<double> toeplitz(const Matrix<double>& A);
   double newton(std::function<double(double)> function, double tol, unsigned max_iteration, double seed) noexcept;
 // --------------------------------------------------------------------------------------
   template<typename T>
-  Matrix<double>   cos(Matrix<T>& A);
+  Matrix<double>   cos(const Matrix<T>& A);
   Matrix<double>&& cos(Matrix<double>&& A) noexcept;
   template<typename T>
-  Matrix<double>   sin(Matrix<T>& A);
+  Matrix<double>   sin(const Matrix<T>& A);
   Matrix<double>&& sin(Matrix<double>&& A) noexcept;
   template<typename T>
-  Matrix<double>   sinc(Matrix<T>& A);
+  Matrix<double>   sinc(const Matrix<T>& A);
   Matrix<double>&& sinc(Matrix<double>&& A) noexcept;
 // --------------------------------------------------------------------------------------
-  Matrix<double>   blackman(const unsigned N);
+  Matrix<double>   blackman(unsigned N);
   Matrix<double>   blackman(const Matrix<double>& signal);
   Matrix<double>&& blackman(Matrix<double>&& signal) noexcept;
-  Matrix<double>   hamming(const unsigned N);
+  Matrix<double>   hamming(unsigned N);
   Matrix<double>   hamming(const Matrix<double>& signal);
   Matrix<double>&& hamming(Matrix<double>&& signal) noexcept;
-  Matrix<double>   hann(const unsigned N);
+  Matrix<double>   hann(unsigned N);
   Matrix<double>   hann(const Matrix<double>& signal);
   Matrix<double>&& hann(Matrix<double>&& signal) noexcept;
 // --------------------------------------------------------------------------------------
@@ -502,8 +502,8 @@ namespace Pinakas
     Matrix<T>& operator=(Matrix<T>&& other) noexcept;
   public:
     // indexing
-    inline       T* operator[](unsigned int j)       noexcept { return data_ + (j * size_.N); }
-    inline const T* operator[](unsigned int j) const noexcept { return data_ + (j * size_.N); }
+    inline       T* operator[](unsigned int j)       noexcept { return _data + (j * _size.N); }
+    inline const T* operator[](unsigned int j) const noexcept { return _data + (j * _size.N); }
     // bound-checked flat-indexing
     inline       T& operator()(signed int k)       noexcept;
     inline const T& operator()(signed int k) const noexcept;
@@ -511,16 +511,16 @@ namespace Pinakas
     inline       T& operator()(signed int j, signed int i)       noexcept;
     inline const T& operator()(signed int j, signed int i) const noexcept;
   public:
-    Size             size()  const noexcept { return size_; }
-    unsigned         numel() const noexcept { return size_.numel; }
-    unsigned         M()     const noexcept { return size_.M; }
-    unsigned         N()     const noexcept { return size_.N; }
-    operator unsigned ()     const noexcept { return size_.numel; } 
+    Size             size()  const noexcept { return _size; }
+    unsigned         numel() const noexcept { return _size.numel; }
+    unsigned         M()     const noexcept { return _size.M; }
+    unsigned         N()     const noexcept { return _size.N; }
+    operator unsigned ()     const noexcept { return _size.numel; } 
   private:
-    Size size_; // matrix size information
-    T*   data_; // T[M * N] array
+    Size _size; // matrix size information
+    T*   _data; // T[M * N] array
     
-    void allocate(const unsigned M, const unsigned N); // allocates memory to data_
+    void _allocate(const unsigned M, const unsigned N); // allocates memory to _data
   public:
     // size-based constructor
     inline explicit Matrix(const Size size);
@@ -546,15 +546,15 @@ namespace Pinakas
     using reference      = T&;
     using iterator       = T*;
     using const_iterator = const T*;
-    iterator       begin()       noexcept { return data_; }
-    iterator       end()         noexcept { return data_ + size_.numel; }
-    const_iterator begin() const noexcept { return data_; }
-    const_iterator end()   const noexcept { return data_ + size_.numel; }
-    T*             data()        noexcept { return data_;}
-    const T*       data()  const noexcept { return data_;}
+    iterator       begin()       noexcept { return _data; }
+    iterator       end()         noexcept { return _data + _size.numel; }
+    const_iterator begin() const noexcept { return _data; }
+    const_iterator end()   const noexcept { return _data + _size.numel; }
+    T*             data()        noexcept { return _data;}
+    const T*       data()  const noexcept { return _data;}
   friend class Slice<T>;
-  friend Matrix<T>&& transpose<T>(Matrix<T>&& A);
-  friend Matrix<T>&& reshape<T>(Matrix<T>&& A, const unsigned M, const unsigned N);
+  friend Matrix<T>&& transpose<T>(Matrix<T>&& A) noexcept;
+  friend Matrix<T>&& reshape<T>(Matrix<T>&& A, unsigned M, unsigned N) noexcept;
   };
 
   struct Set final
@@ -586,7 +586,7 @@ namespace Pinakas
   
   template<typename T1, typename T2>
   auto operator+(const Matrix<T1>& A, const Matrix<T2>& B) -> Matrix<decltype(T1()+T2())>
-  { return _backend::add_mat(A, B); }
+  { return _backend::_add_mat(A, B); }
 
   template<typename T1, typename T2>
   auto operator+(const Matrix<T1>& A, Matrix<T2>&& B) -> Matrix<_backend::if_no_loss<T2, T1>>&&
@@ -634,7 +634,7 @@ namespace Pinakas
 
   template<typename T1, typename T2>
   auto operator+(const Matrix<T1>& A, const T2 B) noexcept -> Matrix<decltype(T1()+T2())>
-  { return _backend::add_val(A, B); }
+  { return _backend::_add_val(A, B); }
 
   template<typename T1, typename T2>
   auto operator+(Matrix<T1>&& A, const T2 B) noexcept -> Matrix<_backend::if_no_loss<T1, T2>>&&
@@ -642,7 +642,7 @@ namespace Pinakas
 
   template<typename T1, typename T2>
   auto operator+(const T1 A, const Matrix<T2>& B) noexcept -> Matrix<decltype(T1()+T2())>
-  { return _backend::add_val(B, A); }
+  { return _backend::_add_val(B, A); }
 
   template<typename T1, typename T2>
   auto operator+(const T1 A, Matrix<T2>&& B) noexcept -> Matrix<_backend::if_no_loss<T2, T1>>&&
@@ -654,7 +654,7 @@ namespace Pinakas
   
   template<typename T1, typename T2>
   auto operator*(const Matrix<T1>& A, const Matrix<T2>& B) -> Matrix<decltype(T1()*T2())>
-  { return _backend::mul_mat(A, B); }
+  { return _backend::_mul_mat(A, B); }
 
   template<typename T1, typename T2>
   auto operator*(const Matrix<T1>& A, Matrix<T2>&& B) -> Matrix<_backend::if_no_loss<T2, T1>>&&
@@ -717,10 +717,10 @@ namespace Pinakas
   { return std::move(_backend::_mul_val_inplace(B, A)); } 
 //----------------------------------------------------------------------------------------------------------------------
   template<typename T>
-  Matrix<T> operator-(const Matrix<T>& A) noexcept { return _backend::neg_mat(A); }
+  Matrix<T> operator-(const Matrix<T>& A) noexcept { return _backend::_neg_mat(A); }
 
   template<typename T>
-  Matrix<T>&& operator-(Matrix<T>&& A) noexcept { return std::move(_backend::neg_inplace(A)); }
+  Matrix<T>&& operator-(Matrix<T>&& A) noexcept { return std::move(_backend::_neg_inplace(A)); }
 
   template<typename T1, typename T2>
   Matrix<T1>& operator-=(Matrix<T1>& A, const Matrix<T2>& B)
@@ -728,7 +728,7 @@ namespace Pinakas
   
   template<typename T1, typename T2>
   auto operator-(const Matrix<T1>& A, const Matrix<T2>& B) -> Matrix<decltype(T1()-T2())>
-  { return _backend::sub_mat(A, B); }
+  { return _backend::_sub_mat(A, B); }
 
   template<typename T1, typename T2>
   auto operator-(const Matrix<T1>& A, Matrix<T2>&& B) -> Matrix<_backend::if_no_loss<T2, T1>>&&

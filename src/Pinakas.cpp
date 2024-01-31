@@ -415,16 +415,16 @@ namespace Pinakas
   template<typename T>
   Matrix<T>::~Matrix() noexcept
   {
-    delete[] data_;
-    PINAKAS_LOG("deleted %ux%u", size_.M, size_.N);
+    delete[] _data;
+    PINAKAS_LOG("deleted %ux%u", _size.M, _size.N);
   }
 
   template<typename T>
   Matrix<T>::Matrix() noexcept :
-    size_{0, 0, 0},
-    data_(nullptr)
+    _size{0, 0, 0},
+    _data(nullptr)
   {
-    PINAKAS_LOG("created %ux%u", size_.M, size_.N);
+    PINAKAS_LOG("created %ux%u", _size.M, _size.N);
   }
 
   template<typename T>
@@ -433,17 +433,17 @@ namespace Pinakas
     if (this != &other)
     {
       // allocate memory
-      allocate(other.size_.M, other.size_.N);
+      _allocate(other._size.M, other._size.N);
 
       // store value
-      for (unsigned k = 0; k < size_.numel; ++k)
+      for (unsigned k = 0; k < _size.numel; ++k)
       {
-        data_[k] = other.data()[k];
+        _data[k] = other.data()[k];
       }
     }
     else PINAKAS_ERROR("could not copy assign, self reference is not supported");
 
-    PINAKAS_LOG("copied %ux%u", other.size_.M, other.size_.N);
+    PINAKAS_LOG("copied %ux%u", other._size.M, other._size.N);
   }
 
   template<typename T>
@@ -452,12 +452,12 @@ namespace Pinakas
     if (this != static_cast<const void*>(&other))
     {
       // allocate memory
-      allocate(other.M(), other.N());
+      _allocate(other.M(), other.N());
 
       // store value
-      for (unsigned m = 0; m < size_.M; ++m)
+      for (unsigned m = 0; m < _size.M; ++m)
       {
-        for (unsigned n = 0; n < size_.N; ++n)
+        for (unsigned n = 0; n < _size.N; ++n)
         {
           *this[m][n] = other[m][n];
         }
@@ -470,22 +470,22 @@ namespace Pinakas
 
   template<typename T>
   Matrix<T>::Matrix(Matrix<T>&& other) noexcept :
-    size_(other.size_),
-    data_(other.data_)
+    _size(other._size),
+    _data(other._data)
   {
-    other.size_ = Size{0, 0, 0};
-    other.data_ = nullptr;
+    other._size = Size{0, 0, 0};
+    other._data = nullptr;
 
-    PINAKAS_LOG("moved %ux%u", size_.M, size_.N);
+    PINAKAS_LOG("moved %ux%u", _size.M, _size.N);
   }
 
   template<typename T>
   Matrix<T>::Matrix(const unsigned M, const unsigned N)
   {
     // allocate memory
-    allocate(M, N);
+    _allocate(M, N);
 
-    PINAKAS_LOG("created %ux%u", size_.M, size_.N);
+    PINAKAS_LOG("created %ux%u", _size.M, _size.N);
   }
 
   template<typename T>
@@ -497,7 +497,7 @@ namespace Pinakas
   Matrix<T>::Matrix(const unsigned M, const unsigned N, const T value)
   {
     // allocate memory
-    allocate(M, N);
+    _allocate(M, N);
 
     // store values
     for (auto& data : *this)
@@ -505,7 +505,7 @@ namespace Pinakas
       data = value;
     }
 
-    PINAKAS_LOG("created %ux%u and filled", size_.M, size_.N);
+    PINAKAS_LOG("created %ux%u and filled", _size.M, _size.N);
   }
 
   template<typename T>
@@ -517,7 +517,7 @@ namespace Pinakas
   Matrix<T>::Matrix(const unsigned M, const unsigned N, Random range)
   {
     // allocate memory
-    allocate(M, N);
+    _allocate(M, N);
 
     // random number generator
     static std::random_device device;
@@ -525,9 +525,9 @@ namespace Pinakas
     std::uniform_real_distribution<float> uniform_distribution(range.min_, range.max_ + std::is_integral<T>::value);
 
     // assign random value to matrix
-    for (unsigned k = 0; k < size_.numel; ++k)
+    for (unsigned k = 0; k < _size.numel; ++k)
     {
-      data_[k] = uniform_distribution(generator);
+      _data[k] = uniform_distribution(generator);
     }
       
     PINAKAS_LOG("created %ux%u from range [%f, %f]", M, N, range.min_, range.max_ + std::is_integral<T>::value);
@@ -542,16 +542,16 @@ namespace Pinakas
   Matrix<T>::Matrix(const List<T> list)
   {
     // allocate memory
-    allocate(1, list.size());
+    _allocate(1, list.size());
 
     // store values
     unsigned x = 0;
     for (T value : list)
     {
-      data_[x++] = value;
+      _data[x++] = value;
     }
 
-    PINAKAS_LOG("created %ux%u", size_.M, size_.N);
+    PINAKAS_LOG("created %ux%u", _size.M, _size.N);
   }
 
   template<typename T>
@@ -564,7 +564,7 @@ namespace Pinakas
       if (temp_N && (temp_N != vector.size()))
       {
         PINAKAS_ERROR("vertical dimensions mismatch (%u vs %u)", temp_N, unsigned(vector.size()));
-        size_ = Size{0, 0, 0};
+        _size = Size{0, 0, 0};
         return;
       }
       else
@@ -574,7 +574,7 @@ namespace Pinakas
     }
 
     // allocate memory
-    allocate(values.size(), temp_N);
+    _allocate(values.size(), temp_N);
 
     // store values
     unsigned y = 0;
@@ -583,13 +583,13 @@ namespace Pinakas
       unsigned x = 0;
       for (T value : vector)
       {
-        data_[x + y * size_.N] = value;
+        _data[x + y * _size.N] = value;
         ++x;
       }
       ++y;
     }
 
-    PINAKAS_LOG("created %ux%u", size_.M, size_.N);
+    PINAKAS_LOG("created %ux%u", _size.M, _size.N);
   }
 
   template<typename T>
@@ -600,43 +600,43 @@ namespace Pinakas
     unsigned N_ = 0;
     for (const Matrix<T>& matrix : list)
     {
-      if (M_ && (M_ != matrix.size_.M))
+      if (M_ && (M_ != matrix._size.M))
       {
-        PINAKAS_ERROR("horizontal dimensions mismatch (%u vs %u)", M_, matrix.size_.M);
-        size_ = Size{0, 0, 0};
+        PINAKAS_ERROR("horizontal dimensions mismatch (%u vs %u)", M_, matrix._size.M);
+        _size = Size{0, 0, 0};
         return;
       }
       else
       {
-        M_ = matrix.size_.M;
+        M_ = matrix._size.M;
       }
 
-      N_ += matrix.size_.N;
+      N_ += matrix._size.N;
     }
 
     // allocate memory
-    allocate(M_, N_);
+    _allocate(M_, N_);
 
     // store values
     unsigned k = 0;
     for (const Matrix<T>& matrix : list)
     {
-      for (unsigned y = 0; y < matrix.size_.M; ++y)
+      for (unsigned y = 0; y < matrix._size.M; ++y)
       {
-        for (unsigned x = 0; x < matrix.size_.N; ++x)
+        for (unsigned x = 0; x < matrix._size.N; ++x)
         {
-          data_[x + k + y * size_.N] = matrix[y][x];
+          _data[x + k + y * _size.N] = matrix[y][x];
         }
       }
 
-      k += matrix.size_.N;
+      k += matrix._size.N;
     }
 
-    PINAKAS_LOG("created %ux%u from concatonation", size_.M, size_.N);
+    PINAKAS_LOG("created %ux%u from concatonation", _size.M, _size.N);
   }
 // --------------------------------------------------------------------------------------
   template<typename T>
-  void Matrix<T>::allocate(const unsigned M, const unsigned N)
+  void Matrix<T>::_allocate(const unsigned M, const unsigned N)
   {
     // validate sizes
     if ((M == 0) || (N == 0))
@@ -646,16 +646,16 @@ namespace Pinakas
       throw std::invalid_argument(error_message.str());
     }
 
-    data_ = new T[M*N];
+    _data = new T[M*N];
 
     // validate memory allocation
-    if (data_ == nullptr)
+    if (_data == nullptr)
     {
       throw std::bad_alloc();
     }
 
     // save size information
-    size_ = Size{M, N, M * N};
+    _size = Size{M, N, M * N};
   }
 // --------------------------------------------------------------------------------------
   template<typename T>
@@ -663,18 +663,18 @@ namespace Pinakas
   {
 # if defined PINAKAS_DEBUG_MODE
     // positive and negative bound checking
-    if ((k < -signed(size_.numel)) || (signed(size_.numel) <= k))
+    if ((k < -signed(_size.numel)) || (signed(_size.numel) <= k))
     {
       auto k_old = k;
-      k %= signed(size_.numel);
-      PINAKAS_WARNING("(%d) out of bound %u, wrapped around to (%d)", k_old, size_.numel, k);
+      k %= signed(_size.numel);
+      PINAKAS_WARNING("(%d) out of bound %u, wrapped around to (%d)", k_old, _size.numel, k);
     }
 #endif
 
     // convert negative indices
-    k += (k < 0) * size_.numel;
+    k += (k < 0) * _size.numel;
 
-    return data_[k];
+    return _data[k];
   }
 
   template<typename T>
@@ -682,18 +682,18 @@ namespace Pinakas
   {
 # if defined PINAKAS_DEBUG_MODE
     // positive and negative bound checking
-    if ((k < -signed(size_.numel)) || (signed(size_.numel) <= k))
+    if ((k < -signed(_size.numel)) || (signed(_size.numel) <= k))
     {
       auto k_old = k;
-      k %= signed(size_.numel);
-      PINAKAS_WARNING("(%d) out of bound %u, wrapped around to (%d)", k_old, size_.numel, k);
+      k %= signed(_size.numel);
+      PINAKAS_WARNING("(%d) out of bound %u, wrapped around to (%d)", k_old, _size.numel, k);
     }
 #endif
 
     // convert negative indices
-    k += (k < 0) * size_.numel;
+    k += (k < 0) * _size.numel;
 
-    return data_[k];
+    return _data[k];
   }
 
   template<typename T>
@@ -701,27 +701,27 @@ namespace Pinakas
   {
 # if defined PINAKAS_DEBUG_MODE
     // positive and negative bound checking
-    if ((j < -signed(size_.M)) || (signed(size_.M) <= j))
+    if ((j < -signed(_size.M)) || (signed(_size.M) <= j))
     {
       auto j_old = j;
-      j %= signed(size_.M);
-      PINAKAS_WARNING("(%d, _) out of bound %u, wrapped around to (%d, _)", j_old, size_.M, j);
+      j %= signed(_size.M);
+      PINAKAS_WARNING("(%d, _) out of bound %u, wrapped around to (%d, _)", j_old, _size.M, j);
     }
 
     // positive and negative bound checking
-    if ((i < -signed(size_.N)) || (signed(size_.N) <= i))
+    if ((i < -signed(_size.N)) || (signed(_size.N) <= i))
     {
       auto i_old = i;
-      i %= signed(size_.N);
-      PINAKAS_WARNING("(_, %d) out of bound %u, wrapped around to (_, %d)", i_old, size_.N, i);
+      i %= signed(_size.N);
+      PINAKAS_WARNING("(_, %d) out of bound %u, wrapped around to (_, %d)", i_old, _size.N, i);
     }
 #endif
 
     // convert negative indices
-    j += (j < 0) * size_.M;
-    i += (i < 0) * size_.N;
+    j += (j < 0) * _size.M;
+    i += (i < 0) * _size.N;
 
-    return data_[i + j * size_.N];
+    return _data[i + j * _size.N];
   }
 
   template<typename T>
@@ -729,27 +729,27 @@ namespace Pinakas
   {
 # if defined PINAKAS_DEBUG_MODE
     // positive and negative bound checking
-    if ((j < -signed(size_.M)) || (signed(size_.M) <= j))
+    if ((j < -signed(_size.M)) || (signed(_size.M) <= j))
     {
       auto j_old = j;
-      j %= signed(size_.M);
-      PINAKAS_WARNING("(%d, _) out of bound %u, wrapped around to (%d, _)", j_old, size_.M, j);
+      j %= signed(_size.M);
+      PINAKAS_WARNING("(%d, _) out of bound %u, wrapped around to (%d, _)", j_old, _size.M, j);
     }
 
     // positive and negative bound checking
-    if ((i < -signed(size_.N)) || (signed(size_.N) <= i))
+    if ((i < -signed(_size.N)) || (signed(_size.N) <= i))
     {
       auto i_old = i;
-      i %= signed(size_.N);
-      PINAKAS_WARNING("(_, %d) out of bound %u, wrapped around to (_, %d)", i_old, size_.N, i);
+      i %= signed(_size.N);
+      PINAKAS_WARNING("(_, %d) out of bound %u, wrapped around to (_, %d)", i_old, _size.N, i);
     }
 #endif
 
     // convert negative indices
-    j += (j < 0) * size_.M;
-    i += (i < 0) * size_.N;
+    j += (j < 0) * _size.M;
+    i += (i < 0) * _size.N;
 
-    return data_[i + j * size_.N];
+    return _data[i + j * _size.N];
   }
   
   template<typename T>
@@ -764,45 +764,45 @@ namespace Pinakas
 
 # if defined PINAKAS_DEBUG_MODE
     // positive and negative bound checking
-    if ((rows.start < -signed(size_.M)) || (signed(size_.M) <= rows.start))
+    if ((rows.start < -signed(_size.M)) || (signed(_size.M) <= rows.start))
     {
       auto rows_start_old = rows.start;
-      rows.start %= signed(size_.M);
-      PINAKAS_WARNING("(%d, _) out of bound %u, wrapped around to (%d, _)", rows_start_old, size_.M, rows.start);
+      rows.start %= signed(_size.M);
+      PINAKAS_WARNING("(%d, _) out of bound %u, wrapped around to (%d, _)", rows_start_old, _size.M, rows.start);
     }
 
     // positive and negative bound checking
-    if ((rows.stop < -signed(size_.M)) || (signed(size_.M) <= rows.stop))
+    if ((rows.stop < -signed(_size.M)) || (signed(_size.M) <= rows.stop))
     {
       auto rows_stop_old = rows.stop;
-      rows.stop %= signed(size_.M);
-      PINAKAS_WARNING("(%d, _) out of bound %u, wrapped around to (%d, _)", rows_stop_old, size_.M, rows.stop);
+      rows.stop %= signed(_size.M);
+      PINAKAS_WARNING("(%d, _) out of bound %u, wrapped around to (%d, _)", rows_stop_old, _size.M, rows.stop);
     }
 
     // positive and negative bound checking
-    if ((cols.start < -signed(size_.N)) || (signed(size_.N) <= cols.start))
+    if ((cols.start < -signed(_size.N)) || (signed(_size.N) <= cols.start))
     {
       auto cols_start_old = cols.start;
-      cols.start %= signed(size_.N);
-      PINAKAS_WARNING("(_, %d) out of bound %u, wrapped around to (_, %d)", cols_start_old, size_.N, cols.start);
+      cols.start %= signed(_size.N);
+      PINAKAS_WARNING("(_, %d) out of bound %u, wrapped around to (_, %d)", cols_start_old, _size.N, cols.start);
     }
 
     // positive and negative bound checking
-    if ((cols.stop < -signed(size_.N)) || (signed(size_.N) <= cols.stop))
+    if ((cols.stop < -signed(_size.N)) || (signed(_size.N) <= cols.stop))
     {
       auto cols_stop_old = cols.stop;
-      cols.stop %= signed(size_.N);
-      PINAKAS_WARNING("(_, %d) out of bound %u, wrapped around to (_, %d)", cols_stop_old, size_.N, cols.stop);
+      cols.stop %= signed(_size.N);
+      PINAKAS_WARNING("(_, %d) out of bound %u, wrapped around to (_, %d)", cols_stop_old, _size.N, cols.stop);
     }
 #endif
 
     // convert negative indices
-    rows.start += (rows.start < 0) * size_.M;
-    rows.stop  += (rows.stop < 0)  * size_.M;
-    cols.start += (cols.start < 0) * size_.N;
-    cols.stop  += (cols.stop < 0)  * size_.N;
+    rows.start += (rows.start < 0) * _size.M;
+    rows.stop  += (rows.stop < 0)  * _size.M;
+    cols.start += (cols.start < 0) * _size.N;
+    cols.stop  += (cols.stop < 0)  * _size.N;
 
-    return Slice<T>(data_, size_, rows, cols);
+    return Slice<T>(_data, _size, rows, cols);
   }
 
   template<typename T>
@@ -810,45 +810,45 @@ namespace Pinakas
   {
 # if defined PINAKAS_DEBUG_MODE
     // positive and negative bound checking
-    if ((rows.start < -signed(size_.M)) || (signed(size_.M) <= rows.start))
+    if ((rows.start < -signed(_size.M)) || (signed(_size.M) <= rows.start))
     {
       auto rows_start_old = rows.start;
-      rows.start %= signed(size_.M);
-      PINAKAS_WARNING("(%d, _) out of bound %u, wrapped around to (%d, _)", rows_start_old, size_.M, rows.start);
+      rows.start %= signed(_size.M);
+      PINAKAS_WARNING("(%d, _) out of bound %u, wrapped around to (%d, _)", rows_start_old, _size.M, rows.start);
     }
 
     // positive and negative bound checking
-    if ((rows.stop < -signed(size_.M)) || (signed(size_.M) <= rows.stop))
+    if ((rows.stop < -signed(_size.M)) || (signed(_size.M) <= rows.stop))
     {
       auto rows_stop_old = rows.stop;
-      rows.stop %= signed(size_.M);
-      PINAKAS_WARNING("(%d, _) out of bound %u, wrapped around to (%d, _)", rows_stop_old, size_.M, rows.stop);
+      rows.stop %= signed(_size.M);
+      PINAKAS_WARNING("(%d, _) out of bound %u, wrapped around to (%d, _)", rows_stop_old, _size.M, rows.stop);
     }
 
     // positive and negative bound checking
-    if ((cols.start < -signed(size_.N)) || (signed(size_.N) <= cols.start))
+    if ((cols.start < -signed(_size.N)) || (signed(_size.N) <= cols.start))
     {
       auto cols_start_old = cols.start;
-      cols.start %= signed(size_.N);
-      PINAKAS_WARNING("(_, %d) out of bound %u, wrapped around to (_, %d)", cols_start_old, size_.N, cols.start);
+      cols.start %= signed(_size.N);
+      PINAKAS_WARNING("(_, %d) out of bound %u, wrapped around to (_, %d)", cols_start_old, _size.N, cols.start);
     }
 
     // positive and negative bound checking
-    if ((cols.stop < -signed(size_.N)) || (signed(size_.N) <= cols.stop))
+    if ((cols.stop < -signed(_size.N)) || (signed(_size.N) <= cols.stop))
     {
       auto cols_stop_old = cols.stop;
-      cols.stop %= signed(size_.N);
-      PINAKAS_WARNING("(_, %d) out of bound %u, wrapped around to (_, %d)", cols_stop_old, size_.N, cols.stop);
+      cols.stop %= signed(_size.N);
+      PINAKAS_WARNING("(_, %d) out of bound %u, wrapped around to (_, %d)", cols_stop_old, _size.N, cols.stop);
     }
 #endif
 
     // convert negative indices
-    rows.start += (rows.start < 0) * size_.M;
-    rows.stop  += (rows.stop < 0)  * size_.M;
-    cols.start += (cols.start < 0) * size_.N;
-    cols.stop  += (cols.stop < 0)  * size_.N;
+    rows.start += (rows.start < 0) * _size.M;
+    rows.stop  += (rows.stop < 0)  * _size.M;
+    cols.start += (cols.start < 0) * _size.N;
+    cols.stop  += (cols.stop < 0)  * _size.N;
 
-    return Slice<const T>(data_, size_, rows, cols);
+    return Slice<const T>(_data, _size, rows, cols);
   }
 // --------------------------------------------------------------------------------------
   template<typename T>
@@ -860,12 +860,12 @@ namespace Pinakas
     if (this != &other)
     {
       // allocate memory if necessary
-      if ((size_ != other.size_) ||!data_)
-        allocate(other.size_.M, other.size_.N);
+      if ((_size != other._size) ||!_data)
+        _allocate(other._size.M, other._size.N);
 
       // store values
-      for (unsigned k = 0; k < size_.numel; ++k)
-        data_[k] = other.data()[k];
+      for (unsigned k = 0; k < _size.numel; ++k)
+        _data[k] = other.data()[k];
     }
     else PINAKAS_ERROR("could not copy assign, self reference is not supported");
 
@@ -877,18 +877,18 @@ namespace Pinakas
     PINAKAS_LOG("copy assigned");
 
     // validate both matrices are not the same
-    if (data_ != other.matrix_data_)
+    if (_data != other.matrix_data_)
     {
       // allocate memory if necessary
-      if ((size_ != other.size_) || (data_ == nullptr))
+      if ((_size != other.size_) || (_data == nullptr))
       {
-        allocate(other.size_.M, other.size_.N);
+        _allocate(other.size_.M, other.size_.N);
       }
 
       // store value
-      for (unsigned m = 0; m < size_.M; ++m)
+      for (unsigned m = 0; m < _size.M; ++m)
       {
-        for (unsigned n = 0; n < size_.N; ++n)
+        for (unsigned n = 0; n < _size.N; ++n)
         {
           *this[m][n] = other[m][n];
         }
@@ -902,16 +902,16 @@ namespace Pinakas
   template<typename T>
   Matrix<T>& Matrix<T>::operator=(Matrix<T>&& other) noexcept
   {
-    if (other.data_ != nullptr)
+    if (other._data != nullptr)
     {
       // take over ressources from other matrix
-      size_ = other.size_;
-      data_ = other.data_;
+      _size = other._size;
+      _data = other._data;
 
-      other.size_ = Size{0, 0, 0};
-      other.data_ = nullptr;
+      other._size = Size{0, 0, 0};
+      other._data = nullptr;
       
-      PINAKAS_LOG("move assigned %ux%u", size_.M, size_.N);
+      PINAKAS_LOG("move assigned %ux%u", _size.M, _size.N);
     }
     else PINAKAS_LOG("nothing to move");
 
@@ -924,8 +924,8 @@ namespace Pinakas
     PINAKAS_LOG("filled");
 
     // store values
-    for (unsigned k = 0; k < size_.numel; ++k)
-      data_[k] = value;
+    for (unsigned k = 0; k < _size.numel; ++k)
+      _data[k] = value;
 
     return *this;
   }
@@ -973,7 +973,7 @@ namespace Pinakas
   {
     if (size_ != other.size())
     {
-      PINAKAS_ERROR("incompatible sizes (%ux%u vs %ux%u)", size_.M, size_.N, other.size_.M, other.size_.N);
+      PINAKAS_ERROR("incompatible sizes (%ux%u vs %ux%u)", size_.M, size_.N, other._size.M, other._size.N);
       return *this;
     }
     
@@ -1799,15 +1799,15 @@ namespace Pinakas
   }
 
   template<typename T>
-  auto transpose(Matrix<T>&& A) -> Matrix<T>&&
+  auto transpose(Matrix<T>&& A) noexcept -> Matrix<T>&&
   {
-    std::swap(A.size_.M, A.size_.N);
+    std::swap(A._size.M, A._size.N);
 
     return std::move(A);
   }
 
   template<typename T>
-  auto reshape(const Matrix<T>& A, const unsigned M, const unsigned N) -> Matrix<T>
+  auto reshape(const Matrix<T>& A, unsigned M, unsigned N) -> Matrix<T>
   {
     Matrix<T> result;
 
@@ -1829,16 +1829,16 @@ namespace Pinakas
   }
 
   template<typename T>
-  auto reshape(Matrix<T>&& A, const unsigned M, const unsigned N) -> Matrix<T>&&
+  auto reshape(Matrix<T>&& A, unsigned M, unsigned N) noexcept -> Matrix<T>&&
   {
-    if (A.size_.numel != M*N)
+    if (A._size.numel != M*N)
     {
       PINAKAS_ERROR("can't reshape %ux%u into %ux%u)", A.M(), A.N(), M, N);
       return std::move(A);
     }
 
-    A.size_.M = M;
-    A.size_.N = N;
+    A._size.M = M;
+    A._size.N = N;
 
     return std::move(A);
   }
@@ -1846,7 +1846,7 @@ namespace Pinakas
   template<template<typename> class M, typename T>
   T min(const M<T>& A) noexcept
   {
-    T result = A[0][0];
+    T result = *A.begin();
 
     for (T data : A)
     {
@@ -1862,7 +1862,7 @@ namespace Pinakas
   template<template<typename> class M, typename T>
   T max(const M<T>& A) noexcept
   {
-    T result = A[0][0];
+    T result = *A.begin();
 
     for (T data : A)
     {
@@ -1898,7 +1898,7 @@ namespace Pinakas
     // }
     // return std::exp(result);
 
-    double result = 1;
+    double result = 1.0;
 
     for (T data : A)
     {
@@ -2186,12 +2186,12 @@ namespace Pinakas
   template<typename T>
   Matrix<T> reverse(const Matrix<T>& A)
   {
-    Matrix<T> result(A.size());
+    auto result = Matrix<T>(A.M(), A.N());
 
-    const unsigned n = A.numel();
-    for (unsigned k = 0; k < n; ++k)
+    const auto N = A.numel();
+    for (unsigned k = 0; k < N; ++k)
     {
-      result.data()[k] = A.data()[n-1 - k];
+      result.data()[k] = A.data()[N-1 - k];
     }
 
     return result;
@@ -2202,10 +2202,10 @@ namespace Pinakas
   {
     Matrix<T> result(A.size());
 
-    const unsigned n = A.numel();
-    for (unsigned k = 0; k < n; ++k)
+    const unsigned N = A.numel();
+    for (unsigned k = 0; k < N; ++k)
     {
-      result.data()[k] = A[0][n-1 - k];
+      result.data()[k] = A[0][N-1 - k];
     }
 
     return result;
@@ -2284,7 +2284,7 @@ namespace Pinakas
     return result;
   }
 
-  Matrix<double> rxx(const Matrix<double>& A)
+  Matrix<double> Rxx(const Matrix<double>& A)
   {
     const unsigned n = A.numel();
 
@@ -2297,7 +2297,7 @@ namespace Pinakas
     return result;
   }
 
-  Matrix<double> rxx(const Matrix<double>& A, const unsigned K)
+  Matrix<double> Rxx(const Matrix<double>& A, const unsigned K)
   {
     const unsigned n = A.numel();
 
@@ -2312,7 +2312,7 @@ namespace Pinakas
 
   Matrix<double> lpc(const Matrix<double>& A, const unsigned p)
   {
-    Matrix<double> result;
+    auto result = Matrix<double>();
 
     if (p >= A.numel())
     {
@@ -2322,20 +2322,25 @@ namespace Pinakas
 
     PINAKAS_WARNING_IF(A.M() != 1, "'A' should be a horizontal vector");
 
-    Matrix<double> rxx_ = rxx(A, p+1);
+    auto rxx            = Rxx(A, p+1);
+    const auto rxx_data = rxx.data();
 
-    Matrix<double> autocorr_mat(p, p);
-    Matrix<double> autocorr_vec(p, 1);
+    auto autocorr_mat = Matrix<double>(p, p);
+    auto autocorr_vec = Matrix<double>(p, 1);
+    auto vec_data     = autocorr_vec.data();
+
     for (unsigned i = 0; i < p; ++i)
     {
       for (unsigned j = 0; j < p; ++j)
       {
-        autocorr_mat[j][i] = rxx_.data()[(j > i) ? (j - i) : (i - j)];
+        autocorr_mat[j][i] = rxx_data[(j > i) ? (j - i) : (i - j)];
       }
 
-      autocorr_vec.data()[i] = rxx_.data()[i+1];
+      vec_data[i] = rxx_data[i+1];
     }
 
+    // TO DO: Levinson recursion (Levinson-Durbin algorithm)
+    // to solve Toeplitz system of equation more efficiently
     result = div(autocorr_vec, autocorr_mat);
 
     return result;
@@ -2343,20 +2348,22 @@ namespace Pinakas
 
   Matrix<double> toeplitz(const Matrix<double>& A)
   {
-    const unsigned n = A.numel();
-    Matrix<double> result(n, n);
-    for (unsigned i = 0; i < n; ++i)
+    const auto N    = A.numel();
+    const auto data = A.data();
+
+    auto result     = Matrix<double>(N, N);
+    for (unsigned i = 0; i < N; ++i)
     {
-      for (unsigned j = 0; j < n; ++j)
+      for (unsigned j = 0; j < N; ++j)
       {
-        result[j][i] = A.data()[(j > i) ? (j - i) : (i - j)];
+        result[j][i] = data[(j > i) ? (j - i) : (i - j)];
       }
     }
 
     return result;
   }
 // --------------------------------------------------------------------------------------
-  Matrix<double> blackman(const unsigned N)
+  Matrix<double> blackman(unsigned N)
   {
     Matrix<double> window(1, N);
     for (unsigned k = 0; k < N; ++k)
@@ -2383,17 +2390,18 @@ namespace Pinakas
 
   Matrix<double>&& blackman(Matrix<double>&& signal) noexcept
   {
-    const unsigned N = signal.numel();
+    const auto N = signal.numel();
+    auto data    = signal.data();
     for (unsigned k = 0; k < N; ++k)
     {
       const double temporary = (2 * M_PI * k)/(N - 1);
-      signal.data()[k] *= 0.42 - 0.50 * std::cos(temporary) + 0.08 * std::cos(2 * temporary);
+      data[k] *= 0.42 - 0.50 * std::cos(temporary) + 0.08 * std::cos(2 * temporary);
     }
 
     return std::move(signal);
   }
 // --------------------------------------------------------------------------------------
-  Matrix<double> hamming(const unsigned N)
+  Matrix<double> hamming(unsigned N)
   {
     Matrix<double> window(1, N);
 
@@ -2407,7 +2415,7 @@ namespace Pinakas
 
   Matrix<double> hamming(const Matrix<double>& signal)
   {
-    const unsigned N = signal.numel();
+    const auto N = signal.numel();
     Matrix<double> windowed(1, N);
     for (unsigned k = 0; k < N; ++k)
     {
@@ -2419,16 +2427,17 @@ namespace Pinakas
 
   Matrix<double>&& hamming(Matrix<double>&& signal) noexcept
   {
-    const unsigned n = signal.numel();
-    for (unsigned k = 0; k < n; ++k)
+    const auto N = signal.numel();
+    auto data    = signal.data();
+    for (unsigned k = 0; k < N; ++k)
     {
-      signal.data()[k] *= 0.54 - 0.46 * std::cos(2 * M_PI * k / (n - 1));
+      data[k] *= 0.54 - 0.46 * std::cos(2 * M_PI * k / (N - 1));
     }
 
     return std::move(signal);
   }
 // --------------------------------------------------------------------------------------
-  Matrix<double> hann(const unsigned N)
+  Matrix<double> hann(unsigned N)
   {
     Matrix<double> window(1, N);
     for (unsigned k = 0; k < N; ++k)
@@ -2441,7 +2450,7 @@ namespace Pinakas
 
   Matrix<double> hann(const Matrix<double>& signal)
   {
-    const unsigned N = signal.numel();
+    const auto N = signal.numel();
     Matrix<double> windowed(1, N);
     for (unsigned k = 0; k < N; ++k)
     {
@@ -2453,10 +2462,11 @@ namespace Pinakas
 
   Matrix<double>&& hann(Matrix<double>&& signal) noexcept
   {
-    const unsigned N = signal.numel();
+    const auto N = signal.numel();
+    auto data    = signal.data();
     for (unsigned k = 0; k < N; ++k)
     {
-      signal.data()[k] *= 0.5 - 0.5 * std::cos(2 * M_PI * k / (N - 1));
+      data[k] *= 0.5 - 0.5 * std::cos(2 * M_PI * k / (N - 1));
     }
 
     return std::move(signal);
@@ -2481,7 +2491,7 @@ namespace Pinakas
   }
 // --------------------------------------------------------------------------------------
   template<typename T>
-  Matrix<double> cos(Matrix<T>& A)
+  Matrix<double> cos(const Matrix<T>& A)
   {
     Matrix<double> result(A.size());
 
@@ -2503,7 +2513,7 @@ namespace Pinakas
   }
 
   template<typename T>
-  Matrix<double> sin(Matrix<T>& A)
+  Matrix<double> sin(const Matrix<T>& A)
   {
     Matrix<double> result(A.size());
 
@@ -2525,7 +2535,7 @@ namespace Pinakas
   }
 
   template<typename T>
-  Matrix<double> sinc(Matrix<T>& A)
+  Matrix<double> sinc(const Matrix<T>& A)
   {
     Matrix<double> result(A.size());
 
@@ -2626,12 +2636,12 @@ namespace Pinakas
     const unsigned filter_length = 2 * offset + 1;
     static auto    filter_cached = blackman(sinc_impulse(filter_length, 1.0/L));
     static auto    offset_cached = offset;
-    static auto    L_cached      = L;
-    if ((offset_cached != offset) || (L_cached != L))
+    static auto    factor_cached = L;
+    if ((offset_cached != offset) || (factor_cached != L))
     {
       filter_cached = blackman(sinc_impulse(filter_length, 1.0/L));
       offset_cached = offset;
-      L_cached      = L;
+      factor_cached = L;
     }
 
     const unsigned N = data.N();
