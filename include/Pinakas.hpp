@@ -31,7 +31,9 @@
 // --versions----------------------------------------------------------------------------
 // 
 // --notice------------------------------------------------------------------------------
-// Pinākás
+//  Pinākás
+//  laz::Matrix;
+//
 // --inclusion guard---------------------------------------------------------------------
 #ifndef PINAKAS_HPP
 #define PINAKAS_HPP
@@ -259,17 +261,17 @@ namespace Pinakas
   Matrix<T3> _pow_rl_val(const Matrix<T1>& B, const T2 A) noexcept;
 // --------------------------------------------------------------------------------------
   template<template<typename> class M, typename T>
-  Matrix<T> floor(const M<T>& A);
+  auto floor(const M<T>& A) -> Matrix<T>;
   template<template<typename> class M, typename T>
-  M<T>&& floor(M<T>&& A) noexcept;
+  auto floor(M<T>&& A) noexcept -> M<T>&&;
   template<template<typename> class M, typename T>
-  Matrix<T> round(const M<T>& A);
+  auto round(const M<T>& A) -> Matrix<T>;
   template<template<typename> class M, typename T>
-  M<T>&& round(M<T>&& A) noexcept;
+  auto round(M<T>&& A) noexcept -> M<T>&&;
   template<template<typename> class M, typename T>
-  Matrix<T> ceil(const M<T>& A);
+  auto ceil(const M<T>& A) -> Matrix<T>;
   template<template<typename> class M, typename T>
-  M<T>&& ceil(M<T>&& A) noexcept;
+  auto ceil(M<T>&& A) noexcept -> M<T>&&;
 // --------------------------------------------------------------------------------------
   template<typename T1, typename T2>
   Matrix<double> mul(const Matrix<T1>& A, const Matrix<T2>& B);
@@ -277,20 +279,20 @@ namespace Pinakas
   Matrix<T> div(const Matrix<T>& b, Matrix<T> A);
 // --------------------------------------------------------------------------------------
   template<typename T = double>
-  Matrix<T> linspace(const double x1, const double x2, const unsigned N);
-  template<typename T = unsigned>
-  Matrix<T> iota(const unsigned n);
+  Matrix<T> linspace(const double x1, const double x2, const size_t N);
+  template<typename T = size_t>
+  auto iota(size_t N) -> Matrix<T>;
   template<typename T = double>
-  Matrix<T> eye(const unsigned M, const unsigned N);
+  Matrix<T> eye(const size_t M, const size_t N);
 // --------------------------------------------------------------------------------------
   template<typename T>
   auto transpose(const Matrix<T>& A) -> Matrix<T>;
   template<typename T>
   auto transpose(Matrix<T>&& A) noexcept -> Matrix<T>&&;
   template<typename T>
-  auto reshape(const Matrix<T>& A, unsigned M, unsigned N) -> Matrix<T>;
+  auto reshape(const Matrix<T>& A, size_t M, size_t N) -> Matrix<T>;
   template<typename T>
-  auto reshape(Matrix<T>&& A, unsigned M, unsigned N) noexcept -> Matrix<T>&&;
+  auto reshape(Matrix<T>&& A, size_t M, size_t N) noexcept -> Matrix<T>&&;
 // --------------------------------------------------------------------------------------
   template<template<typename> class M, typename T>
   T min(const M<T>& A) noexcept;
@@ -321,7 +323,7 @@ namespace Pinakas
   template<template<typename> class M, typename T>
   M<T>&&    reverse(M<T>&& A) noexcept;
 // --------------------------------------------------------------------------------------
-  Matrix<double> diff(const Matrix<double>& A, unsigned n = 1);
+  Matrix<double> diff(const Matrix<double>& A, size_t n = 1);
 // --------------------------------------------------------------------------------------
   template<typename T1, typename T2>
   auto conv(const Matrix<T1>& A, const Matrix<T2>& B) -> Matrix<decltype(T1()*T2())>;
@@ -331,10 +333,10 @@ namespace Pinakas
   template<typename T>
   Matrix<T>      corr(const Matrix<T>& A);
   Matrix<double> Rxx(const Matrix<double>& A);
-  Matrix<double> Rxx(const Matrix<double>& A, const unsigned K);
-  Matrix<double> lpc(const Matrix<double>& A, const unsigned p);
+  Matrix<double> Rxx(const Matrix<double>& A, const size_t K);
+  Matrix<double> lpc(const Matrix<double>& A, const size_t p);
   Matrix<double> toeplitz(const Matrix<double>& A);
-  double newton(std::function<double(double)> function, double tol, unsigned max_iteration, double seed) noexcept;
+  double newton(std::function<double(double)> function, double tol, size_t max_iteration, double seed) noexcept;
 // --------------------------------------------------------------------------------------
   template<typename T>
   Matrix<double>   cos(const Matrix<T>& A);
@@ -346,19 +348,19 @@ namespace Pinakas
   Matrix<double>   sinc(const Matrix<T>& A);
   Matrix<double>&& sinc(Matrix<double>&& A) noexcept;
 // --------------------------------------------------------------------------------------
-  Matrix<double>   blackman(unsigned N);
+  Matrix<double>   blackman(size_t N);
   Matrix<double>   blackman(const Matrix<double>& signal);
   Matrix<double>&& blackman(Matrix<double>&& signal) noexcept;
-  Matrix<double>   hamming(unsigned N);
+  Matrix<double>   hamming(size_t N);
   Matrix<double>   hamming(const Matrix<double>& signal);
   Matrix<double>&& hamming(Matrix<double>&& signal) noexcept;
-  Matrix<double>   hann(unsigned N);
+  Matrix<double>   hann(size_t N);
   Matrix<double>   hann(const Matrix<double>& signal);
   Matrix<double>&& hann(Matrix<double>&& signal) noexcept;
 // --------------------------------------------------------------------------------------
-  Matrix<double> sinc_impulse(const unsigned length, const double frequency);
+  Matrix<double> sinc_impulse(const size_t length, const double frequency);
   template<typename T>
-  Matrix<double> resample(const Matrix<T>& data, unsigned L, unsigned reflect = 2, float alpha = 3.5, const bool tail = false);
+  Matrix<double> resample(const Matrix<T>& data, size_t L, size_t reflect = 2, float alpha = 3.5, const bool tail = false);
 // --------------------------------------------------------------------------------------
   void plot(List<Set> data_sets, bool persistent = true, bool remove = true, bool pause = false, bool lines = true);
 // --------------------------------------------------------------------------------------
@@ -377,9 +379,14 @@ namespace Pinakas
 // --Pinakas library: backend struct and class definitions-------------------------------
   struct Size final
   {
-    unsigned M, N, numel;
+    size_t M, N, numel;
     inline bool operator==(const Size other) const noexcept;
     inline bool operator!=(const Size other) const noexcept;
+  };
+
+  struct Indices
+  {
+    size_t j, i;
   };
 
   template<typename T>
@@ -393,12 +400,14 @@ namespace Pinakas
     inline Slice<T>& operator=(T value);
     
     inline Size     size()  const & noexcept { return size_; }
-    inline unsigned numel() const & noexcept { return size_.numel; }
-    inline unsigned M()     const & noexcept { return size_.M; }
-    inline unsigned N()     const & noexcept { return size_.N; }
+    inline size_t numel() const & noexcept { return size_.numel; }
+    inline size_t M()     const & noexcept { return size_.M; }
+    inline size_t N()     const & noexcept { return size_.N; }
     // indexing
-    T*       operator[](const unsigned j)       noexcept { return matrix_data_ + (j*matrix_M_ + offset_); }
-    const T* operator[](const unsigned j) const noexcept { return matrix_data_ + (j*matrix_M_ + offset_); }
+    T*       operator[](const size_t j)        noexcept { return matrix_data_ + (j*matrix_M_ + offset_); }
+    const T* operator[](const size_t j)  const noexcept { return matrix_data_ + (j*matrix_M_ + offset_); }
+    T*       operator[](const Indices idx)       noexcept { return (matrix_data_ + (idx.j*matrix_M_ + offset_))[idx.i]; }
+    const T* operator[](const Indices idx) const noexcept { return (matrix_data_ + (idx.j*matrix_M_ + offset_))[idx.i]; }
     // bound-checked flat-indexing
     T&       operator()(signed int k)       noexcept;
     const T& operator()(signed int k) const noexcept;
@@ -407,8 +416,8 @@ namespace Pinakas
     const T& operator()(signed int j, signed int i) const noexcept;
   private:
     T* matrix_data_;
-    const unsigned matrix_M_;
-    const unsigned offset_;
+    const size_t matrix_M_;
+    const size_t offset_;
     const Size size_;     
   private:
     template<typename T0>
@@ -418,8 +427,8 @@ namespace Pinakas
       explicit Iterator(Slice<T>& slice, const int value) noexcept : slice_(slice), current_(value) {}
       T0&  operator*() const noexcept
       {
-        unsigned i = current_ % slice_.size_.N;
-        unsigned j = current_ / slice_.size_.N;
+        size_t i = current_ % slice_.size_.N;
+        size_t j = current_ / slice_.size_.N;
         return slice_.matrix_data_[i + j*slice_.matrix_M_ + slice_.offset_];
       }
       void operator++()                            noexcept { ++current_;}
@@ -445,28 +454,30 @@ namespace Pinakas
   class Range final
   {
   public:
-    inline explicit Range(const unsigned stop) noexcept;
+    inline explicit Range(const size_t stop) noexcept;
     inline explicit Range(const int start, const int stop) noexcept;
-    inline explicit Range(const int start, const int stop, const unsigned step) noexcept;
-    int start;
-    int stop;
-    int step;
+    inline explicit Range(const int start, const int stop, const size_t step) noexcept;
+    int _start;
+    int _stop;
+    int _step;
   private:
     class Iterator
     {  
     public:
-      explicit Iterator(int value, int step)           noexcept : current(value), step(step) {}
-      int      operator*()                       const noexcept { return current; }
-      void     operator++()                            noexcept { current += step; }
+      explicit Iterator(int value_, int step_)           noexcept
+        : _current(value_), _step(step_)
+      {}
+      int      operator*()                       const noexcept { return _current; }
+      void     operator++()                            noexcept { _current += _step; }
       bool     operator!=(const Iterator& other) const noexcept
-      { return (step > 0) ? (current <= other.current) : (current >= other.current); }
+      { return (_step > 0) ? (_current <= other._current) : (_current >= other._current); }
     private:
-      int current;
-      const int step;
+      int _current;
+      const int _step;
     };
   public:
-    Iterator begin() const noexcept { return Iterator(start, step); }
-    Iterator end()   const noexcept { return Iterator(stop,  step); }
+    Iterator begin() const noexcept { return Iterator(_start, _step); }
+    Iterator end()   const noexcept { return Iterator(_stop,  _step); }
   };
 
   template<typename T>
@@ -483,12 +494,12 @@ namespace Pinakas
     // empty constructor
     Matrix() noexcept;
     // empty MxN constructor 
-    explicit Matrix(const unsigned M, const unsigned N);
+    explicit Matrix(const size_t M, const size_t N);
     // random MxN constructor 
-    explicit Matrix(const unsigned M, const unsigned N, Random range);
+    explicit Matrix(const size_t M, const size_t N, Random range);
 
     // fill
-    explicit Matrix(const unsigned M, const unsigned N, const T value);
+    explicit Matrix(const size_t M, const size_t N, const T value);
     Matrix<T>& operator=(const T value) noexcept;
 
     // copy
@@ -502,25 +513,29 @@ namespace Pinakas
     Matrix<T>& operator=(Matrix<T>&& other) noexcept;
   public:
     // indexing
-    inline       T* operator[](unsigned int j)       noexcept { return _data + (j * _size.N); }
-    inline const T* operator[](unsigned int j) const noexcept { return _data + (j * _size.N); }
+    inline auto operator[](size_t j)        noexcept ->       T*;
+    inline auto operator[](size_t j)  const noexcept -> const T*;
+    inline auto operator[](Indices idx)       noexcept ->       T&;
+    inline auto operator[](Indices idx) const noexcept -> const T&;
     // bound-checked flat-indexing
-    inline       T& operator()(signed int k)       noexcept;
-    inline const T& operator()(signed int k) const noexcept;
+    inline       T& operator()(signed k)       noexcept;
+    inline const T& operator()(signed k) const noexcept;
     // bound-checked indexing
-    inline       T& operator()(signed int j, signed int i)       noexcept;
-    inline const T& operator()(signed int j, signed int i) const noexcept;
+    inline       T& operator()(signed j, signed i)       noexcept;
+    inline const T& operator()(signed j, signed i) const noexcept;
   public:
     Size             size()  const noexcept { return _size; }
-    unsigned         numel() const noexcept { return _size.numel; }
-    unsigned         M()     const noexcept { return _size.M; }
-    unsigned         N()     const noexcept { return _size.N; }
-    operator unsigned ()     const noexcept { return _size.numel; } 
+    size_t         numel() const noexcept { return _size.numel; }
+    size_t         M()     const noexcept { return _size.M; }
+    size_t         N()     const noexcept { return _size.N; }
+    operator size_t ()     const noexcept { return _size.numel; } 
   private:
     Size _size; // matrix size information
+    Size _true_size;
     T*   _data; // T[M * N] array
     
-    void _allocate(const unsigned M, const unsigned N); // allocates memory to _data
+    void _allocate(size_t M, size_t N); // allocates memory to _data
+    void _drop(size_t amount) noexcept;
   public:
     // size-based constructor
     inline explicit Matrix(const Size size);
@@ -554,7 +569,7 @@ namespace Pinakas
     const T*       data()  const noexcept { return _data;}
   friend class Slice<T>;
   friend Matrix<T>&& transpose<T>(Matrix<T>&& A) noexcept;
-  friend Matrix<T>&& reshape<T>(Matrix<T>&& A, unsigned M, unsigned N) noexcept;
+  friend Matrix<T>&& reshape<T>(Matrix<T>&& A, size_t M, size_t N) noexcept;
   };
 
   struct Set final
@@ -562,8 +577,8 @@ namespace Pinakas
     Set(const char* name, const Matrix<double>& x, const Matrix<double>& y) noexcept;
     Set(const char* name, const Matrix<double>& y) noexcept;
   private:
-    Matrix<double> x_if_temp;
-    Matrix<double> y_if_temp;
+    Matrix<double> _x_if_temp;
+    Matrix<double> _y_if_temp;
   public:
     const char* const name;
     const Matrix<double>& x;
